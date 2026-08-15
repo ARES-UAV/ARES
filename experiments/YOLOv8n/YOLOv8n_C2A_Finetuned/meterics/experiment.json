@@ -1,0 +1,32 @@
+{
+    "experiment": "C2A Human Detection",
+    "model": "YOLOv8n",
+    "dataset": "C2A",
+    "task": "object_detection",
+    "training": {
+        "epochs": 50,
+        "image_size": 640,
+        "batch_size": 8,
+        "device": "Tesla T4",
+        "workers": 2,
+        "pretrained": true,
+        "patience": 10,
+        "seed": 42
+    },
+    "test": {
+        "images": 2043,
+        "instances": 72523,
+        "precision": 0.843,
+        "recall": 0.728,
+        "mAP50": 0.774,
+        "mAP50_95": 0.488,
+        "inference_ms_per_image": 4.4
+    },
+    "model_parameters": 3005843,
+    "paths": {
+        "model": "YOLOv8n/model/best.pt",
+        "training_results": "YOLOv8n/training/",
+        "test_results": "YOLOv8n/test/",
+        "metrics_csv": "YOLOv8n/test_metrics.csv"
+    }
+}
