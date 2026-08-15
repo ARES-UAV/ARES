@@ -1,0 +1,2 @@
+Model,Dataset,Test_Images,Test_Instances,Precision,Recall,mAP50,mAP50-95,Inference_ms_per_image
+YOLOv8n,C2A,2043,72523,0.843,0.728,0.774,0.488,4.4
