@@ -1,0 +1,2 @@
+model,pretrained,dataset,evaluation_split,images,instances,precision,recall,mAP50,mAP50_95,inference_ms_per_image,parameters,GFLOPs
+YOLOv8s,COCO,C2A Human Detection,test,2043,72523,0.3350569042139544,0.24228175889028308,0.17323375849861045,0.0845050131189208,8.2,11156544,28.6
