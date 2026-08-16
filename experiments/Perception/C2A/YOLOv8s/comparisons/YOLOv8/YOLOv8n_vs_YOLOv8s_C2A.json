@@ -1,0 +1,57 @@
+{
+    "experiment": "YOLOv8n vs YOLOv8s on C2A",
+    "dataset": "C2A Human Detection",
+    "evaluation_split": "test",
+    "test_images": 2043,
+    "test_instances": 72523,
+    "models": {
+        "YOLOv8n": {
+            "precision": 0.843,
+            "recall": 0.728,
+            "mAP50": 0.774,
+            "mAP50_95": 0.488,
+            "parameters_M": 3.005843,
+            "GFLOPs": 8.1,
+            "inference_ms": 4.4
+        },
+        "YOLOv8s": {
+            "precision": 0.8612927161595996,
+            "recall": 0.7640737994118999,
+            "mAP50": 0.8121408932138355,
+            "mAP50_95": 0.5438539349196255,
+            "parameters_M": 11.125971,
+            "GFLOPs": 28.4,
+            "inference_ms": 8.1
+        }
+    },
+    "accuracy_comparison": [
+        {
+            "Metric": "Precision",
+            "YOLOv8n": 0.843,
+            "YOLOv8s": 0.8612927161595996,
+            "Absolute_Gain": 0.018292716159599598,
+            "Relative_Improvement_%": 2.1699544673309132
+        },
+        {
+            "Metric": "Recall",
+            "YOLOv8n": 0.728,
+            "YOLOv8s": 0.7640737994118999,
+            "Absolute_Gain": 0.03607379941189992,
+            "Relative_Improvement_%": 4.95519222690933
+        },
+        {
+            "Metric": "mAP50",
+            "YOLOv8n": 0.774,
+            "YOLOv8s": 0.8121408932138355,
+            "Absolute_Gain": 0.038140893213835514,
+            "Relative_Improvement_%": 4.9277639811156995
+        },
+        {
+            "Metric": "mAP50-95",
+            "YOLOv8n": 0.488,
+            "YOLOv8s": 0.5438539349196255,
+            "Absolute_Gain": 0.055853934919625536,
+            "Relative_Improvement_%": 11.44547846713638
+        }
+    ]
+}
