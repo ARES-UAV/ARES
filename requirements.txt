@@ -1,0 +1,16 @@
+# ARES — dashboard backend dependencies
+#
+# Deliberately light. The backend serves pre-computed detections and does
+# NOT run inference, so it must not pull in torch/ultralytics — that is a
+# ~2 GB install and would make the dashboard slow to set up and fragile
+# to deploy.
+#
+# ML dependencies live in ai/requirements.txt. Install that one only when
+# training, validating, exporting, or benchmarking a model.
+#
+#   python -m venv .venv && source .venv/bin/activate
+#   pip install -r requirements.txt
+
+fastapi>=0.115
+uvicorn[standard]>=0.32
+pydantic>=2.9

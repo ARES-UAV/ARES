@@ -1,0 +1,24 @@
+# ARES — ML / perception dependencies
+#
+# Heavy (~2 GB with torch). Install ONLY when training, validating,
+# exporting, or benchmarking a model. The dashboard backend does not
+# need any of this — see the root requirements.txt.
+#
+#   python -m venv .venv-ml && source .venv-ml/bin/activate
+#   pip install -r ai/requirements.txt
+#
+# On Raspberry Pi: requires 64-bit OS (uname -m must print aarch64).
+
+ultralytics>=8.4.126
+opencv-python>=4.10
+numpy>=1.26
+pyyaml>=6.0
+
+# Export / inference runtimes.
+# onnx + onnxruntime are needed to export and to run .onnx on CPU.
+onnx>=1.17
+onnxruntime>=1.20
+onnxslim>=0.1.48
+
+# Uncomment for the Raspberry Pi ARM-optimised path (see BUILD_ORDER.md):
+# ncnn>=1.0.20240410

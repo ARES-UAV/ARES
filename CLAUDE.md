@@ -1,0 +1,187 @@
+# ARES — Repository Context
+
+## ⚠️ Unresolved: the project's own name
+
+Two different expansions of "ARES" are in circulation:
+
+- **Adaptive Rescue and Exploration System** — used in `README.md` and `docs/project_overview.md`
+- **Autonomous Rescue & Environmental Intelligence System** — used in the pitch deck and planning material
+
+**Pick one and make it consistent everywhere before 5 September.** A judge who reads the repo and then the deck will notice, and it reads as a project that has not settled what it is. Until it is resolved, do not silently choose one when writing new docs — flag it.
+
+---
+
+## What this project is
+
+An AI-assisted UAV system for disaster-zone search and rescue. Onboard vision detects survivors in drone imagery, tracks them without double-counting, localizes them on a map, ranks them by rescue priority, and surfaces it all on a command dashboard. The longer-term research contribution is **adaptive, risk-aware search planning** — choosing where to search next rather than flying a fixed grid.
+
+This repo is a monorepo covering perception, planning, experiments and the dashboard.
+
+## Hard deadline
+
+**5 September 2026** — internal hackathon, the selection cutoff for Smart India Hackathon 2026 (Hardware Edition). **20 September** follows for the national submission.
+
+Every decision trades in favour of **working on demo day** over impressive-but-fragile. If a feature could fail live on stage, it does not go in.
+
+---
+
+## Repository layout
+
+```
+ARES/
+├── CLAUDE.md              # this file
+├── README.md
+├── requirements.txt       # backend only — light, no torch
+├── docs/                  # research + technical documentation
+├── ai/                    # perception: detection, tracking, export
+│   └── requirements.txt   # ML deps — heavy, install separately
+├── planning/              # search + adaptive planning algorithms
+├── simulation/            # disaster / UAV simulation
+├── experiments/           # evaluation results, one dir per experiment
+│   ├── MODEL_SELECTION.md # ← read before touching model choice
+│   └── Perception/C2A/    # YOLOv8n + YOLOv8s baselines and fine-tunes
+├── hardware/              # UAV hardware and CAD
+├── backend/               # FastAPI — dashboard API   (to be built)
+└── frontend/              # Vite + React + Tailwind   (to be built)
+```
+
+`ai/`, `planning/`, `simulation/` and `hardware/` are currently README-only placeholders.
+
+---
+
+## The data contract — read before writing any code
+
+All perception output crosses module boundaries as a JSON array of detection records. This format is agreed across the team and **must not be changed unilaterally**:
+
+```json
+{
+  "frame_id": 0,
+  "bbox": [x1, y1, x2, y2],
+  "confidence": 0.87,
+  "track_id": 2,
+  "class": 0
+}
+```
+
+- `frame_id` — zero-indexed frame number in the source video
+- `bbox` — pixel coordinates, top-left and bottom-right, in the original frame's resolution
+- `confidence` — 0.0 to 1.0
+- `track_id` — persistent per-person ID across frames. `-1` means untracked. **The count of unique `track_id` values is the de-duplicated survivor count** — this is the number that matters, not the raw detection count.
+- `class` — always `0` (person) for now. Hazard classes arrive in Phase 2.
+
+Derived fields the backend adds (latitude, longitude, priority score) are computed server-side and are **not** part of this input contract.
+
+---
+
+## Detection model status (23 Aug 2026)
+
+Current: **YOLOv12s**, single `person` class, trained on combined C2A + VisDrone. Epoch 44 of 100 — P 0.845, R 0.717, mAP50 0.775, mAP50-95 0.494. Interim weights: `ares_detect_v0.9.pt`.
+
+- Operating confidence threshold: **~0.18, deliberately low.** Tuned for recall over precision because a missed survivor costs far more than a false alarm. Surface on the dashboard as **"Detection Mode: High Recall"**.
+- `max_det` must be **1000**, not the default 300 — scenes routinely exceed 300 people.
+- On-device target: **Raspberry Pi 4 Model B**, CPU only. Expect a low FPS figure and display it honestly.
+
+**Before changing model architecture, read `experiments/MODEL_SELECTION.md`.** This repo already contains trained YOLOv8n and YOLOv8s models whose relationship to YOLOv12s is not yet established — they were measured on a different test split.
+
+---
+
+## Demo footage policy — important
+
+There is no physical drone. Demo footage comes from **public UAV datasets** (VisDrone-VID sequences, UAV123, or free stock aerial clips), and detections are produced by **running the real trained model over that footage**. The detections are genuine model output; only the flight is borrowed.
+
+**Never hand-author or fabricate detection records for a demo.** If a judge asks "is this your model's output?", the answer has to be yes. A borrowed clip with real detections is honest and normal for a prototype. Invented bounding boxes are not, and one question would expose them.
+
+`backend/data/fixture_detections.json` (generated by `tools/make_fixture.py`) exists **only** so the frontend can be built before real footage is processed. It is development scaffolding. It must never appear in a demo, a screenshot, or the recorded video. Delete it once real detections exist.
+
+Drone GPS origin, altitude and FOV are assumed constants per clip. That assumption is disclosed in the pitch, not hidden.
+
+---
+
+## Demo-day constraints (non-negotiable)
+
+1. **The demo replays a pre-computed detections file. It does not run inference live.** The backend streams stored events against a playback clock. Identical to a judge, and it removes every live-inference failure mode.
+2. **The dashboard must work with the backend switched off.** Keep a path where the frontend loads a static JSON file directly.
+3. **Map tiles need internet, and venue wifi fails.** Cache tiles for the demo area or fall back to a static georeferenced image. Do not discover this on 5 September.
+4. **No API keys.** OpenStreetMap tiles via Leaflet need none.
+
+---
+
+## Localization — pixel to GPS
+
+Nadir-pointing camera, known altitude `H`, flat local terrain. `H`, FOV and `(lat0, lon0)` are **fixed constants per demo clip** — there is no live telemetry in the prototype.
+
+```
+GSD    = 2 * H * tan(FOV / 2) / image_width     # metres per pixel
+dx, dy = pixel_offset_from_centre * GSD          # metres
+dlat   = dy / 111320
+dlon   = dx / (111320 * cos(lat0))
+lat, lon = lat0 + dlat, lon0 + dlon
+```
+
+Keep these constants in one config module, not scattered through the code.
+
+At 640 px input with a 60° FOV, a 1.7 m person spans ~47 px at 20 m altitude and ~24 px at 40 m. **State a maximum operating altitude of roughly 40 m** rather than implying it works at any height.
+
+---
+
+## Priority scoring
+
+Ranks survivors for rescue order. Keep it **simple and explainable** — a judge will ask how it works and "a neural network decides" is a bad answer. Inputs: detection confidence, cluster size, hazard proximity. A transparent weighted formula beats a clever opaque one. Weights live in the config module.
+
+---
+
+## Dashboard requirements
+
+From a design review; not optional.
+
+- **Counts must reconcile across every section.** Header saying 12 while the table shows 5 was the first mockup's biggest flaw. Derive every count from one shared state.
+- **Show the de-duplicated tracked count next to the raw detection count.** Two numbers, both labelled.
+- **Survivors get their own colour, not red.** Red already carries "high priority" and "fire hazard".
+- **RGB and thermal views must look genuinely different**, not the same image filtered.
+- **Display the measured on-device FPS** and the **"Detection Mode: High Recall"** indicator on screen.
+- **Make priority planning visible on the map** — annotate routes and reroutes rather than claiming adaptivity in text.
+- Keep the mission date current. A stale placeholder date reads as unfinished.
+
+---
+
+## Scope — what is real and what is described
+
+The pitch is deliberately honest about this split. **Do not build, mock, or imply the "described only" items.**
+
+| Capability | Status |
+|---|---|
+| On-device AI inference | Built |
+| Emergency alerting / priority scoring | Built |
+| Command centre dashboard | In progress |
+| Geo-tagged mapping | Built |
+| Offline resilience | Built — a consequence of on-device inference |
+| Multi-sensor fusion (RGB + thermal) | Partial — public thermal datasets, not hardware |
+| Hazard classification | Partial — 3 of 7 classes (fire/smoke, flood, collapse), Phase 2 |
+| Adaptive search planning | Research direction — simulation only, not flown |
+| Autonomous navigation, GPS-denied SLAM | **Described only** — architecture write-up, not built |
+
+---
+
+## Team
+
+| Person | Owns |
+|---|---|
+| **Dewang** | Detection model, hazard classifier, on-device benchmark. **All of backend and frontend.** |
+| **Robin** | Tracking, pixel→GPS localization, priority scoring logic |
+| **Ujjaini** | Pitch deck, presentation, demo video recording. **No code.** |
+
+Ujjaini consumes the finished dashboard to record the demo video — she is the audience for this repo, not a contributor.
+
+Robin owns `localize.py` and `priority.py`. If his versions are not ready, stub them from the formulas above and swap his in later — do not block the dashboard.
+
+If a change touches the JSON contract, it affects all three. Flag it rather than changing it.
+
+---
+
+## Conventions
+
+- Python: type hints on function signatures; Pydantic models for anything crossing an API boundary.
+- Keep tunable constants (altitude, FOV, origin coordinates, threshold, scoring weights) in a single config module. Judges ask to see these.
+- **Never commit model weights, datasets, or video.** Weights go to GitHub Releases. See `.gitignore`.
+- Every experiment records: config, dataset version, model version, parameters, results, conclusion — and **the test split it was measured on**, which is how the current YOLOv8-vs-YOLOv12 ambiguity arose.
+- Prefer boring, working solutions. This codebase has 13 days to live before it is judged.
