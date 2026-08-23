@@ -1,16 +1,5 @@
 # ARES — Repository Context
 
-## ⚠️ Unresolved: the project's own name
-
-Two different expansions of "ARES" are in circulation:
-
-- **Adaptive Rescue and Exploration System** — used in `README.md` and `docs/project_overview.md`
-- **Autonomous Rescue & Environmental Intelligence System** — used in the pitch deck and planning material
-
-**Pick one and make it consistent everywhere before 5 September.** A judge who reads the repo and then the deck will notice, and it reads as a project that has not settled what it is. Until it is resolved, do not silently choose one when writing new docs — flag it.
-
----
-
 ## What this project is
 
 An AI-assisted UAV system for disaster-zone search and rescue. Onboard vision detects survivors in drone imagery, tracks them without double-counting, localizes them on a map, ranks them by rescue priority, and surfaces it all on a command dashboard. The longer-term research contribution is **adaptive, risk-aware search planning** — choosing where to search next rather than flying a fixed grid.
@@ -168,9 +157,9 @@ The pitch is deliberately honest about this split. **Do not build, mock, or impl
 |---|---|
 | **Dewang** | Detection model, hazard classifier, on-device benchmark. **All of backend and frontend.** |
 | **Robin** | Tracking, pixel→GPS localization, priority scoring logic |
-| **Ujjaini** | Pitch deck, presentation, demo video recording. **No code.** |
+| **Ujjaini** | Pitch deck, presentation, demo video recording |
 
-Ujjaini consumes the finished dashboard to record the demo video — she is the audience for this repo, not a contributor.
+Ujjaini works from the finished dashboard to record the demo video — this repo is an input to her deliverables rather than one she contributes code to, so implementation tasks should not be assigned to her.
 
 Robin owns `localize.py` and `priority.py`. If his versions are not ready, stub them from the formulas above and swap his in later — do not block the dashboard.
 
@@ -184,4 +173,16 @@ If a change touches the JSON contract, it affects all three. Flag it rather than
 - Keep tunable constants (altitude, FOV, origin coordinates, threshold, scoring weights) in a single config module. Judges ask to see these.
 - **Never commit model weights, datasets, or video.** Weights go to GitHub Releases. See `.gitignore`.
 - Every experiment records: config, dataset version, model version, parameters, results, conclusion — and **the test split it was measured on**, which is how the current YOLOv8-vs-YOLOv12 ambiguity arose.
-- Prefer boring, working solutions. This codebase has 13 days to live before it is judged.
+- Prefer boring, working solutions. This codebase is judged on 5 September.
+- **Never commit secrets** — API keys, tokens, credentials, private endpoints. This file is public; treat everything in it as readable by anyone.
+
+---
+
+## Naming consistency
+
+Two expansions of "ARES" are currently in use across the project's materials:
+
+- **Adaptive Rescue and Exploration System** — `README.md`, `docs/project_overview.md`
+- **Autonomous Rescue & Environmental Intelligence System** — pitch deck and planning material
+
+The first reflects the research contribution (adaptive search planning); the second reflects the SIH framing. **One should be adopted everywhere before 5 September.** Until that decision is made, use the `README.md` form in anything written here rather than introducing a third variant.
