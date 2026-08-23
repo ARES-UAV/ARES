@@ -41,11 +41,53 @@ export const SOURCE_HEIGHT = 720
 export const CLIP_SRC = '/demo_clip.mp4'
 
 /**
- * Survivor overlay colour.
+ * The dashboard palette.
  *
- * Deliberately not red: red is reserved for hazards and high priority
- * (CLAUDE.md, dashboard requirements). Cyan stays legible over the greys and
- * browns of aerial disaster footage.
+ * Survivors get their own colour and it is deliberately not red: red already
+ * means "hazard" and "critical priority" (CLAUDE.md, dashboard requirements).
+ *
+ * `survivor` marks survivors and nothing else — bounding boxes, map pins, the
+ * dot beside the survivor count. It is never used as a text colour, because a
+ * cyan number reads as a category rather than a value and the whole point of
+ * the colour is that it means one specific thing.
+ *
+ * The other four are status colours, ordered by escalation. They apply to
+ * priority and hazard state, never to survivors.
  */
-export const SURVIVOR_COLOR = '#22d3ee'
+export const COLORS = {
+  survivor: '#22d3ee', // cyan — survivor marks ONLY, never text
+  good: '#4ade80', // status: clear / rescued
+  warning: '#fbbf24', // status: medium priority
+  serious: '#fb923c', // status: high priority
+  critical: '#f87171', // status: hazard, critical priority
+}
+
+/** Survivor overlay colours, drawn on the video canvas. */
+export const SURVIVOR_COLOR = COLORS.survivor
 export const SURVIVOR_LABEL_TEXT = '#04212b'
+
+/**
+ * Measured inference throughput on the target device.
+ *
+ * `null` means exactly that: nobody has run the benchmark yet. The header
+ * renders a dash and says "not yet measured" rather than showing a number,
+ * because an invented FPS figure on a dashboard a judge is reading is the kind
+ * of thing one follow-up question destroys. Set this to the real measurement
+ * once `ai/` produces one — the header picks it up with no other change.
+ *
+ * This lives here rather than coming from the backend because the dashboard
+ * has to work with the backend switched off (CLAUDE.md, demo-day constraint 2).
+ * It must stay in step with whatever the benchmark records.
+ */
+export const DEVICE_FPS = null
+export const DEVICE_NAME = 'Raspberry Pi 4 Model B'
+
+/**
+ * Operating confidence threshold, shown beside the "High Recall" indicator so
+ * the claim is backed by the actual number.
+ *
+ * Mirrors CONFIDENCE_THRESHOLD in `backend/config.py`. If that changes, change
+ * this — the frontend cannot read it, since it must render with the backend
+ * switched off.
+ */
+export const CONFIDENCE_THRESHOLD = 0.18

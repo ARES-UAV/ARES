@@ -26,7 +26,7 @@ MAX_DETECTIONS_PER_FRAME: int = 1000
 # ── Clip geometry (fixed constants per demo clip) ──────────────────
 FRAME_WIDTH: int = 1280
 FRAME_HEIGHT: int = 720
-CLIP_FPS: float = 30.0
+CLIP_FPS: float = 24.0
 
 ALTITUDE_M: float = 40.0          # stated maximum operating altitude
 CAMERA_FOV_DEG: float = 60.0      # nadir-pointing

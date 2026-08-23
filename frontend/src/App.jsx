@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { fetchDetections } from './api.js'
+import { buildDetectionIndex, detectionsAt, uniqueTracksAt } from './detectionIndex.js'
+import HeaderBar from './HeaderBar.jsx'
 import VideoPanel from './VideoPanel.jsx'
 
 /**
@@ -16,6 +18,10 @@ import VideoPanel from './VideoPanel.jsx'
  *                  currentTime and reports it up; the map, survivor table and
  *                  anything else time-varying read it from here, so the whole
  *                  dashboard is always showing the same instant.
+ *
+ * The derived index built from those two is also owned here and passed down.
+ * Panels are given numbers, not the raw array — a panel that counts for itself
+ * is a panel that can disagree with the header.
  */
 export default function App() {
   const [detections, setDetections] = useState(null)
@@ -25,6 +31,10 @@ export default function App() {
   useEffect(() => {
     fetchDetections().then(setDetections).catch((e) => setError(e.message))
   }, [])
+
+  // Unconditional: hooks cannot sit behind the early returns below. An empty
+  // index is harmless because nothing renders against it until data arrives.
+  const index = useMemo(() => buildDetectionIndex(detections ?? []), [detections])
 
   if (error) {
     return (
@@ -45,39 +55,23 @@ export default function App() {
     )
   }
 
-  // -1 means the tracker did not assign an ID. Those detections are real, but
-  // they cannot be de-duplicated, so they are excluded from the survivor count.
-  const trackedIds = new Set(
-    detections.filter((d) => d.track_id !== -1).map((d) => d.track_id),
-  )
-
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 p-8">
-      <h1 className="text-2xl font-semibold">ARES</h1>
+    <div className="min-h-screen bg-slate-950 text-slate-100">
+      <HeaderBar
+        frameDetectionCount={detectionsAt(index, currentFrame).length}
+        survivorsSoFar={uniqueTracksAt(index, currentFrame)}
+        survivorsInClip={index.totalUniqueTracks}
+      />
 
-      <div className="mt-8 flex gap-12">
-        <div>
-          <div className="text-4xl font-semibold tabular-nums">
-            {detections.length}
-          </div>
-          <div className="mt-1 text-sm text-slate-400">Total detections</div>
+      <main className="p-8">
+        <div className="max-w-4xl">
+          <VideoPanel
+            index={index}
+            currentFrame={currentFrame}
+            onFrameChange={setCurrentFrame}
+          />
         </div>
-
-        <div>
-          <div className="text-4xl font-semibold tabular-nums">
-            {trackedIds.size}
-          </div>
-          <div className="mt-1 text-sm text-slate-400">Survivors (unique tracks)</div>
-        </div>
-      </div>
-
-      <div className="mt-8 max-w-4xl">
-        <VideoPanel
-          detections={detections}
-          currentFrame={currentFrame}
-          onFrameChange={setCurrentFrame}
-        />
-      </div>
-    </main>
+      </main>
+    </div>
   )
 }

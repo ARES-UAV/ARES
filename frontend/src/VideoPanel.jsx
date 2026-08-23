@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { detectionsAt } from './detectionIndex.js'
 import {
   CLIP_SRC,
   FPS,
@@ -19,8 +20,12 @@ import {
  * frame upward via `onFrameChange` and renders whatever `currentFrame` it is
  * given back. Other panels (map, survivor table) read the same value from App,
  * which is what keeps every count on the dashboard reconciled.
+ *
+ * It does not own the detection index either. The header's "raw detections this
+ * frame" and the boxes drawn here are the same lookup into the same map, so
+ * they cannot report different numbers for the same instant.
  */
-export default function VideoPanel({ detections, currentFrame, onFrameChange }) {
+export default function VideoPanel({ index, currentFrame, onFrameChange }) {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const stageRef = useRef(null)
@@ -28,19 +33,6 @@ export default function VideoPanel({ detections, currentFrame, onFrameChange }) 
   // The stage's CSS size. Bounding boxes are scaled from the source coordinate
   // space to this, so it has to be tracked rather than assumed.
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 })
-
-  // frame_id -> detections. Rebuilt only when the detections array changes;
-  // the draw loop then does a single map lookup per frame instead of a full
-  // scan of a couple of thousand records 24 times a second.
-  const byFrame = useMemo(() => {
-    const map = new Map()
-    for (const d of detections) {
-      const existing = map.get(d.frame_id)
-      if (existing) existing.push(d)
-      else map.set(d.frame_id, [d])
-    }
-    return map
-  }, [detections])
 
   // Kept in a ref so the clock effect below never needs to tear down and
   // restart just because App re-rendered with a new callback identity.
@@ -124,7 +116,7 @@ export default function VideoPanel({ detections, currentFrame, onFrameChange }) 
     const LABEL_HEIGHT = 16
     const LABEL_PAD_X = 4
 
-    for (const detection of byFrame.get(currentFrame) ?? []) {
+    for (const detection of detectionsAt(index, currentFrame)) {
       const [x1, y1, x2, y2] = detection.bbox
       const x = x1 * scaleX
       const y = y1 * scaleY
@@ -153,9 +145,7 @@ export default function VideoPanel({ detections, currentFrame, onFrameChange }) 
       ctx.fillStyle = SURVIVOR_LABEL_TEXT
       ctx.fillText(label, x + LABEL_PAD_X, labelY + LABEL_HEIGHT / 2)
     }
-  }, [stageSize, currentFrame, byFrame])
-
-  const frameDetections = byFrame.get(currentFrame) ?? []
+  }, [stageSize, currentFrame, index])
 
   return (
     <section>
@@ -185,14 +175,15 @@ export default function VideoPanel({ detections, currentFrame, onFrameChange }) 
         />
       </div>
 
+      {/* The in-frame detection count used to sit here too. It now lives in
+          the header, where it is labelled against the survivor count it must
+          not be confused with. Repeating it would be harmless — same lookup —
+          but two copies of a number invite the reader to check they match. */}
       <div className="mt-2 flex gap-6 text-sm text-slate-400 tabular-nums">
         <span>
           Frame <span className="text-slate-200">{currentFrame}</span>
         </span>
-        <span>
-          <span className="text-slate-200">{frameDetections.length}</span> in frame
-        </span>
-        <span>{FPS} fps (declared)</span>
+        <span>{FPS} fps (declared clip rate)</span>
       </div>
     </section>
   )
