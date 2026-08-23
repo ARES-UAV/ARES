@@ -1,19 +1,26 @@
 import { useEffect, useState } from 'react'
 import { fetchDetections } from './api.js'
+import VideoPanel from './VideoPanel.jsx'
 
 /**
  * ARES command dashboard.
  *
- * Stage 0: prove one number travels from backend to browser. Deliberately
- * unstyled beyond the bare minimum — panels arrive in later stages.
+ * Two pieces of shared state live here and nowhere else:
  *
- * Both counts derive from the single `detections` array. CLAUDE.md requires
- * every count on the dashboard to reconcile, which means one shared source of
- * truth, never a second independently-fetched total.
+ *   detections   — the whole clip's records, fetched once. Every count on the
+ *                  dashboard is derived from this one array. CLAUDE.md requires
+ *                  the counts to reconcile, which means one source of truth and
+ *                  never a second independently-fetched total.
+ *
+ *   currentFrame — the playback clock. VideoPanel derives it from the video's
+ *                  currentTime and reports it up; the map, survivor table and
+ *                  anything else time-varying read it from here, so the whole
+ *                  dashboard is always showing the same instant.
  */
 export default function App() {
   const [detections, setDetections] = useState(null)
   const [error, setError] = useState(null)
+  const [currentFrame, setCurrentFrame] = useState(0)
 
   useEffect(() => {
     fetchDetections().then(setDetections).catch((e) => setError(e.message))
@@ -62,6 +69,14 @@ export default function App() {
           </div>
           <div className="mt-1 text-sm text-slate-400">Survivors (unique tracks)</div>
         </div>
+      </div>
+
+      <div className="mt-8 max-w-4xl">
+        <VideoPanel
+          detections={detections}
+          currentFrame={currentFrame}
+          onFrameChange={setCurrentFrame}
+        />
       </div>
     </main>
   )
