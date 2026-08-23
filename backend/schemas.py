@@ -54,8 +54,39 @@ class ClipConfig(BaseModel):
     confidence_threshold: float = Field(..., ge=0.0, le=1.0)
     altitude_m: float = Field(..., gt=0, description="Fixed drone altitude for the clip")
     camera_fov_deg: float = Field(..., gt=0, lt=180, description="Horizontal FOV, nadir")
-    origin_lat: float = Field(..., ge=-90, le=90, description="GPS origin, frame centre")
+    origin_lat: float = Field(
+        ..., ge=-90, le=90, description="GPS origin, frame centre at frame 0"
+    )
     origin_lon: float = Field(..., ge=-180, le=180)
+    drone_speed_ms: float = Field(
+        ..., ge=0, description="Assumed constant ground speed along the track"
+    )
+    drone_heading_deg: float = Field(
+        ...,
+        ge=0,
+        lt=360,
+        description="Assumed track bearing; 0 = north, 90 = east, clockwise",
+    )
+
+    # Priority scoring. The dashboard prints the formula next to the ranked
+    # table using these, so what a judge reads on screen is the arithmetic that
+    # actually ran rather than a caption someone has to remember to update.
+    weight_confidence: float = Field(..., ge=0)
+    weight_cluster_size: float = Field(..., ge=0)
+    weight_hazard_proximity: float = Field(..., ge=0)
+    cluster_radius_m: float = Field(
+        ..., gt=0, description="Survivors within this range count as clustered"
+    )
+    hazard_count: int = Field(
+        ...,
+        ge=0,
+        description=(
+            "Known hazard positions. 0 means the hazard term is not scored at "
+            "all — hazard classification is Phase 2 — not that the area is clear"
+        ),
+    )
+    priority_serious_at: float = Field(..., ge=0.0, le=1.0)
+    priority_critical_at: float = Field(..., ge=0.0, le=1.0)
 
 
 class Survivor(BaseModel):
@@ -78,3 +109,19 @@ class Survivor(BaseModel):
     first_frame: int = Field(..., ge=0)
     last_frame: int = Field(..., ge=0, description="Frame the position is taken from")
     detection_count: int = Field(..., gt=0, description="Frames this track appears in")
+
+    # Derived server-side by `backend.priority`, like latitude and longitude and
+    # for the same reason: the perception JSON contract carries what the model
+    # saw, not what the dashboard concluded from it.
+    priority: float = Field(
+        ..., ge=0.0, le=1.0, description="Weighted rescue-priority score"
+    )
+    priority_band: str = Field(
+        ...,
+        description="Status ramp band: warning | serious | critical",
+    )
+    cluster_size: int = Field(
+        ...,
+        ge=0,
+        description="Other survivors within CLUSTER_RADIUS_M of this one",
+    )

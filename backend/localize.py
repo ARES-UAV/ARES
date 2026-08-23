@@ -2,9 +2,16 @@
 
 Implements the flat-earth nadir projection described in CLAUDE.md. The camera
 points straight down, the terrain under the clip is treated as flat, and
-altitude, field of view and the GPS origin are fixed constants per clip — the
-prototype has no live telemetry, so there is nothing to read them from. Those
-constants live in `backend.config` and are not duplicated here.
+altitude, field of view, the frame-0 GPS origin and the flight track are fixed
+constants per clip — the prototype has no live telemetry, so there is nothing
+to read them from. Those constants live in `backend.config` and are not
+duplicated here.
+
+The drone moves. `ORIGIN_LAT`/`ORIGIN_LON` is where it sits at frame 0, and
+`origin_for_frame` advances it along an assumed constant-velocity track from
+there. That track is an assumption of exactly the same kind as the altitude —
+disclosed, not measured — and it is the reason survivors spread along a flight
+path instead of piling into the single 23 m footprint a hovering drone sees.
 
 The accuracy this buys is "good enough to put a pin on the right building",
 not survey grade, and the pitch says so. Above roughly 40 m a 1.7 m person
@@ -46,6 +53,52 @@ def ground_sample_distance(
     return 2.0 * altitude * math.tan(math.radians(fov) / 2.0) / width
 
 
+def origin_for_frame(
+    frame_id: int,
+    *,
+    origin_lat: Optional[float] = None,
+    origin_lon: Optional[float] = None,
+    fps: Optional[float] = None,
+    speed_ms: Optional[float] = None,
+    heading_deg: Optional[float] = None,
+) -> Tuple[float, float]:
+    """Where the drone is assumed to be when frame `frame_id` was captured.
+
+    The frame-0 origin displaced along a straight constant-velocity track:
+
+        t        = frame_id / fps                 seconds since frame 0
+        distance = speed_ms * t                   metres along the heading
+
+    `heading_deg` is a compass bearing — 0 is north, 90 is east, increasing
+    clockwise — which is the convention flight software uses and is NOT the
+    mathematical convention. So north takes the cosine and east the sine, the
+    opposite way round from the usual polar-to-cartesian pair. Getting that
+    backwards mirrors the track across the north-east diagonal, which looks
+    like a plausible flight either way.
+
+    A constant-velocity straight line is a deliberate simplification. Nothing
+    here reads telemetry; there is none. Real turns, climbs and station-keeping
+    would come from a flight log, and when one exists this function is the only
+    thing that has to change.
+    """
+    lat0 = config.ORIGIN_LAT if origin_lat is None else origin_lat
+    lon0 = config.ORIGIN_LON if origin_lon is None else origin_lon
+    rate = config.CLIP_FPS if fps is None else fps
+    speed = config.DRONE_SPEED_MS if speed_ms is None else speed_ms
+    heading = config.DRONE_HEADING_DEG if heading_deg is None else heading_deg
+
+    distance_m = speed * (frame_id / rate)
+    bearing = math.radians(heading)
+
+    north_m = distance_m * math.cos(bearing)
+    east_m = distance_m * math.sin(bearing)
+
+    dlat = north_m / METRES_PER_DEGREE_LAT
+    dlon = east_m / (METRES_PER_DEGREE_LAT * math.cos(math.radians(lat0)))
+
+    return lat0 + dlat, lon0 + dlon
+
+
 def pixel_to_latlon(
     x: float,
     y: float,
@@ -59,8 +112,14 @@ def pixel_to_latlon(
     """Convert a pixel in the source frame to (latitude, longitude).
 
     The origin is the *centre* of the frame: the drone is assumed to sit
-    directly above `(ORIGIN_LAT, ORIGIN_LON)` looking down, so the centre pixel
+    directly above `(origin_lat, origin_lon)` looking down, so the centre pixel
     is that coordinate and everything else is an offset from it.
+
+    That origin is the drone's position **for the frame this pixel came from**,
+    not a fixed point — the drone flies. Callers working from a detection
+    record should go through `bbox_to_latlon`, which resolves the frame's
+    origin from `origin_for_frame`. The bare defaults here are the frame-0
+    position, which is only correct for frame 0.
 
     Note the sign on the northing. Image y grows downward while latitude grows
     northward, so a pixel below the centre of the frame is *south* of the
@@ -86,6 +145,7 @@ def pixel_to_latlon(
 
 def bbox_to_latlon(
     bbox: Sequence[float],
+    frame_id: int,
     **kwargs: float,
 ) -> Tuple[float, float]:
     """Ground position of one detection, from its `[x1, y1, x2, y2]` box.
@@ -94,6 +154,18 @@ def bbox_to_latlon(
     directly beneath them, so the centre of the box is the best single-point
     estimate available — unlike an oblique view, where the bottom edge would be
     the ground contact point.
+
+    `frame_id` is required rather than optional because the answer genuinely
+    depends on it: the same pixel in frame 0 and in frame 299 is 62 m apart on
+    the ground at the configured speed. A default would silently pick one.
+
+    An explicit `origin_lat`/`origin_lon` in `kwargs` still wins, so a caller
+    with a real telemetry fix can supply it and bypass the assumed track.
     """
+    if kwargs.get("origin_lat") is None or kwargs.get("origin_lon") is None:
+        origin_lat, origin_lon = origin_for_frame(frame_id)
+        kwargs.setdefault("origin_lat", origin_lat)
+        kwargs.setdefault("origin_lon", origin_lon)
+
     x1, y1, x2, y2 = bbox
     return pixel_to_latlon((x1 + x2) / 2.0, (y1 + y2) / 2.0, **kwargs)

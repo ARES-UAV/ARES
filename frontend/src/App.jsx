@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchDetections, fetchSurvivors, loadConfig } from './api.js'
-import { buildDetectionIndex, detectionsAt, uniqueTracksAt } from './detectionIndex.js'
+import { buildDetectionIndex, detectionsAt } from './detectionIndex.js'
 import HeaderBar from './HeaderBar.jsx'
 import MapPanel from './MapPanel.jsx'
+import SurvivorTable from './SurvivorTable.jsx'
 import VideoPanel from './VideoPanel.jsx'
 
 /**
@@ -16,15 +17,15 @@ import VideoPanel from './VideoPanel.jsx'
  *                  does. Panels are handed it rather than importing constants,
  *                  so there is one set of numbers in force at any moment.
  *
- *   detections   — the whole clip's records, fetched once. Every count on the
- *                  dashboard is derived from this one array. CLAUDE.md requires
- *                  the counts to reconcile, which means one source of truth and
- *                  never a second independently-fetched total.
+ *   detections   — the whole clip's records, fetched once. The per-frame
+ *                  detection count and the video overlay both read the index
+ *                  built from it, so "3 in frame" in the header and three boxes
+ *                  on the video are the same lookup.
  *
- *   survivors    — one record per unique track_id with a lat/lon the backend
- *                  derived. This is a *view* of the same detections file, not a
- *                  second dataset: its length is `index.totalUniqueTracks` by
- *                  construction, which is why the map and the header agree.
+ *   survivors    — one record per unique track_id, already ranked by priority
+ *                  descending, each with a lat/lon and a priority score the
+ *                  backend derived. This is a *view* of the same detections
+ *                  file, not a second dataset.
  *
  *   currentFrame — the playback clock. VideoPanel derives it from the video's
  *                  currentTime and reports it up; the map, survivor table and
@@ -32,12 +33,14 @@ import VideoPanel from './VideoPanel.jsx'
  *                  dashboard is always showing the same instant.
  *
  *   selectedTrackId — which survivor the operator is looking at. Owned here
- *                  because it crosses panels: the map sets it, the video
- *                  overlay and the header render it.
+ *                  because it crosses three panels: a map pin, a table row and
+ *                  a bounding box are one selection viewed three ways, and the
+ *                  map and the table set it with the same handler.
  *
- * The derived index built from the detections is also owned here and passed
- * down. Panels are given numbers, not the raw array — a panel that counts for
- * itself is a panel that can disagree with the header.
+ * Everything derived from that state is derived HERE, once, and passed down.
+ * Panels are given numbers and lists, never the raw data to tally for
+ * themselves — a panel that counts for itself is a panel that can disagree
+ * with the header, which was the first mockup's worst flaw.
  */
 export default function App() {
   const [config, setConfig] = useState(null)
@@ -64,9 +67,9 @@ export default function App() {
 
   useEffect(() => {
     // A survivor-list failure does not blank the dashboard: the video, the
-    // overlay and every count still work without it. The map says what is
-    // missing instead of rendering an empty field of no pins, which would read
-    // as "no survivors found".
+    // overlay and the per-frame detection count still work without it. The map
+    // and the table say what is missing instead of rendering an empty field of
+    // no pins and no rows, which would read as "no survivors found".
     fetchSurvivors().then(setSurvivors).catch((e) => setSurvivorsError(e.message))
   }, [])
 
@@ -74,13 +77,38 @@ export default function App() {
   // index is harmless because nothing renders against it until data arrives.
   const index = useMemo(() => buildDetectionIndex(detections ?? []), [detections])
 
+  // ── The survivor roster ──────────────────────────────────────────
+  // `survivorsFound` is the ONE list of survivors the drone has reached by the
+  // current playback instant. The table renders it as rows and the header
+  // renders its length, so the row count and the "survivors tracked" figure are
+  // the same value and cannot drift — CLAUDE.md's requirement that counts
+  // reconcile, satisfied by construction rather than by two calculations
+  // agreeing. The map shades the same boundary: a survivor absent from this
+  // list is the one drawn hollow.
+  //
+  // `first_frame <= currentFrame` is discovery, not localization. Every tracked
+  // survivor has a position — the projection cannot fail — so a survivor
+  // missing here is one the clip has not got to yet.
+  //
+  // null, not [], while the list is loading or has failed. An empty array would
+  // make the header confidently display 0 survivors, which is a different claim
+  // from "not known yet".
+  const survivorsFound = useMemo(() => {
+    if (survivors === null) return null
+    return survivors.filter((s) => s.first_frame <= currentFrame)
+  }, [survivors, currentFrame])
+
+  const survivorsSoFar = survivorsFound?.length ?? null
+  const survivorsInClip = survivors?.length ?? null
+
   const selectedSurvivor = useMemo(
     () => (survivors ?? []).find((s) => s.track_id === selectedTrackId) ?? null,
     [survivors, selectedTrackId],
   )
 
-  // Clicking the already-selected marker clears it, so the map is its own
-  // deselect target and there is no state you can only leave via the header.
+  // Shared by the map and the table. Clicking the already-selected pin or row
+  // clears it, so both are their own deselect target and there is no state you
+  // can only leave via the header.
   const handleSelectTrack = useCallback((trackId) => {
     setSelectedTrackId((current) => (current === trackId ? null : trackId))
   }, [])
@@ -104,8 +132,8 @@ export default function App() {
         config={config}
         configOffline={configOffline}
         frameDetectionCount={detectionsAt(index, currentFrame).length}
-        survivorsSoFar={uniqueTracksAt(index, currentFrame)}
-        survivorsInClip={index.totalUniqueTracks}
+        survivorsSoFar={survivorsSoFar}
+        survivorsInClip={survivorsInClip}
         selectedTrackId={selectedTrackId}
         selectedSurvivor={selectedSurvivor}
         onClearSelection={clearSelection}
@@ -136,14 +164,32 @@ export default function App() {
             selectedTrackId={selectedTrackId}
           />
 
+          {/* The same two survivor figures the header is given and the same two
+              the table is given — one derivation, three renderings. */}
           <MapPanel
             survivors={survivors}
             survivorsError={survivorsError}
             config={config}
             currentFrame={currentFrame}
+            survivorsSoFar={survivorsSoFar}
+            survivorsInClip={survivorsInClip}
             selectedTrackId={selectedTrackId}
             onSelectTrack={handleSelectTrack}
           />
+
+          {/* Full width under both panels. The rows are `survivorsFound`, whose
+              length is the header's survivor count — the two cannot disagree
+              because they are the same array. */}
+          <div className="lg:col-span-2">
+            <SurvivorTable
+              survivors={survivorsFound}
+              survivorsInClip={survivorsInClip}
+              survivorsError={survivorsError}
+              config={config}
+              selectedTrackId={selectedTrackId}
+              onSelectTrack={handleSelectTrack}
+            />
+          </div>
         </div>
       </main>
     </div>

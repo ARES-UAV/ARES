@@ -10,7 +10,7 @@ from typing import Dict, List
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend import config, localize
+from backend import config, localize, priority
 from backend.schemas import ClipConfig, Detection, Health, Survivor
 
 VERSION = "0.1.0"
@@ -54,6 +54,18 @@ def clip_config() -> ClipConfig:
         camera_fov_deg=config.CAMERA_FOV_DEG,
         origin_lat=config.ORIGIN_LAT,
         origin_lon=config.ORIGIN_LON,
+        drone_speed_ms=config.DRONE_SPEED_MS,
+        drone_heading_deg=config.DRONE_HEADING_DEG,
+        weight_confidence=config.WEIGHT_CONFIDENCE,
+        weight_cluster_size=config.WEIGHT_CLUSTER_SIZE,
+        weight_hazard_proximity=config.WEIGHT_HAZARD_PROXIMITY,
+        cluster_radius_m=config.CLUSTER_RADIUS_M,
+        # len(), not a hand-kept number: the dashboard uses this to decide
+        # whether to say the hazard term is scored or inactive, and that
+        # sentence has to follow the list rather than someone's memory of it.
+        hazard_count=len(config.HAZARDS),
+        priority_serious_at=config.PRIORITY_SERIOUS_AT,
+        priority_critical_at=config.PRIORITY_CRITICAL_AT,
     )
 
 
@@ -96,14 +108,21 @@ def detections() -> List[Detection]:
 
 @app.get("/api/survivors", response_model=List[Survivor])
 def survivors() -> List[Survivor]:
-    """One record per unique `track_id`, at its most recent known position.
+    """One record per unique `track_id`, ranked by rescue priority.
 
-    This is the de-duplicated survivor list the map plots. Its length is the
-    survivor count — the same number the dashboard header derives from the
-    detection records, because both come from `_load_detections()`.
+    This is the de-duplicated survivor list the map plots and the dashboard
+    table ranks. Its length is the survivor count, and the dashboard counts
+    these records rather than tallying track IDs a second time of its own — a
+    header figure and a table that agree because they are the same list, not
+    because two calculations happened to land on the same number.
 
     "Latest position" means the highest `frame_id` the track appears in.
     Ties cannot happen: a tracker emits one box per track per frame.
+
+    **Sorted by priority, descending** — highest first, ties broken by
+    `track_id` so the order is stable across requests. That is the order a
+    rescue team would work the list in, so it is the order the API hands it
+    over in rather than something the client has to know to impose.
     """
     latest: Dict[int, Detection] = {}
     first_frame: Dict[int, int] = {}
@@ -126,12 +145,29 @@ def survivors() -> List[Survivor]:
         if previous is None or detection.frame_id >= previous.frame_id:
             latest[track_id] = detection
 
-    # Sorted by track_id so the map's marker order, the eventual survivor
-    # table's row order and this response are all the same stable order.
-    result = []
-    for track_id in sorted(latest):
+    # Localize first, in track_id order. Scoring needs every position before it
+    # can score any of them — the cluster term is "how many others are near
+    # this one" — so the whole list is built before priority is computed.
+    track_ids = sorted(latest)
+    positions = []
+    for track_id in track_ids:
         detection = latest[track_id]
-        latitude, longitude = localize.bbox_to_latlon(detection.bbox)
+        # Localized against the origin for *that detection's* frame, not a
+        # fixed point: the drone is assumed to be flying a constant-velocity
+        # track, so where the frame centre was matters. Using frame 0's origin
+        # for everything would stack the whole clip into one camera footprint.
+        latitude, longitude = localize.bbox_to_latlon(
+            detection.bbox, detection.frame_id
+        )
+        positions.append((latitude, longitude, detection.confidence))
+
+    scores = priority.score_all(positions)
+
+    result = []
+    for track_id, (latitude, longitude, _), score in zip(
+        track_ids, positions, scores
+    ):
+        detection = latest[track_id]
         result.append(
             Survivor(
                 track_id=track_id,
@@ -141,6 +177,14 @@ def survivors() -> List[Survivor]:
                 first_frame=first_frame[track_id],
                 last_frame=detection.frame_id,
                 detection_count=counts[track_id],
+                priority=score.score,
+                priority_band=score.band,
+                cluster_size=score.cluster_size,
             )
         )
+
+    # Highest priority first. `track_id` breaks ties so equal scores keep a
+    # fixed order instead of shuffling between requests, which on a dashboard
+    # polling this endpoint would look like the ranking changing on its own.
+    result.sort(key=lambda s: (-s.priority, s.track_id))
     return result

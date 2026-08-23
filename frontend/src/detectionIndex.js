@@ -1,21 +1,27 @@
 /**
  * Derived views over the clip's detection records.
  *
- * Everything the dashboard counts is computed here, once, from the single
- * `detections` array App holds. CLAUDE.md's first dashboard requirement is that
- * counts reconcile across every section, and the way that is guaranteed is that
- * no panel is allowed to count anything for itself — the header and the video
- * overlay both read the structures below, so "3 in frame" in the header and
- * three boxes on the video are the same lookup, not two agreeing calculations.
+ * Everything the dashboard counts from raw detections is computed here, once,
+ * from the single `detections` array App holds. CLAUDE.md's first dashboard
+ * requirement is that counts reconcile across every section, and the way that
+ * is guaranteed is that no panel is allowed to count anything for itself — the
+ * header and the video overlay both read the structures below, so "3 in frame"
+ * in the header and three boxes on the video are the same lookup, not two
+ * agreeing calculations.
+ *
+ * SURVIVOR counts deliberately do not live here. This module used to tally
+ * distinct track_ids as well, which gave the dashboard two ways to answer "how
+ * many survivors?" — this one, and the length of the `/api/survivors` list the
+ * map and the table render. The two agreed, because both descend from the same
+ * detections file, but agreeing is not the same as being one number, and the
+ * header's figure now has to equal the table's row count exactly. So the
+ * survivor roster is the single source for that and this module counts frames.
  */
 
 /**
  * @typedef {object} DetectionIndex
  * @property {Map<number, object[]>} byFrame        detections keyed by frame_id
- * @property {Int32Array} uniqueTracksThrough       distinct track_ids seen from
- *                                                  frame 0 through frame i
  * @property {number} maxFrame                      highest frame_id present
- * @property {number} totalUniqueTracks             distinct track_ids in the clip
  * @property {number} totalDetections               raw record count
  */
 
@@ -37,49 +43,11 @@ export function buildDetectionIndex(detections) {
     else byFrame.set(frame, [detection])
   }
 
-  // Cumulative distinct track_ids, so the header can answer "how many separate
-  // people has the drone found *so far*" at any point in playback without
-  // rescanning the clip on every frame. A dense array costs 4 bytes per frame
-  // and turns the per-frame question into one indexed read.
-  //
-  // track_id -1 means the tracker assigned no ID. Those detections are real and
-  // are drawn on the video, but they cannot be de-duplicated — two -1s might be
-  // one person seen twice — so counting them would inflate the survivor number.
-  // They are excluded here and everywhere else the count is derived.
-  const seen = new Set()
-  const uniqueTracksThrough = new Int32Array(maxFrame + 1)
-
-  for (let frame = 0; frame <= maxFrame; frame += 1) {
-    for (const detection of byFrame.get(frame) ?? []) {
-      if (detection.track_id !== -1) seen.add(detection.track_id)
-    }
-    uniqueTracksThrough[frame] = seen.size
-  }
-
   return {
     byFrame,
-    uniqueTracksThrough,
     maxFrame,
-    totalUniqueTracks: seen.size,
     totalDetections: detections.length,
   }
-}
-
-/**
- * Distinct survivors tracked from the start of the clip up to `frame`.
- *
- * The playback clock can run past the last detection — the video may be longer
- * than the processed range, and a paused video sitting on the final frame is
- * normal — so the frame is clamped rather than returning 0 off the end.
- *
- * @param {DetectionIndex} index
- * @param {number} frame
- * @returns {number}
- */
-export function uniqueTracksAt(index, frame) {
-  if (index.maxFrame < 0 || index.uniqueTracksThrough.length === 0) return 0
-  const clamped = Math.min(Math.max(frame, 0), index.maxFrame)
-  return index.uniqueTracksThrough[clamped]
 }
 
 /**

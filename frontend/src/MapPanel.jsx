@@ -25,9 +25,18 @@ import {
  * surveyed point, and these positions are a flat-earth estimate from a fixed
  * assumed altitude. A soft circle reads as "about here", which is the truth.
  *
- * The panel counts nothing for itself. `discoveredCount` comes from the same
- * playback state the header reads, so "6 of 9 located" here and "6 survivors
- * tracked" there are the same number by construction, not by coincidence.
+ * The panel counts nothing for itself. `survivorsSoFar` and `survivorsInClip`
+ * are the same two numbers App hands the header and the survivor table — the
+ * length of the roster the table renders as rows — so the figure here, the
+ * header's survivor count and the table's row count are one value rendered
+ * three times rather than three calculations that happen to agree.
+ *
+ * They are counts of DISCOVERY, not of localization success. Every tracked
+ * survivor gets a position — `bbox_to_latlon` cannot fail — so a survivor
+ * missing from the count has not been reached by the playback clock yet, and
+ * is drawn hollow rather than hidden. The wording has to carry that: "6 of 9
+ * located" read as "localization worked for 6 of them", which is a bug report
+ * about a system that is working correctly.
  */
 
 /** Radius in px for a survivor circle, selected or not. */
@@ -61,6 +70,8 @@ export default function MapPanel({
   survivorsError,
   config,
   currentFrame,
+  survivorsSoFar,
+  survivorsInClip,
   selectedTrackId,
   onSelectTrack,
 }) {
@@ -202,8 +213,9 @@ export default function MapPanel({
   // Two independent things are shown by style rather than by adding or removing
   // pins: which survivor is selected, and which have been found by the current
   // playback instant. A survivor the drone has not reached yet is drawn hollow
-  // instead of hidden, so the map's "N of M located" and the header's live
-  // survivor count are the same number at every frame.
+  // instead of hidden — removing the pin would make the panel's count and the
+  // header's disagree with what is on screen, and would also make the map jump
+  // as pins appeared.
   useEffect(() => {
     for (const survivor of survivors ?? []) {
       const marker = markersRef.current.get(survivor.track_id)
@@ -237,29 +249,40 @@ export default function MapPanel({
     }
   }, [survivors, selectedTrackId])
 
-  const located = (survivors ?? []).filter((s) => s.first_frame <= currentFrame).length
-  const total = (survivors ?? []).length
-
   return (
     <section className="flex flex-col">
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
           Survivor map
         </h2>
+        {/* Deliberately NOT "N of M located". Every tracked survivor has a
+            position; this is how many the clip has reached by the current
+            frame, which is the header's "survivors tracked" figure and the
+            same prop. "Located" invited the reading that localization had
+            failed for the rest. */}
         <span className="text-[11px] tabular-nums text-slate-500">
-          {survivorsError ? 'positions unavailable' : `${located} of ${total} located`}
+          {survivorsError
+            ? 'positions unavailable'
+            : survivorsSoFar === null
+              ? 'loading positions…'
+              : `${survivorsSoFar} of ${survivorsInClip} found by this frame`}
         </span>
       </div>
 
+      {/* Its own row, above the map, not an overlay on it. Leaflet puts the
+          zoom control at the top-left of the map pane and gives it a z-index
+          this banner would have to fight; a banner stacked under a "+" button
+          hides the very word that says what is wrong. Taking a row costs a
+          line of vertical space only when the tiles have actually failed. */}
+      {tilesFailed && (
+        <div className="mb-2 rounded-md border border-amber-900/60 bg-amber-950/30 px-3 py-2 text-[11px] leading-relaxed text-amber-300">
+          Map tiles unreachable — survivor positions are still plotted, the base
+          map is not.
+        </div>
+      )}
+
       <div className="relative isolate overflow-hidden rounded-lg border border-slate-800">
         <div ref={containerRef} className="h-[24rem] w-full bg-slate-900" />
-
-        {tilesFailed && (
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-20 bg-slate-950/90 px-3 py-2 text-[11px] text-amber-300">
-            Map tiles unreachable — survivor positions are still plotted, the
-            base map is not.
-          </div>
-        )}
 
         {survivorsError && (
           <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-950/85 px-6 text-center text-sm text-slate-400">
@@ -276,8 +299,14 @@ export default function MapPanel({
         <span className="tabular-nums text-slate-400">{config.altitude_m} m</span> altitude
         and{' '}
         <span className="tabular-nums text-slate-400">{config.camera_fov_deg}°</span> FOV
-        over flat terrain. No live telemetry — the drone origin is a per-clip
-        constant. Click a marker to highlight that track.
+        over flat terrain, along an assumed constant-velocity track of{' '}
+        <span className="tabular-nums text-slate-400">{config.drone_speed_ms} m/s</span>{' '}
+        on heading{' '}
+        <span className="tabular-nums text-slate-400">{config.drone_heading_deg}°</span>.
+        No live telemetry — altitude, FOV and that track are per-clip constants.
+        Hollow markers are survivors the clip has not reached yet — they are
+        exactly the ones with no row in the priority queue below. Click a marker
+        or a table row to highlight that track in all three panels.
       </p>
     </section>
   )

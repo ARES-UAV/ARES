@@ -66,8 +66,11 @@ function Pill({ color, children }) {
  * @param {object}  props.config              clip constants in force right now
  * @param {boolean} props.configOffline       true when `config` is the local fallback
  * @param {number}  props.frameDetectionCount raw records for the current frame
- * @param {number}  props.survivorsSoFar      distinct track_ids up to this frame
- * @param {number}  props.survivorsInClip     distinct track_ids in the whole clip
+ * @param {number|null} props.survivorsSoFar  survivors found by this frame — the
+ *                                            length of the exact array the
+ *                                            survivor table renders as rows.
+ *                                            null while the list is unavailable.
+ * @param {number|null} props.survivorsInClip survivors in the whole clip
  * @param {object=} props.selectedSurvivor    the survivor selected on the map
  * @param {number|null} props.selectedTrackId
  * @param {function} props.onClearSelection
@@ -119,23 +122,38 @@ export default function HeaderBar({
           <Figure>{frameDetectionCount}</Figure>
         </Stat>
 
+        {/* This figure is `survivorsFound.length` — the length of the very
+            array the survivor table below renders as rows. Not a second tally
+            of track IDs that happens to agree with it: the table's row count
+            and this number are the same value, which is the only version of
+            "counts reconcile" that survives someone editing one of them.
+
+            null means the survivor list has not arrived (or failed), which is
+            not the same claim as zero survivors — so it shows a dash. */}
         <Stat
           label="Survivors tracked"
-          sublabel={`unique IDs so far · ${survivorsInClip} in full clip`}
+          sublabel={
+            survivorsSoFar === null
+              ? 'survivor list unavailable'
+              : `unique IDs so far · ${survivorsInClip} in full clip`
+          }
           mark={COLORS.survivor}
         >
-          <Figure>{survivorsSoFar}</Figure>
+          <Figure muted={survivorsSoFar === null}>
+            {survivorsSoFar === null ? '—' : survivorsSoFar}
+          </Figure>
         </Stat>
 
-        {/* Mirrors the map selection. Clicking a pin has to land somewhere the
-            eye already is, or the only feedback is a highlight on a video the
-            viewer may not be looking at. */}
+        {/* Mirrors the selection, wherever it was made. Clicking a pin or a
+            table row has to land somewhere the eye already is, or the only
+            feedback is a highlight on a panel the viewer may not be looking
+            at. */}
         <Stat
           label="Selected survivor"
           sublabel={
             selectedSurvivor
               ? `${selectedSurvivor.latitude.toFixed(5)}, ${selectedSurvivor.longitude.toFixed(5)}`
-              : 'click a marker on the map'
+              : 'click a map marker or a table row'
           }
           mark={selectedTrackId !== null ? COLORS.survivor : undefined}
         >

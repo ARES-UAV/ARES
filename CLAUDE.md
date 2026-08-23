@@ -99,6 +99,17 @@ Drone GPS origin, altitude and FOV are assumed constants per clip. That assumpti
 
 Nadir-pointing camera, known altitude `H`, flat local terrain. `H`, FOV and `(lat0, lon0)` are **fixed constants per demo clip** — there is no live telemetry in the prototype.
 
+The drone does not hover. `(lat0, lon0)` is its position at **frame 0**, and the origin advances from there along an **assumed constant-velocity track** — `DRONE_SPEED_MS` and `DRONE_HEADING_DEG` in the config module, heading as a compass bearing (0 = north, 90 = east, clockwise):
+
+```
+t        = frame_id / fps
+distance = DRONE_SPEED_MS * t
+north_m += distance * cos(heading)      # bearing convention: north takes cos
+east_m  += distance * sin(heading)      # and east takes sin, not the reverse
+```
+
+That track is an assumption of the **same disclosed class as altitude and FOV** — stated in the pitch and on the map panel, not hidden. Without it every survivor in the clip lands inside one ~23 m camera footprint no matter how long the drone flew, which is not what a search flight looks like. Each detection is localized against the origin for *its own* `frame_id`.
+
 ```
 GSD      = 2 * H * tan(FOV / 2) / image_width    # metres per pixel
 
