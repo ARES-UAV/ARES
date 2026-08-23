@@ -1,1 +1,63 @@
 @import "tailwindcss";
+
+/**
+ * Leaflet ships a light-themed skin. These are the few pieces of it that would
+ * otherwise sit as bright white rectangles on a dark dashboard. Kept here
+ * rather than in MapPanel because they override Leaflet's own stylesheet and
+ * need to load after it.
+ */
+
+/* Track labels beside each survivor marker. Cyan is the survivor colour and is
+   never used as a text colour, so the label is a dark chip with a cyan edge —
+   the colour still identifies it, the number stays readable. */
+.leaflet-tooltip.ares-track-tooltip {
+  background: rgb(2 6 23 / 0.85);
+  border: 1px solid #22d3ee;
+  color: #e2e8f0;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  padding: 1px 5px;
+  box-shadow: none;
+  white-space: nowrap;
+}
+
+/* Leaflet draws a little arrow on tooltips; there is nothing for it to point
+   at here that the circle does not already mark. */
+.leaflet-tooltip.ares-track-tooltip::before {
+  display: none;
+}
+
+/* Attribution is a licence requirement for OpenStreetMap tiles, so it stays —
+   it is toned down, not removed. */
+.leaflet-container {
+  background: #0f172a;
+  font-family: inherit;
+}
+
+.leaflet-control-attribution {
+  background: rgb(2 6 23 / 0.75) !important;
+  color: #64748b !important;
+  font-size: 10px;
+}
+
+.leaflet-control-attribution a {
+  color: #94a3b8 !important;
+}
+
+.leaflet-control-scale-line {
+  background: rgb(2 6 23 / 0.75);
+  border-color: #475569;
+  color: #cbd5e1;
+}
+
+.leaflet-bar a {
+  background: #1e293b;
+  color: #e2e8f0;
+  border-bottom-color: #334155;
+}
+
+.leaflet-bar a:hover {
+  background: #334155;
+  color: #f1f5f9;
+}

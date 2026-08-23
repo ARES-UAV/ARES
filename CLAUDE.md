@@ -100,12 +100,20 @@ Drone GPS origin, altitude and FOV are assumed constants per clip. That assumpti
 Nadir-pointing camera, known altitude `H`, flat local terrain. `H`, FOV and `(lat0, lon0)` are **fixed constants per demo clip** — there is no live telemetry in the prototype.
 
 ```
-GSD    = 2 * H * tan(FOV / 2) / image_width     # metres per pixel
-dx, dy = pixel_offset_from_centre * GSD          # metres
-dlat   = dy / 111320
-dlon   = dx / (111320 * cos(lat0))
+GSD      = 2 * H * tan(FOV / 2) / image_width    # metres per pixel
+
+# Image y grows DOWNWARD. Latitude grows NORTHWARD. The subtraction reverses.
+east_m   = (px - image_width  / 2) * GSD
+north_m  = (image_height / 2 - py) * GSD         # <- note the reversed order
+
+dlat     = north_m / 111320
+dlon     = east_m  / (111320 * cos(lat0))
 lat, lon = lat0 + dlat, lon0 + dlon
 ```
+
+**Get the `north_m` sign wrong and every survivor mirrors across the drone position** — plausible-looking, entirely wrong, and invisible until someone checks a known point. Verify with the corners: a pixel in the **top-left** of the frame must come out **north and west** of the origin; **bottom-right** must come out **south and east**.
+
+Use the **centre** of the bbox, not its bottom edge. Under a nadir camera the person is directly beneath their box centre; the bottom-edge convention only applies to oblique views.
 
 Keep these constants in one config module, not scattered through the code.
 

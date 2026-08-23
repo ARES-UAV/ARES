@@ -112,11 +112,17 @@ Latitude, longitude and priority score are derived server-side and are not part 
 Pixel coordinates are converted to GPS assuming a nadir-pointing camera at known altitude over locally flat terrain:
 
 ```
-GSD    = 2 · H · tan(FOV / 2) / image_width     # metres per pixel
-Δx, Δy = pixel_offset_from_centre · GSD          # metres
-Δlat   = Δy / 111320
-Δlon   = Δx / (111320 · cos(lat0))
+GSD     = 2 · H · tan(FOV / 2) / image_width     # metres per pixel
+
+# Image y grows downward; latitude grows northward — the subtraction reverses
+east_m  = (px - image_width  / 2) · GSD
+north_m = (image_height / 2 - py) · GSD
+
+Δlat    = north_m / 111320
+Δlon    = east_m  / (111320 · cos(lat0))
 ```
+
+Position is taken from the **centre** of each bounding box — under a nadir camera the subject lies directly beneath it. Sign convention is verified against frame corners: a top-left pixel resolves north-and-west of the origin, bottom-right south-and-east.
 
 Altitude, FOV and origin coordinates are fixed constants per clip in the current prototype — there is no live telemetry yet. This assumption is stated rather than hidden.
 
@@ -175,34 +181,18 @@ ARES/
 ## Getting Started
 
 Dependencies are split so the dashboard does not pull in the ML stack.
-The dashboard is two processes — run each in its own terminal.
-
-**Backend — FastAPI on port 8000**
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
-uvicorn backend.main:app --reload --port 8000
+# Dashboard backend — FastAPI, uvicorn, pydantic
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+
+# Perception — ultralytics, torch, onnx. Only needed for training,
+# validation, export or benchmarking.
+pip install -r ai/requirements.txt
 ```
 
-**Frontend — Vite dev server on port 5173**
-
-```bash
-cd frontend && npm install
-npm run dev
-```
-
-Check the backend is alive at <http://localhost:8000/api/health>; interactive API
-docs are at <http://localhost:8000/docs>. The dashboard is at <http://localhost:5173>.
-
-Perception dependencies are separate and only needed for training, validation,
-export or benchmarking:
-
-```bash
-pip install -r ai/requirements.txt   # ultralytics, torch, onnx — heavy
-```
-
-Datasets and model weights are not stored in this repository. Trained weights are
-published as release assets.
+Datasets and model weights are not stored in this repository. Trained weights are published as release assets.
 
 ---
 

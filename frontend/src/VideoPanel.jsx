@@ -1,13 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { detectionsAt } from './detectionIndex.js'
-import {
-  CLIP_SRC,
-  FPS,
-  SOURCE_HEIGHT,
-  SOURCE_WIDTH,
-  SURVIVOR_COLOR,
-  SURVIVOR_LABEL_TEXT,
-} from './config.js'
+import { CLIP_SRC, SURVIVOR_COLOR, SURVIVOR_LABEL_TEXT } from './config.js'
 
 /**
  * The demo clip with its detection overlay.
@@ -24,8 +17,19 @@ import {
  * It does not own the detection index either. The header's "raw detections this
  * frame" and the boxes drawn here are the same lookup into the same map, so
  * they cannot report different numbers for the same instant.
+ *
+ * Nor does it own the clip geometry: fps and the source resolution arrive in
+ * `config`, which comes from the backend when it is reachable. Hard-coding them
+ * here is how the overlay ends up drawn against the wrong frame after someone
+ * changes the clip and updates only one of the two places that knew its rate.
  */
-export default function VideoPanel({ index, currentFrame, onFrameChange }) {
+export default function VideoPanel({
+  index,
+  config,
+  currentFrame,
+  onFrameChange,
+  selectedTrackId,
+}) {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const stageRef = useRef(null)
@@ -40,6 +44,8 @@ export default function VideoPanel({ index, currentFrame, onFrameChange }) {
   useEffect(() => {
     onFrameChangeRef.current = onFrameChange
   })
+
+  const fps = config.clip_fps
 
   // ── Playback clock ───────────────────────────────────────────────
   // requestVideoFrameCallback fires once per frame actually presented and
@@ -57,7 +63,7 @@ export default function VideoPanel({ index, currentFrame, onFrameChange }) {
     const tick = (_now, metadata) => {
       if (stopped) return
       const mediaTime = metadata ? metadata.mediaTime : video.currentTime
-      onFrameChangeRef.current(Math.max(0, Math.floor(mediaTime * FPS)))
+      onFrameChangeRef.current(Math.max(0, Math.floor(mediaTime * fps)))
       schedule()
     }
 
@@ -73,7 +79,7 @@ export default function VideoPanel({ index, currentFrame, onFrameChange }) {
       if (useVideoCallback) video.cancelVideoFrameCallback(handle)
       else cancelAnimationFrame(handle)
     }
-  }, [])
+  }, [fps])
 
   // ── Track the displayed size ─────────────────────────────────────
   useEffect(() => {
@@ -104,17 +110,23 @@ export default function VideoPanel({ index, currentFrame, onFrameChange }) {
     ctx.clearRect(0, 0, width, height)
 
     // Source coordinate space -> displayed size. Deliberately derived from the
-    // declared SOURCE_* constants, not from video.videoWidth/videoHeight: the
+    // declared source dimensions, not from video.videoWidth/videoHeight: the
     // two are not the same for this clip and there is no guarantee they ever
     // will be.
-    const scaleX = width / SOURCE_WIDTH
-    const scaleY = height / SOURCE_HEIGHT
+    const scaleX = width / config.source_width
+    const scaleY = height / config.source_height
 
     ctx.font = '600 12px ui-sans-serif, system-ui, -apple-system, sans-serif'
     ctx.textBaseline = 'middle'
 
     const LABEL_HEIGHT = 16
     const LABEL_PAD_X = 4
+
+    // Selecting a survivor on the map dims everything else rather than hiding
+    // it. The other detections are still real and the frame's raw count in the
+    // header still includes them — a box that vanished when a pin was clicked
+    // would make the header look wrong.
+    const hasSelection = selectedTrackId !== null
 
     for (const detection of detectionsAt(index, currentFrame)) {
       const [x1, y1, x2, y2] = detection.bbox
@@ -127,9 +139,22 @@ export default function VideoPanel({ index, currentFrame, onFrameChange }) {
       // detection, so it is drawn — dashed, to show it cannot be counted as a
       // distinct survivor.
       const tracked = detection.track_id !== -1
+      const selected = tracked && detection.track_id === selectedTrackId
+
+      ctx.globalAlpha = !hasSelection || selected ? 1 : 0.3
+
+      // The selected box gets a white halo underneath the cyan stroke. Cyan on
+      // cyan cannot carry "this one" on its own, and the survivor colour is not
+      // available to borrow from — it means survivor and nothing else.
+      if (selected) {
+        ctx.strokeStyle = '#ffffff'
+        ctx.lineWidth = 5
+        ctx.setLineDash([])
+        ctx.strokeRect(x, y, boxWidth, boxHeight)
+      }
 
       ctx.strokeStyle = SURVIVOR_COLOR
-      ctx.lineWidth = 2
+      ctx.lineWidth = selected ? 3 : 2
       ctx.setLineDash(tracked ? [] : [4, 3])
       ctx.strokeRect(x, y, boxWidth, boxHeight)
       ctx.setLineDash([])
@@ -145,7 +170,16 @@ export default function VideoPanel({ index, currentFrame, onFrameChange }) {
       ctx.fillStyle = SURVIVOR_LABEL_TEXT
       ctx.fillText(label, x + LABEL_PAD_X, labelY + LABEL_HEIGHT / 2)
     }
-  }, [stageSize, currentFrame, index])
+
+    ctx.globalAlpha = 1
+  }, [stageSize, currentFrame, index, selectedTrackId, config.source_width, config.source_height])
+
+  // Whether the selected survivor is actually visible right now. Selecting a
+  // pin for someone the drone passed forty frames ago should say so, not leave
+  // the viewer hunting the frame for a highlight that is not there.
+  const selectedInFrame =
+    selectedTrackId !== null &&
+    detectionsAt(index, currentFrame).some((d) => d.track_id === selectedTrackId)
 
   return (
     <section>
@@ -156,7 +190,7 @@ export default function VideoPanel({ index, currentFrame, onFrameChange }) {
         // video file's. Boxes are drawn in that space, so the picture is
         // stretched to fit it rather than the other way round — that keeps the
         // overlay geometry exact and self-consistent.
-        style={{ aspectRatio: `${SOURCE_WIDTH} / ${SOURCE_HEIGHT}` }}
+        style={{ aspectRatio: `${config.source_width} / ${config.source_height}` }}
       >
         <video
           ref={videoRef}
@@ -179,11 +213,16 @@ export default function VideoPanel({ index, currentFrame, onFrameChange }) {
           the header, where it is labelled against the survivor count it must
           not be confused with. Repeating it would be harmless — same lookup —
           but two copies of a number invite the reader to check they match. */}
-      <div className="mt-2 flex gap-6 text-sm text-slate-400 tabular-nums">
+      <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm text-slate-400 tabular-nums">
         <span>
           Frame <span className="text-slate-200">{currentFrame}</span>
         </span>
-        <span>{FPS} fps (declared clip rate)</span>
+        <span>{fps} fps (declared clip rate)</span>
+        {selectedTrackId !== null && !selectedInFrame && (
+          <span className="text-slate-500">
+            Track #{selectedTrackId} is not in this frame
+          </span>
+        )}
       </div>
     </section>
   )

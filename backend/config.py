@@ -28,10 +28,10 @@ FRAME_WIDTH: int = 1280
 FRAME_HEIGHT: int = 720
 CLIP_FPS: float = 24.0
 
-ALTITUDE_M: float = 40.0          # stated maximum operating altitude
+ALTITUDE_M: float = 20.0          # stated maximum operating altitude
 CAMERA_FOV_DEG: float = 60.0      # nadir-pointing
-ORIGIN_LAT: float = 28.6139       # demo clip GPS origin
-ORIGIN_LON: float = 77.2090
+ORIGIN_LAT: float = 26.1445       # demo clip GPS origin
+ORIGIN_LON: float = 91.7362
 
 # ── Priority scoring weights ───────────────────────────────────────
 # A transparent weighted formula, not a learned model — a judge will ask.
