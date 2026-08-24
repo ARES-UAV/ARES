@@ -122,3 +122,4 @@ frontend/public/demo_clip.mp4
 .venv/
 .venv/
 .venv-ml/
+.claude/
