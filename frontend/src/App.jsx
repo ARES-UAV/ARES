@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchDetections, fetchEvents, fetchSurvivors, loadConfig } from './api.js'
-import { buildDetectionIndex, detectionsAt } from './detectionIndex.js'
+import {
+  buildDetectionIndex,
+  detectionsAt,
+  uniqueTracksThrough,
+} from './detectionIndex.js'
 import EventLogPanel from './EventLogPanel.jsx'
 import HeaderBar from './HeaderBar.jsx'
 import MapPanel from './MapPanel.jsx'
@@ -25,15 +29,17 @@ import VideoPanel from './VideoPanel.jsx'
  *                  built from it, so "3 in frame" in the header and three boxes
  *                  on the video are the same lookup.
  *
- *   survivors    — one record per unique track_id, already ranked by priority
+ *   survivors    — one record per CONFIRMED track, already ranked by priority
  *                  descending, each with a lat/lon and a priority score the
  *                  backend derived. This is a *view* of the same detections
- *                  file, not a second dataset.
+ *                  file, not a second dataset: the backend drops tracks that
+ *                  lasted less than `min_track_seconds` on the way out and
+ *                  leaves detections.json complete.
  *
  *   events       — the clip's cluster and priority-band timeline, from
  *                  `/api/events`. The half of the mission log that needs the
  *                  server's localization and scoring; the other half is
- *                  derived from `survivors` below, so the log's acquisition
+ *                  derived from `survivors` below, so the log's confirmation
  *                  lines are the survivor roster rather than a second count of
  *                  it. See missionLog.js.
  *
@@ -126,7 +132,7 @@ export default function App() {
 
   useEffect(() => {
     // Degrades like the survivor list rather than blanking anything: the log's
-    // replay-start, acquisition and end-of-clip lines are derived from state
+    // replay-start, confirmation and end-of-clip lines are derived from state
     // the dashboard already holds, so a failure here costs the cluster and
     // priority lines and the panel says which half is missing.
     fetchEvents().then(setEvents).catch((e) => setEventsError(e.message))
@@ -137,24 +143,32 @@ export default function App() {
   const index = useMemo(() => buildDetectionIndex(detections ?? []), [detections])
 
   // ── The survivor roster ──────────────────────────────────────────
-  // `survivorsFound` is the ONE list of survivors the drone has reached by the
-  // current playback instant. The table renders it as rows and the header
-  // renders its length, so the row count and the "survivors tracked" figure are
-  // the same value and cannot drift — CLAUDE.md's requirement that counts
-  // reconcile, satisfied by construction rather than by two calculations
-  // agreeing. The map shades the same boundary: a survivor absent from this
-  // list is the one drawn hollow.
+  // `survivorsFound` is the ONE list of confirmed survivors as of the current
+  // playback instant. The table renders it as rows and the header renders its
+  // length, so the row count and the "confirmed survivors" figure are the same
+  // value and cannot drift — CLAUDE.md's requirement that counts reconcile,
+  // satisfied by construction rather than by two calculations agreeing. The
+  // map shades the same boundary: a survivor absent from this list is the one
+  // drawn hollow.
   //
-  // `first_frame <= currentFrame` is discovery, not localization. Every tracked
-  // survivor has a position — the projection cannot fail — so a survivor
-  // missing here is one the clip has not got to yet.
+  // The filter is `confirmed_frame`, NOT `first_frame`, and the difference is
+  // the honest one. A track first seen at frame 100 does not clear 2.5 seconds
+  // of persistence until frame 160; counting it at 100 would confirm it on
+  // evidence the clip has not played yet, and the header's survivor figure
+  // would run ahead of the footage underneath it. Filtering on confirmation
+  // makes the count lag the tracker by exactly the threshold, which is what
+  // the threshold means.
+  //
+  // Neither field is about localization. Every tracked survivor has a position
+  // — the projection cannot fail — so a survivor missing here is one the clip
+  // has not confirmed yet, never one that could not be placed.
   //
   // null, not [], while the list is loading or has failed. An empty array would
   // make the header confidently display 0 survivors, which is a different claim
   // from "not known yet".
   const survivorsFound = useMemo(() => {
     if (survivors === null) return null
-    return survivors.filter((s) => s.first_frame <= currentFrame)
+    return survivors.filter((s) => s.confirmed_frame <= currentFrame)
   }, [survivors, currentFrame])
 
   // The clip's final frame, from the footage's true duration — NOT from the
@@ -168,6 +182,23 @@ export default function App() {
       ? Math.max(0, Math.round(clipDuration * config.clip_fps) - 1)
       : index.maxFrame
 
+  // ── The header's three counts, from one source array ─────────────
+  // All three descend from the clip's detection records. The first two are
+  // read off the index built from the `detections` array directly; the third
+  // is the length of the roster the table renders, and that roster is the
+  // backend's view of the same file with the persistence filter applied on the
+  // way out. Nothing here counts anything twice, and the gap between the last
+  // two is a fact about the tracker rather than a disagreement between tallies.
+  //
+  //   raw          every box the model drew on the frame on screen.
+  //   uniqueTracks every identity the tracker has issued so far — flicker and
+  //                ID switches included. What the output looks like BEFORE
+  //                filtering.
+  //   survivors    the tracks that lasted `min_track_seconds`. What the
+  //                dashboard is willing to call a person.
+  const rawDetectionsThisFrame = detectionsAt(index, currentFrame).length
+  const uniqueTracksSoFar = uniqueTracksThrough(index, currentFrame)
+  const uniqueTracksInClip = index.trackCount
   const survivorsSoFar = survivorsFound?.length ?? null
   const survivorsInClip = survivors?.length ?? null
 
@@ -210,7 +241,9 @@ export default function App() {
         ref={measureHeader}
         config={config}
         configOffline={configOffline}
-        frameDetectionCount={detectionsAt(index, currentFrame).length}
+        frameDetectionCount={rawDetectionsThisFrame}
+        uniqueTracksSoFar={uniqueTracksSoFar}
+        uniqueTracksInClip={uniqueTracksInClip}
         survivorsSoFar={survivorsSoFar}
         survivorsInClip={survivorsInClip}
         selectedTrackId={selectedTrackId}
@@ -321,6 +354,7 @@ export default function App() {
                 currentFrame={currentFrame}
                 lastFrame={lastFrame}
                 survivorsInClip={survivorsInClip}
+                uniqueTracksInClip={uniqueTracksInClip}
               />
             </div>
           </div>
@@ -352,7 +386,7 @@ export default function App() {
             note="weights from /api/config"
             summary="What the four bands mean, where their cut points are, and the formula behind every score in the queue."
           >
-            <PriorityReference config={config} />
+            <PriorityReference config={config} survivors={survivors} />
           </Reference>
         </div>
       </main>

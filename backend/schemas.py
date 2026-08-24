@@ -52,6 +52,17 @@ class ClipConfig(BaseModel):
     source_width: int = Field(..., gt=0, description="Width bboxes are expressed in")
     source_height: int = Field(..., gt=0, description="Height bboxes are expressed in")
     confidence_threshold: float = Field(..., ge=0.0, le=1.0)
+
+    # The input size the served detections were actually produced at. It is a
+    # property of the file, not a setting the dashboard could change, so it
+    # travels with the constants it has to be read alongside: a confidence
+    # threshold means something different at 640 than at 960, and a judge
+    # asking why the tracker fragments a person into three IDs is asking about
+    # this number.
+    detection_imgsz: int = Field(
+        ..., gt=0, description="Model input size the detections were produced at"
+    )
+
     altitude_m: float = Field(..., gt=0, description="Fixed drone altitude for the clip")
     camera_fov_deg: float = Field(..., gt=0, lt=180, description="Horizontal FOV, nadir")
     origin_lat: float = Field(
@@ -111,24 +122,63 @@ class ClipConfig(BaseModel):
         ..., gt=0, description="Playback seconds between priority re-assessments"
     )
 
+    # The persistence rule, sent as BOTH the duration and the frame count it
+    # works out to at `clip_fps`. The duration is the rule; the frame count is
+    # what it means for this clip, and the header needs it to explain the gap
+    # between the tracker's ID count and the confirmed survivor count. Sending
+    # both means the dashboard states the rule in the unit it is written in and
+    # the unit it is applied in, without multiplying anything itself.
+    min_track_seconds: float = Field(
+        ..., gt=0, description="How long a track must persist to be a survivor"
+    )
+    min_track_frames: int = Field(
+        ...,
+        ge=0,
+        description=(
+            "That duration in frames at clip_fps. 0 or 1 means the rule is a "
+            "no-op at this frame rate, not that filtering was switched off"
+        ),
+    )
+
     # The three cuts of the four-band priority ramp. The dashboard prints them
     # verbatim, so changing backend/config.py changes what is on screen.
     priority_medium_at: float = Field(..., ge=0.0, le=1.0)
     priority_high_at: float = Field(..., ge=0.0, le=1.0)
     priority_critical_at: float = Field(..., ge=0.0, le=1.0)
 
+    # The deadband around those cuts. Sent for the same reason the cuts are:
+    # the priority reference panel states it beside them, so a judge looking at
+    # a survivor scored 0.76 in the "high" row reads why off the screen. It is
+    # a disclosed design decision, not hidden smoothing, and shipping it in the
+    # same object as the thresholds is what makes that true on the dashboard
+    # rather than only in a comment.
+    band_hysteresis: float = Field(
+        ...,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "How far past a cut a score must travel before the band changes. "
+            "0 means the thresholds apply exactly, with no deadband"
+        ),
+    )
+
 
 class Survivor(BaseModel):
-    """One de-duplicated person, at their most recent known position.
+    """One CONFIRMED person, at their most recent known position.
 
-    One record per unique `track_id`. This is the count that matters — the raw
-    detection total counts the same person once per frame they appear in.
-    Untracked detections (`track_id == -1`) are excluded: two of them might be
-    one person seen twice, so they cannot be de-duplicated and counting them
-    would inflate the number.
+    One record per unique `track_id` that has persisted for at least
+    `MIN_TRACK_SECONDS` — see `backend.tracks` for the rule and why a raw track
+    ID is not a survivor. Tracks below the threshold are absent entirely: this
+    list is the confirmed roster, so its length is the confirmed count and no
+    caller has to filter it again.
 
-    `latitude` and `longitude` are derived server-side by `backend.localize`
-    and are deliberately NOT part of the perception JSON contract.
+    Untracked detections (`track_id == -1`) are excluded for a different
+    reason, and it is worth keeping the two apart. An untracked box has no
+    identity to accumulate evidence against, so it cannot be de-duplicated at
+    all; a short track has an identity, and the evidence for it was too thin.
+
+    `latitude`, `longitude` and the priority fields are derived server-side and
+    are deliberately NOT part of the perception JSON contract.
     """
 
     track_id: int = Field(..., ge=0)
@@ -136,8 +186,22 @@ class Survivor(BaseModel):
     longitude: float
     confidence: float = Field(..., ge=0.0, le=1.0, description="Of the latest detection")
     first_frame: int = Field(..., ge=0)
+
+    # When this track EARNED its place on the roster: the frame its
+    # MIN_TRACK_FRAMES-th detection landed on, which is always >= first_frame.
+    #
+    # The dashboard filters on this, not on `first_frame`. A track first seen
+    # at frame 100 and confirmed at frame 160 is not a survivor at frame 130 —
+    # confirming it there would count evidence the clip has not played yet, and
+    # the header's survivor figure would run ahead of the footage under it.
+    confirmed_frame: int = Field(
+        ..., ge=0, description="Frame this track reached the persistence threshold"
+    )
+
     last_frame: int = Field(..., ge=0, description="Frame the position is taken from")
-    detection_count: int = Field(..., gt=0, description="Frames this track appears in")
+    detection_count: int = Field(
+        ..., gt=0, description="Frames this track appears in; >= MIN_TRACK_FRAMES"
+    )
 
     # Derived server-side by `backend.priority`, like latitude and longitude and
     # for the same reason: the perception JSON contract carries what the model
@@ -153,6 +217,23 @@ class Survivor(BaseModel):
         ...,
         ge=0,
         description="Other survivors within CLUSTER_RADIUS_M of this one",
+    )
+
+    # The cluster term as it entered the score, or null when it did not.
+    #
+    # Null means the term came out IDENTICAL for every survivor — one group
+    # containing everybody, or nobody with a neighbour — so it could not rank
+    # anyone and was dropped, with the remaining weights renormalised. It does
+    # not mean nobody is nearby: `cluster_size` above says how many are, and
+    # stays true either way. The dashboard reads this to say "cluster size did
+    # not differentiate on this clip" rather than printing a term that looks
+    # scored but ordered nothing. Same convention as the hazard term's absence
+    # — see `backend.priority`.
+    cluster_score: Optional[float] = Field(
+        None,
+        ge=0.0,
+        le=1.0,
+        description="Cluster term as scored, or null if it did not differentiate",
     )
 
 
@@ -177,7 +258,7 @@ class MissionEvent(BaseModel):
 
     The log's other lines — replay start, each track's first detection, the
     end-of-clip summary — are NOT here. The frontend derives those from the
-    survivor roster it already holds, so the number of acquisition lines *is*
+    survivor roster it already holds, so the number of confirmation lines *is*
     the header's survivor count rather than a second tally that has to agree
     with it.
     """

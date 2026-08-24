@@ -8,9 +8,28 @@
  * Two rows, and the split is a layout decision made for 1280px, which is
  * projector resolution and the only width that actually has to work. Six stat
  * cells in one strip needed about 1250px before they wrapped into a ragged
- * second line; an identity row above three wide stat cells holds at 1280 with
- * room to spare and puts the numbers that change during playback on their own
- * baseline, where the eye can find them from the back of a room.
+ * second line; an identity row above four stat cells holds at 1280 with room
+ * to spare and puts the numbers that change during playback on their own
+ * baseline, where the eye can find them from the back of a room. The
+ * sublabels are written to fit ~43 monospace characters, which is what a
+ * quarter of 1280px leaves once the cell padding is taken out.
+ *
+ * ── The three counts, and why there are three ───────────────────────
+ * Raw detections, track IDs issued, confirmed survivors. The last two are
+ * different numbers on purpose and the labels have to make that read as
+ * deliberate, because the gap between them is large: on the current clip the
+ * tracker issues 333 IDs and 23 of them clear the persistence threshold.
+ *
+ * That gap is the price of `confidence_threshold` being 0.18. A recall-first
+ * detector reports anything person-shaped, the tracker dutifully gives each
+ * one an identity, and most of those identities last a fraction of a second.
+ * Showing only the ID count would overstate the survivors by an order of
+ * magnitude; showing only the confirmed count would hide what the filter is
+ * doing and leave a judge no way to check it. So both are on screen, next to
+ * each other, and the identity row above states the rule that separates them.
+ *
+ * All three descend from one array of detection records — see App, where they
+ * are derived. This component computes nothing; it is handed the numbers.
  *
  * It is also kept THIN, because it is row one of four and the other three have
  * to fit under it at 1280×720 without scrolling. App measures this bar and
@@ -23,6 +42,8 @@
  * plays, which reads as instability in a dashboard whose job is to look
  * trustworthy.
  */
+
+import { FALLBACK_CONFIG } from './config.js'
 
 /** Small caps label above a value. */
 function Label({ mark, children }) {
@@ -91,6 +112,22 @@ function Caveat({ children }) {
 }
 
 /**
+ * A persistence threshold in seconds, at the precision it is configured with.
+ *
+ * `2.5` prints as "2.5" and `3` prints as "3", rather than a fixed two
+ * decimals turning a round rule into "3.00 s" — a number that looks measured
+ * when it is a chosen constant.
+ */
+function seconds(value) {
+  // `??` for a backend running from before this field existed — the same
+  // tolerance MissionParameters applies to `ground_footprint_m`. The bundled
+  // constant is the honest stand-in: it is what the rule is meant to be, and
+  // the offline badge already says when local constants are in force.
+  const s = value ?? FALLBACK_CONFIG.min_track_seconds
+  return String(Number(s.toFixed(2)))
+}
+
+/**
  * Today, as the mission date.
  *
  * Computed rather than written down. A placeholder date is stale the day after
@@ -111,11 +148,14 @@ function missionDate() {
  * @param {object}  props.config              clip constants in force right now
  * @param {boolean} props.configOffline       true when `config` is the local fallback
  * @param {number}  props.frameDetectionCount raw records for the current frame
- * @param {number|null} props.survivorsSoFar  survivors found by this frame — the
- *                                            length of the exact array the
+ * @param {number}  props.uniqueTracksSoFar  distinct track IDs issued by this
+ *                                           frame — pre-filter tracker output
+ * @param {number}  props.uniqueTracksInClip distinct track IDs in the whole clip
+ * @param {number|null} props.survivorsSoFar  survivors CONFIRMED by this frame —
+ *                                            the length of the exact array the
  *                                            survivor table renders as rows.
  *                                            null while the list is unavailable.
- * @param {number|null} props.survivorsInClip survivors in the whole clip
+ * @param {number|null} props.survivorsInClip confirmed survivors in the whole clip
  * @param {object=} props.selectedSurvivor    the survivor selected on the map
  * @param {number|null} props.selectedTrackId
  * @param {function} props.onClearSelection
@@ -131,6 +171,8 @@ export default function HeaderBar({
   config,
   configOffline,
   frameDetectionCount,
+  uniqueTracksSoFar,
+  uniqueTracksInClip,
   survivorsSoFar,
   survivorsInClip,
   selectedSurvivor,
@@ -158,12 +200,19 @@ export default function HeaderBar({
         <div className="ml-auto flex flex-wrap items-center gap-x-6 gap-y-2">
           {/* Required on screen (CLAUDE.md, dashboard requirements). The
               threshold is the reason for the mode, so it is printed next to
-              it rather than left as a claim. */}
+              it rather than left as a claim — and the persistence rule is
+              printed next to the threshold for the same reason. They are two
+              halves of one decision: the low threshold is what lets the
+              detector report anything person-shaped, and the persistence rule
+              is what stops those reports being counted as people. Reading
+              them together is what makes the two survivor figures below
+              legible as a deliberate pair rather than a discrepancy. */}
           <div className="flex items-baseline gap-2">
             <span className="eyebrow">Detection mode</span>
             <span className="text-fine font-semibold text-ink">High Recall</span>
             <span className="figure text-eyebrow text-ink-muted">
-              confidence {config.confidence_threshold.toFixed(2)} and above
+              confidence {config.confidence_threshold.toFixed(2)} and above ·
+              confirmed after {seconds(config.min_track_seconds)} s tracked
             </span>
           </div>
 
@@ -184,12 +233,30 @@ export default function HeaderBar({
 
       {/* ── Stat strip ────────────────────────────────────────────── */}
       <div className="flex flex-wrap">
-        {/* Two counts, deliberately worded so they cannot be read as the same
-            thing: one is per-frame and raw, the other is cumulative and
-            de-duplicated. The first mockup's worst flaw was a header count
-            that disagreed with the table below it. */}
-        <Stat label="Raw detections" sublabel="this frame · before de-duplication">
+        {/* Three counts, deliberately worded so no two can be read as the same
+            thing: one is per-frame and raw, one is cumulative and
+            de-duplicated, one is cumulative and filtered. The first mockup's
+            worst flaw was a header count that disagreed with the table below
+            it, and the fix is not fewer numbers — it is numbers that say what
+            they are counting. */}
+        <Stat label="Raw detections" sublabel="this frame · pre de-duplication">
           <Figure>{frameDetectionCount}</Figure>
+        </Stat>
+
+        {/* The tracker's raw output: how many identities it has issued, before
+            anything is thrown away. This is NOT a survivor count and is not
+            labelled as one — flicker and ID switches are in it, which is
+            precisely why it is worth showing. It is what the number would be
+            without the filter, standing next to what it is with one.
+
+            Read off the same detection index the raw figure above comes from,
+            so both are the one `detections` array counted two ways rather than
+            two datasets. */}
+        <Stat
+          label="Track IDs issued"
+          sublabel={`so far · ${uniqueTracksInClip} in full clip`}
+        >
+          <Figure>{uniqueTracksSoFar}</Figure>
         </Stat>
 
         {/* This figure is `survivorsFound.length` — the length of the very
@@ -198,14 +265,20 @@ export default function HeaderBar({
             and this number are the same value, which is the only version of
             "counts reconcile" that survives someone editing one of them.
 
+            It sits directly right of the ID count so the two are read as a
+            pair. The sublabel carries the rule in the unit the rule is written
+            in — a duration — with the frame count it works out to at this
+            clip's rate beside it, because the same 2.5 s is 60 frames here and
+            3 on the Pi.
+
             null means the survivor list has not arrived (or failed), which is
             not the same claim as zero survivors — so it shows a dash. */}
         <Stat
-          label="Survivors tracked"
+          label="Confirmed survivors"
           sublabel={
             survivorsSoFar === null
               ? 'survivor list unavailable'
-              : `unique IDs so far · ${survivorsInClip} in full clip`
+              : `tracked ≥ ${seconds(config.min_track_seconds)} s · ${survivorsInClip} in full clip`
           }
           mark
         >

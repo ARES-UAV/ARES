@@ -10,19 +10,26 @@
  *                    `backend.priority`. The frontend never recomputes a
  *                    position or a score; it renders the ones it is given.
  *
- *   FROM SHARED STATE — replay start, each track's first detection, and the
+ *   FROM SHARED STATE — replay start, each survivor's confirmation, and the
  *                    end-of-clip summary. These are derived HERE, from the
  *                    same survivor roster the header counts and the table
  *                    renders.
  *
  * That second half is not an oversight, it is the point. The obvious design
- * has the backend emit an acquisition event per track, and then the log's
- * acquisition lines are a second list of survivors that has to agree with the
+ * has the backend emit a confirmation event per track, and then the log's
+ * confirmation lines are a second list of survivors that has to agree with the
  * header's count. CLAUDE.md's first dashboard requirement is that counts
  * reconcile, and the standing rule in this codebase is that agreeing is not
- * the same as being one number. So the acquisition lines ARE the roster: one
+ * the same as being one number. So the confirmation lines ARE the roster: one
  * line per element of the same array `survivorsInClip` is the length of. They
  * cannot disagree, because there is nothing to disagree.
+ *
+ * They are keyed on `confirmed_frame`, not `first_frame`, for the same reason.
+ * The panel shows every line at or before the playback instant, so a line
+ * placed at first sighting would put a survivor in the log 2.5 seconds before
+ * the header was willing to count them — the log would be ahead of the number
+ * it is supposed to be the itemisation of. Confirmation is the event the
+ * roster records, so confirmation is where the line goes.
  *
  * Nothing in this module authors an event. Every line traces to a detection
  * record — see the demo footage policy in CLAUDE.md. There is deliberately no
@@ -37,14 +44,14 @@ import { detectionsAt } from './detectionIndex.js'
  * Sort rank within a single frame.
  *
  * Several things can land on one frame, and the order they are read in should
- * be the order the causation ran: a track is acquired, that acquisition puts
- * it in a cluster, and being in a cluster is what moved the priority score the
- * band line reports. Reading the consequence above its cause makes the log
- * look arbitrary.
+ * be the order the causation ran: a track is confirmed, that confirmation
+ * puts it in a cluster, and being in a cluster is what moved the priority
+ * score the band line reports. Reading the consequence above its cause makes
+ * the log look arbitrary.
  */
 const KIND_RANK = {
   replay_start: 0,
-  track_acquired: 1,
+  survivor_confirmed: 1,
   cluster_formed: 2,
   priority_assessed: 3,
   priority_changed: 3,
@@ -59,6 +66,8 @@ const KIND_RANK = {
  * @property {number} [trackId]
  * @property {number[]} [trackIds]  cluster membership
  * @property {number|null} [confidence]
+ * @property {number} [firstFrame]  where a confirmed track was first sighted
+ * @property {number} [trackedFrames] frames of evidence at confirmation
  * @property {string} [fromBand]
  * @property {string} [toBand]
  * @property {number} [score]
@@ -87,25 +96,30 @@ export function buildMissionLog({ events, survivors, index, lastFrame }) {
   entries.push({ id: 'replay-start', frame: 0, kind: 'replay_start' })
 
   // ── One line per survivor, from the roster ───────────────────────
-  // `first_frame` is the roster's own record of when the track was first seen,
-  // so this loop cannot discover a survivor the table does not have or miss
-  // one it does.
+  // `confirmed_frame` is the roster's own record of when the track cleared the
+  // persistence threshold, so this loop cannot log a survivor the table does
+  // not have, miss one it does, or place one earlier than the header counts it.
   //
-  // The confidence is looked up in the detection index at that frame — the
-  // roster carries the confidence of each track's LATEST detection, which is
-  // not what a first-sighting line should quote. A missing lookup renders
-  // without a figure rather than substituting the one that is to hand: they
-  // are different measurements and only one of them is the first sighting.
+  // The line carries `first_frame` too, because "confirmed at 00:06.6, first
+  // seen at 00:04.1" is the whole rule made visible on one line — the gap is
+  // the threshold, and a judge can time it against the clip.
+  //
+  // The confidence is looked up in the detection index at the CONFIRMATION
+  // frame — the roster carries the confidence of each track's latest detection,
+  // which is a third measurement again. A missing lookup renders without a
+  // figure rather than substituting whichever one is to hand: they are
+  // different numbers, and only one of them was taken at this instant.
   for (const survivor of survivors ?? []) {
-    const first = detectionsAt(index, survivor.first_frame).find(
+    const atConfirmation = detectionsAt(index, survivor.confirmed_frame).find(
       (d) => d.track_id === survivor.track_id,
     )
     entries.push({
-      id: `acquired-${survivor.track_id}`,
-      frame: survivor.first_frame,
-      kind: 'track_acquired',
+      id: `confirmed-${survivor.track_id}`,
+      frame: survivor.confirmed_frame,
+      kind: 'survivor_confirmed',
       trackId: survivor.track_id,
-      confidence: first ? first.confidence : null,
+      firstFrame: survivor.first_frame,
+      confidence: atConfirmation ? atConfirmation.confidence : null,
     })
   }
 

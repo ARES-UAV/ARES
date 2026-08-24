@@ -11,7 +11,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from backend import config, events as events_module, localize, priority
+from backend import config, events as events_module, localize, priority, tracks
 from backend.schemas import ClipConfig, Detection, Health, MissionEvent, Survivor
 
 VERSION = "0.1.0"
@@ -51,6 +51,7 @@ def clip_config() -> ClipConfig:
         source_width=config.FRAME_WIDTH,
         source_height=config.FRAME_HEIGHT,
         confidence_threshold=config.CONFIDENCE_THRESHOLD,
+        detection_imgsz=config.DETECTION_IMGSZ,
         altitude_m=config.ALTITUDE_M,
         camera_fov_deg=config.CAMERA_FOV_DEG,
         origin_lat=config.ORIGIN_LAT,
@@ -71,7 +72,13 @@ def clip_config() -> ClipConfig:
         # whether to say the hazard term is scored or inactive, and that
         # sentence has to follow the list rather than someone's memory of it.
         hazard_count=len(config.HAZARDS),
+        band_hysteresis=config.BAND_HYSTERESIS,
         event_sample_interval_s=config.EVENT_SAMPLE_INTERVAL_S,
+        min_track_seconds=config.MIN_TRACK_SECONDS,
+        # `tracks.min_track_frames()`, not `config.MIN_TRACK_FRAMES` — the
+        # floor is part of the rule, so the dashboard is told the threshold
+        # that will actually be applied rather than the raw multiplication.
+        min_track_frames=tracks.min_track_frames(),
         priority_medium_at=config.PRIORITY_MEDIUM_AT,
         priority_high_at=config.PRIORITY_HIGH_AT,
         priority_critical_at=config.PRIORITY_CRITICAL_AT,
@@ -117,19 +124,19 @@ def _load_detections() -> List[Detection]:
     """Read and validate the clip's detection records.
 
     Read from disk per request rather than cached at startup: the file is a few
-    hundred KB, and regenerating the fixture during development shows up
-    immediately instead of needing a server restart.
+    hundred KB, and re-running the model over the clip shows up immediately
+    instead of needing a server restart.
 
     Both `/api/detections` and `/api/survivors` go through here, so the counts
     they imply are derived from one read of one file and cannot disagree.
     """
-    path = config.FIXTURE_PATH
+    path = config.DETECTIONS_PATH
     if not path.exists():
         raise HTTPException(
             status_code=503,
             detail=(
-                f"No detections file at {path.name}. Generate the development "
-                f"fixture with: python tools/make_fixture.py > {path}"
+                f"No detections file at {path.name}. Produce it by running the "
+                f"model over the demo clip: python tools/build_demo_clip.py"
             ),
         )
 
@@ -163,7 +170,7 @@ def events() -> List[MissionEvent]:
     which needs `backend.localize`, and priority bands, which need
     `backend.priority`. Replay start, first detections and the closing summary
     are derived by the frontend from the survivor roster it already holds, so
-    the log's acquisition lines are the header's survivor count rather than a
+    the log's confirmation lines are the header's survivor count rather than a
     second count of the same people.
 
     The final `priority_band` events assess the roster at the clip's last
@@ -175,13 +182,31 @@ def events() -> List[MissionEvent]:
 
 @app.get("/api/survivors", response_model=List[Survivor])
 def survivors() -> List[Survivor]:
-    """One record per unique `track_id`, ranked by rescue priority.
+    """One record per CONFIRMED survivor, ranked by rescue priority.
 
-    This is the de-duplicated survivor list the map plots and the dashboard
-    table ranks. Its length is the survivor count, and the dashboard counts
-    these records rather than tallying track IDs a second time of its own — a
-    header figure and a table that agree because they are the same list, not
-    because two calculations happened to land on the same number.
+    This is the list the map plots and the dashboard table ranks. Its length is
+    the confirmed survivor count, and the dashboard counts these records rather
+    than tallying track IDs a second time of its own — a header figure and a
+    table that agree because they are the same list, not because two
+    calculations happened to land on the same number.
+
+    ── Persistence filtering ────────────────────────────────────────
+    A track has to have appeared in at least `MIN_TRACK_FRAMES` frames to
+    appear here. Tracks below that threshold are dropped, and the raw
+    detections file is untouched — `/api/detections` still serves every record
+    and the video overlay still draws every box. Confirmation is a display
+    decision made on the way out, not an edit to the model's output.
+
+    The gap the filter opens is real and the dashboard shows it rather than
+    hiding it: the tracker emits 333 IDs on the current clip and 23 of them
+    clear 2.5 seconds. That difference is the price of a 0.18 confidence
+    threshold, and both numbers are on the header for exactly that reason.
+    See `backend.tracks`.
+
+    Everything downstream is computed on the CONFIRMED roster only, which is
+    why the filter runs before localization rather than after: `cluster_size`
+    counts how many survivors are nearby, and a flicker that lasted two frames
+    is not a survivor standing next to anyone.
 
     "Latest position" means the highest `frame_id` the track appears in.
     Ties cannot happen: a tracker emits one box per track per frame.
@@ -190,16 +215,38 @@ def survivors() -> List[Survivor]:
     `track_id` so the order is stable across requests. That is the order a
     rescue team would work the list in, so it is the order the API hands it
     over in rather than something the client has to know to impose.
+
+    ── Bands come from the event walk ───────────────────────────────
+    `priority_band` is hysteretic: a change needs the score to clear the cut by
+    BAND_HYSTERESIS, so the band depends on the track's history and not on this
+    frame alone. This endpoint therefore takes each track's current band from
+    `events.final_bands` — the state the mission log's own walk ends on — and
+    re-scores against it rather than re-deriving one from the thresholds. The
+    band in this table and the band the log closes on are then the same value
+    by construction, which is the point: a survivor cannot be "critical" in the
+    table and "high" in the log at the same moment.
     """
+    records = _load_detections()
+
+    # The confirmed roster and the frame each track earned its place on. Keys
+    # are the whole membership test, so nothing below needs a second threshold
+    # comparison that could be written differently.
+    confirmed_at = tracks.confirmation_frames(records)
+
     latest: Dict[int, Detection] = {}
     first_frame: Dict[int, int] = {}
     counts: Dict[int, int] = {}
 
-    for detection in _load_detections():
+    for detection in records:
         track_id = detection.track_id
         # -1 means the tracker assigned no ID. Real detections, but they cannot
         # be de-duplicated, so they are not survivors — see Survivor's docstring.
         if track_id < 0:
+            continue
+
+        # Too short to be a person. Dropped here rather than after scoring so
+        # the cluster term never counts a flicker as somebody's neighbour.
+        if track_id not in confirmed_at:
             continue
 
         counts[track_id] = counts.get(track_id, 0) + 1
@@ -217,6 +264,7 @@ def survivors() -> List[Survivor]:
     # this one" — so the whole list is built before priority is computed.
     track_ids = sorted(latest)
     positions = []
+    cluster_geometry = []
     for track_id in track_ids:
         detection = latest[track_id]
         # Localized against the origin for *that detection's* frame, not a
@@ -228,7 +276,31 @@ def survivors() -> List[Survivor]:
         )
         positions.append((latitude, longitude, detection.confidence))
 
-    scores = priority.score_all(positions)
+        # And the same detection with the flight track held still, which is the
+        # geometry the cluster term counts neighbours in. The assumed track is
+        # the right model for where somebody IS and the wrong one for how far
+        # apart two people are, because it turns the gap between two last
+        # sightings into ground distance — see
+        # `localize.bbox_to_reference_latlon`. Only the map pin and the hazard
+        # distance use the moving origin.
+        cluster_geometry.append(localize.bbox_to_reference_latlon(detection.bbox))
+
+    # Band history, from the same walk the event log is built from.
+    #
+    # Hysteresis (BAND_HYSTERESIS) means a band depends on where the track came
+    # from, not only where its score is now — so scoring this frame in
+    # isolation would put a survivor sitting just past a cut in the band above
+    # while the event log, which watched them creep up to it, still holds them
+    # below. The header, the table and the log would disagree about one person
+    # on screen at once. `events.final_bands` is where the log's assessment
+    # ends up, and re-scoring against it is idempotent (see `priority.band_for`),
+    # so the two cannot diverge.
+    previous_bands = events_module.final_bands(records)
+    scores = priority.score_all(
+        positions,
+        [previous_bands.get(track_id) for track_id in track_ids],
+        cluster_geometry,
+    )
 
     result = []
     for track_id, (latitude, longitude, _), score in zip(
@@ -242,11 +314,13 @@ def survivors() -> List[Survivor]:
                 longitude=longitude,
                 confidence=detection.confidence,
                 first_frame=first_frame[track_id],
+                confirmed_frame=confirmed_at[track_id],
                 last_frame=detection.frame_id,
                 detection_count=counts[track_id],
                 priority=score.score,
                 priority_band=score.band,
                 cluster_size=score.cluster_size,
+                cluster_score=score.cluster_score,
             )
         )
 

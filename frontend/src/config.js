@@ -50,6 +50,17 @@ export const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000'
  *                        dimensions to whatever size the video element is
  *                        displayed at; never from videoWidth/videoHeight.
  *
+ *   detection_imgsz      The model input size the served detections were
+ *                        produced at. Not a knob the dashboard turns — it is a
+ *                        property of the detections file, and it is here
+ *                        because the confidence threshold above cannot be read
+ *                        without it: at 640 on a 1280-wide clip a person
+ *                        reaches the network at half the pixels and the
+ *                        detector flickers, which is what fragments one person
+ *                        into several track IDs. Chosen from a sweep over this
+ *                        clip, not assumed and not measured on device — see
+ *                        DETECTION_IMGSZ in backend/config.py for the numbers.
+ *
  *   altitude_m,          Fixed per demo clip. There is no live telemetry in
  *   camera_fov_deg,      the prototype, and the pitch discloses that rather
  *   origin_lat/lon       than hiding it. They drive the pixel->GPS conversion,
@@ -106,18 +117,43 @@ export const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000'
  *                        threshold on detector confidence noise. See
  *                        EVENT_SAMPLE_INTERVAL_S in backend/config.py.
  *
+ *   band_hysteresis      The deadband around each ramp cut: how far past a
+ *                        threshold a score has to travel before the band
+ *                        actually changes. The priority reference panel states
+ *                        it beside the thresholds, because a survivor scored
+ *                        0.76 sitting in the "high" row is otherwise an
+ *                        unexplained contradiction of the cut printed directly
+ *                        above it. The other half of the sampling rate above:
+ *                        that decides how often the band is re-asked, this
+ *                        decides how much movement a different answer needs.
+ *                        Applied server-side in backend/priority.py — the
+ *                        frontend states the margin and never applies it.
+ *
  *   hazard_count         How many known hazard positions the backend scored
  *                        against. 0 is the honest current state — hazard
  *                        classification is Phase 2 — and it means the hazard
  *                        term was DROPPED from the average, not scored zero.
  *                        The table says which, because "no hazard nearby" and
  *                        "no hazard detector" are very different claims.
+ *
+ *   min_track_seconds,   The persistence rule: how long a track has to last
+ *   min_track_frames     before it counts as a confirmed survivor, and what
+ *                        that works out to at `clip_fps`. The DURATION is the
+ *                        rule and the frame count is derived from it, because
+ *                        the same 2.5 s means 60 frames in this clip and 3 on
+ *                        a Raspberry Pi — see MIN_TRACK_SECONDS in
+ *                        backend/config.py. The header prints both to explain
+ *                        why the tracker's ID count and the confirmed survivor
+ *                        count are different numbers. The filtering itself is
+ *                        server-side; the frontend never applies the threshold,
+ *                        it only states it.
  */
 export const FALLBACK_CONFIG = {
   clip_fps: 24,
   source_width: 1280,
   source_height: 720,
   confidence_threshold: 0.18,
+  detection_imgsz: 960,
   altitude_m: 20.0,
   camera_fov_deg: 60.0,
   origin_lat: 26.1445,
@@ -133,9 +169,16 @@ export const FALLBACK_CONFIG = {
   cluster_radius_m: 15.0,
   hazard_count: 0,
   event_sample_interval_s: 1.0,
+  min_track_seconds: 2.5,
+  // 2.5 * 24. Written out rather than computed from clip_fps above: this
+  // whole object is a hand-kept mirror of backend/config.py, and a value that
+  // recomputed itself here would go on looking right after the backend's rule
+  // changed.
+  min_track_frames: 60,
   priority_medium_at: 0.25,
   priority_high_at: 0.5,
   priority_critical_at: 0.75,
+  band_hysteresis: 0.03,
 }
 
 /**

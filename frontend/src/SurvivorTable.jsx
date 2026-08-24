@@ -1,16 +1,21 @@
 import { useEffect, useRef } from 'react'
-import { paint, priorityBand } from './config.js'
+import { FALLBACK_CONFIG, paint, priorityBand } from './config.js'
 
 /**
- * The ranked survivor list — one row per de-duplicated person.
+ * The ranked survivor list — one row per confirmed person.
  *
  * Rows are the `survivors` prop and nothing else. That is the same array App
  * hands the header to count, so the number of rows here and the header's
- * "survivors tracked" figure are one value rendered two ways. CLAUDE.md's
+ * "confirmed survivors" figure are one value rendered two ways. CLAUDE.md's
  * first dashboard requirement is that counts reconcile across every section,
  * and the first mockup failed it with a header saying 12 above a table showing
  * 5 — the only durable fix is for the table and the count to be the same list,
  * not two derivations that agree today.
+ *
+ * The header's OTHER survivor figure — track IDs issued — is deliberately not
+ * a row count here and is not meant to match this table. It is what the
+ * tracker emitted before the persistence filter, and this table is what
+ * survived it. Two different questions, two different numbers, both labelled.
  *
  * The list is already ranked when it arrives: `/api/survivors` returns it
  * sorted by priority descending. Re-sorting here would be a second opinion on
@@ -29,11 +34,13 @@ import { paint, priorityBand } from './config.js'
  */
 
 /** Column header cell. Sticky, so the columns stay named while the list scrolls. */
-function Th({ children, numeric = false }) {
+function Th({ children, numeric = false, tight = false }) {
   return (
     <th
       scope="col"
-      className={`sticky top-0 z-10 border-b border-edge bg-surface-2 px-3 py-2 text-eyebrow font-semibold tracking-wider whitespace-nowrap text-ink-muted uppercase ${
+      className={`sticky top-0 z-10 border-b border-edge bg-surface-2 ${
+        tight ? 'px-2' : 'px-3'
+      } py-2 text-eyebrow font-semibold tracking-wider whitespace-nowrap text-ink-muted uppercase ${
         numeric ? 'text-right' : 'text-left'
       }`}
     >
@@ -69,7 +76,10 @@ function PriorityCell({ survivor }) {
       <span className="score w-9 text-right font-semibold text-ink">
         {survivor.priority.toFixed(2)}
       </span>
-      <span className="w-16 text-fine font-semibold text-ink-soft">{band.label}</span>
+      {/* w-14, not w-16: "Critical" is the longest band name and fits, and
+          this table has six nowrap columns to fit inside half of a 1280px
+          screen. Fixed rather than auto so the words start on one edge. */}
+      <span className="w-14 text-fine font-semibold text-ink-soft">{band.label}</span>
     </div>
   )
 }
@@ -89,9 +99,10 @@ function SkeletonRows() {
 
 /**
  * @param {object}   props
- * @param {object[]|null} props.survivors    rows: survivors found by this frame,
- *                                           already ranked. null while loading.
- * @param {number|null}   props.survivorsInClip total tracks in the whole clip
+ * @param {object[]|null} props.survivors    rows: survivors confirmed by this
+ *                                           frame, already ranked. null while
+ *                                           loading.
+ * @param {number|null}   props.survivorsInClip confirmed survivors in the clip
  * @param {string|null}   props.survivorsError
  * @param {object}   props.config             clip constants in force right now
  * @param {number|null} props.selectedTrackId
@@ -136,7 +147,7 @@ export default function SurvivorTable({
             ? 'unavailable'
             : survivors === null
               ? 'loading…'
-              : `${rows.length} of ${survivorsInClip} found by this frame · highest priority first`}
+              : `${rows.length} of ${survivorsInClip} confirmed by this frame · highest priority first`}
         </span>
       </div>
 
@@ -157,13 +168,22 @@ export default function SurvivorTable({
             </p>
           </div>
         ) : (
-          <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
+          /* `overflow-x-auto` is a safety net, not the plan: the six columns
+             fit the panel at 1280px, and below that the table scrolls sideways
+             inside its own box rather than clipping the coordinate columns off
+             the right edge or forcing the whole page wide. */
+          <div ref={scrollRef} className="min-h-0 flex-1 overflow-x-auto overflow-y-auto">
             <table className="w-full border-collapse text-fine">
               <thead>
                 <tr>
                   <Th>Priority</Th>
                   <Th>Track</Th>
-                  <Th>First seen</Th>
+                  {/* One column, not two. The pair is the point — the
+                      distance between the frames IS the persistence threshold
+                      — and this panel is half of a 1280px screen, where a
+                      seventh nowrap column pushed the coordinates off the
+                      right edge. */}
+                  <Th tight>Seen → confirmed</Th>
                   <Th numeric>Confidence</Th>
                   <Th numeric>Latitude</Th>
                   <Th numeric>Longitude</Th>
@@ -175,7 +195,10 @@ export default function SurvivorTable({
                 {survivors !== null && rows.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-4 py-8 text-center text-ink-muted">
-                      No survivors found yet — rows appear as the clip reaches them.
+                      No survivors confirmed yet — a track has to hold for{' '}
+                      {config.min_track_seconds ?? FALLBACK_CONFIG.min_track_seconds}s
+                      before it counts as a person, so the first rows appear a
+                      little after the first detections do.
                     </td>
                   </tr>
                 )}
@@ -215,6 +238,15 @@ export default function SurvivorTable({
                         `confidence ${survivor.confidence.toFixed(2)}, ` +
                         `${survivor.cluster_size} survivor(s) within ` +
                         `${config.cluster_radius_m} m` +
+                        // Both terms report their own absence rather than
+                        // letting a reader assume a number they cannot see was
+                        // part of the score. A null cluster_score means the
+                        // term was the same for everyone and was dropped — not
+                        // that this row has no neighbours, which the count
+                        // beside it already answers.
+                        (survivor.cluster_score == null
+                          ? ' (cluster term not scored — same for every survivor)'
+                          : '') +
                         (config.hazard_count > 0
                           ? ''
                           : ', hazard term not scored (no hazard layer)')
@@ -226,11 +258,21 @@ export default function SurvivorTable({
                       <td className="num px-3 py-2 font-semibold whitespace-nowrap text-ink">
                         #{survivor.track_id}
                       </td>
-                      <td className="num px-3 py-2 whitespace-nowrap text-ink-soft">
+                      {/* First sighting, then the frame the row earned its
+                          place. The gap between them is the persistence
+                          threshold, made checkable per survivor instead of
+                          asserted once in the header.
+
+                          Frames only, no clock time beside them: the two
+                          figures plus a seconds reading is what pushed this
+                          panel's table past its 616px and cut the longitude
+                          column off. The event log's confirmation line for
+                          this track carries the timecode, so the dashboard
+                          still states it — once, where there is room. */}
+                      <td className="num px-2 py-2 whitespace-nowrap text-ink-soft">
                         frame {survivor.first_frame}
-                        <span className="ml-1.5 text-ink-muted">
-                          {(survivor.first_frame / config.clip_fps).toFixed(1)} s
-                        </span>
+                        <span className="text-ink-muted"> → </span>
+                        {survivor.confirmed_frame}
                       </td>
                       <td className="num px-3 py-2 text-right whitespace-nowrap text-ink-soft">
                         {survivor.confidence.toFixed(2)}

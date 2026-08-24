@@ -18,6 +18,12 @@ import { FALLBACK_CONFIG } from './config.js'
  *   assumed   — a fixed per-clip constant standing in for a measurement the
  *               prototype cannot make. Altitude, FOV, the flight track, the
  *               GPS origin. Disclosed, not hidden (CLAUDE.md, Localization).
+ *   chosen    — an operating decision, not a guess about the world. The value
+ *               is exactly what it says it is; what is open to question is
+ *               whether it was a good choice, so the basis says what it was
+ *               chosen against. The detector's input size and its confidence
+ *               threshold are settings someone picked, not properties of a
+ *               place nobody measured.
  *   derived   — arithmetic on the assumed values. Inherits their uncertainty;
  *               the formula is printed beside it so it can be checked.
  *   measured  — an actual observation of the actual system. Today exactly one
@@ -38,13 +44,13 @@ import { FALLBACK_CONFIG } from './config.js'
 /**
  * The provenance chip.
  *
- * Three tags plus the null state, as a trust ramp: the further from "measured"
+ * Four tags plus the null state, as a trust ramp: the further from "measured"
  * a row is, the further its tag recedes into the background. That ordering is
  * carried by ink weight rather than hue, so it survives a projector and a
  * viewer with a colour vision deficiency — and it never competes with the two
  * colours on this dashboard that already mean something.
  *
- * `unmeasured` is not a fourth kind of provenance. It is the absence of one,
+ * `unmeasured` is not a fifth kind of provenance. It is the absence of one,
  * drawn in the token file's not-measured pair so it reads as a gap rather than
  * as a state.
  */
@@ -52,6 +58,16 @@ const PROVENANCE = {
   assumed: {
     label: 'assumed',
     className: 'border-edge text-ink-muted',
+  },
+  // Deliberately the same ink weight as `derived`, not a rung of its own. The
+  // ramp runs on how far a number is from an observation of the running
+  // system, and on that axis a setting someone typed and a figure computed
+  // from settings sit together: both are exactly known, neither is an
+  // observation. Giving `chosen` its own weight would imply an ordering
+  // between the two that does not exist.
+  chosen: {
+    label: 'chosen',
+    className: 'border-edge text-ink-soft',
   },
   derived: {
     label: 'derived',
@@ -120,6 +136,21 @@ export default function MissionParameters({ config, configOffline }) {
   const deviceFps = config.device_fps ?? null
   const deviceName = config.device_name ?? FALLBACK_CONFIG.device_name
 
+  // `??` for a backend predating these fields, like `ground_footprint_m`
+  // above. The rule is the duration; the frame count is what it works out to
+  // at this clip's rate, and both are printed because the row has to be
+  // checkable against a 24 fps clip and against a 1.5 fps Pi.
+  // `??` for a backend predating the field, as above. It describes the
+  // detections file rather than configuring anything, so a backend that does
+  // not send it is one whose file was built before the sweep — the bundled
+  // value is the right thing to show, not a blank.
+  const detectionImgsz = config.detection_imgsz ?? FALLBACK_CONFIG.detection_imgsz
+
+  const minTrackSeconds =
+    config.min_track_seconds ?? FALLBACK_CONFIG.min_track_seconds
+  const minTrackFrames =
+    config.min_track_frames ?? Math.trunc(minTrackSeconds * config.clip_fps)
+
   const rows = [
     {
       key: 'altitude',
@@ -178,17 +209,66 @@ export default function MissionParameters({ config, configOffline }) {
       key: 'threshold',
       label: 'Confidence threshold',
       value: `≥ ${config.confidence_threshold.toFixed(2)}`,
-      // The one row where the tag is a compromise: this is a setting, not a
-      // guess about the world. Of the three tags "assumed" is the closest —
-      // it is neither computed from something else nor observed — and the
-      // basis text says plainly what it actually is.
-      provenance: 'assumed',
+      // A setting, not a guess about the world — which is exactly what the
+      // `chosen` tag is for. This row used to be tagged "assumed" as the
+      // closest of three, with the basis text carrying the correction; it no
+      // longer has to.
+      provenance: 'chosen',
       label2: 'High Recall',
       basis:
         'Detection Mode: High Recall. A deliberate operating choice, not a ' +
         'measurement — set low because a false alarm costs a rescuer seconds ' +
         'and a missed survivor cannot be recovered. Every detection on this ' +
         'dashboard cleared this threshold.',
+    },
+    {
+      key: 'imgsz',
+      label: 'Detector input size',
+      value: `${detectionImgsz} px`,
+      // `chosen`, not `measured`: the sweep that picked it was a real
+      // measurement, but what this row states is the decision it produced, and
+      // the number itself is a setting rather than an observation. The one row
+      // that could ever say "measured" is the on-device FPS below.
+      provenance: 'chosen',
+      label2: `· source ${config.source_width} × ${config.source_height}`,
+      basis:
+        `The square each frame is resized to before the model sees it, and ` +
+        `the size these detections were produced at. It decides how much of a ` +
+        `person survives to be detected at all: on a ${config.source_width} px ` +
+        `source, running at 640 halves them before the network looks, small ` +
+        `people fall below what it resolves, and the boxes that flicker in and ` +
+        `out split one person across several track IDs. Chosen from a sweep of ` +
+        `640 / 960 / 1280 over this clip — 960 found the most detections ` +
+        `(7081) and fragmented them into the fewest identities (333); 1280 ` +
+        `cost more inference for slightly worse tracking. Speed did not enter ` +
+        `it: detection ran once, offline, to produce the file this dashboard ` +
+        `replays.`,
+    },
+    {
+      key: 'persistence',
+      label: 'Track persistence',
+      value: `${minTrackSeconds} s`,
+      // `chosen` for the same reason the threshold row is: an operating
+      // decision, neither computed from something else nor observed. The frame
+      // count beside it IS derived, but it is the same row's value in another
+      // unit rather than a second parameter, so the basis text carries it.
+      provenance: 'chosen',
+      // A separator, unlike the "High Recall" row above: that label2 is a
+      // name and reads as one, while "2.5 s 60 frames" runs two figures
+      // together into something that looks like a single mangled number.
+      label2: `· ${minTrackFrames} frames at ${config.clip_fps} fps`,
+      basis:
+        `A track must appear in at least ${minTrackFrames} frames before it ` +
+        `counts as a survivor. The counterweight to the recall threshold ` +
+        `above: at ≥ ${config.confidence_threshold.toFixed(2)} the detector ` +
+        `reports anything person-shaped and the tracker issues an ID for each, ` +
+        `so the raw ID count is far higher than the number of people. Set as a ` +
+        `DURATION, not a frame count — the same 2.5 s is ${minTrackFrames} ` +
+        `frames in this clip and about 3 on a Raspberry Pi at ~1.5 fps. It ` +
+        `does not remove ID switches, where one person picks up a second ID ` +
+        `after an occlusion; that needs a better tracker. Filtering happens ` +
+        `server-side on the way out — the detections file stays complete and ` +
+        `the video overlay draws every box in it.`,
     },
     {
       key: 'fps',

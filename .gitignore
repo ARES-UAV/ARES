@@ -118,3 +118,4 @@ desktop.ini
 # Keep CLAUDE.md tracked — it is shared context.
 # Ignore only per-machine local settings.
 .claude/settings.local.json
+frontend/public/demo_clip.mp4

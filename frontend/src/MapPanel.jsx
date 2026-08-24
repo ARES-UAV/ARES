@@ -35,12 +35,18 @@ import { token, SURVIVOR, SELECTION_HALO } from './theme.js'
  * header's survivor count and the table's row count are one value rendered
  * three times rather than three calculations that happen to agree.
  *
- * They are counts of DISCOVERY, not of localization success. Every tracked
+ * They are counts of CONFIRMATION, not of localization success. Every tracked
  * survivor gets a position — `bbox_to_latlon` cannot fail — so a survivor
- * missing from the count has not been reached by the playback clock yet, and
- * is drawn hollow rather than hidden. The wording has to carry that: "6 of 9
- * located" read as "localization worked for 6 of them", which is a bug report
- * about a system that is working correctly.
+ * missing from the count has not cleared the persistence threshold by the
+ * current playback instant, and is drawn hollow rather than hidden. The
+ * wording has to carry that: "6 of 9 located" read as "localization worked for
+ * 6 of them", which is a bug report about a system that is working correctly.
+ *
+ * Every pin on this map is a confirmed survivor. The tracks the filter dropped
+ * are not plotted at all and are not drawn hollow either — hollow means "not
+ * yet", and a two-frame flicker is never going to become a person. They remain
+ * visible where they belong: as boxes on the video overlay, which draws the
+ * raw detections file unfiltered.
  */
 
 /** Radius in px for a survivor circle, selected or not. */
@@ -239,8 +245,8 @@ export default function MapPanel({
 
   // ── Restyle for selection and for discovery ──────────────────────
   // Two independent things are shown by style rather than by adding or removing
-  // pins: which survivor is selected, and which have been found by the current
-  // playback instant. A survivor the drone has not reached yet is drawn hollow
+  // pins: which survivor is selected, and which have been confirmed by the
+  // current playback instant. A survivor not yet confirmed is drawn hollow
   // instead of hidden — removing the pin would make the panel's count and the
   // header's disagree with what is on screen, and would also make the map jump
   // as pins appeared.
@@ -252,7 +258,10 @@ export default function MapPanel({
       const marker = markersRef.current.get(survivor.track_id)
       if (!marker) continue
 
-      const discovered = survivor.first_frame <= currentFrame
+      // Confirmation, not first sighting — the same boundary the header's
+      // survivor figure and the table's rows use. Shading on `first_frame`
+      // would fill a pin in 2.5 seconds before the count acknowledged it.
+      const discovered = survivor.confirmed_frame <= currentFrame
       const selected = survivor.track_id === selectedTrackId
 
       marker.setStyle({
@@ -289,8 +298,8 @@ export default function MapPanel({
       <div className="mb-2 flex shrink-0 flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="eyebrow">Survivor map</h2>
         {/* Deliberately NOT "N of M located". Every tracked survivor has a
-            position; this is how many the clip has reached by the current
-            frame, which is the header's "survivors tracked" figure and the
+            position; this is how many the clip has confirmed by the current
+            frame, which is the header's "confirmed survivors" figure and the
             same prop. "Located" invited the reading that localization had
             failed for the rest. */}
         <span className="figure text-eyebrow text-ink-muted">
@@ -298,7 +307,7 @@ export default function MapPanel({
             ? 'positions unavailable'
             : survivorsSoFar === null
               ? 'loading positions…'
-              : `${survivorsSoFar} of ${survivorsInClip} found by this frame`}
+              : `${survivorsSoFar} of ${survivorsInClip} confirmed by this frame`}
         </span>
       </div>
 

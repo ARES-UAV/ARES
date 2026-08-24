@@ -44,9 +44,9 @@ export function fetchDetections() {
  * The clip's mission event timeline.
  *
  * Only the half of the log that needs server-side maths: cluster formation and
- * priority bands. The other half — replay start, first detections, the closing
- * summary — is derived in `missionLog.js` from the survivor roster the
- * dashboard already holds, so the log's acquisition lines and the header's
+ * priority bands. The other half — replay start, survivor confirmations, the
+ * closing summary — is derived in `missionLog.js` from the survivor roster the
+ * dashboard already holds, so the log's confirmation lines and the header's
  * survivor count are one list rather than two that must agree.
  *
  * A failure here degrades the log rather than removing it, and the panel says

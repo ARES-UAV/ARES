@@ -169,3 +169,46 @@ def bbox_to_latlon(
 
     x1, y1, x2, y2 = bbox
     return pixel_to_latlon((x1 + x2) / 2.0, (y1 + y2) / 2.0, **kwargs)
+
+
+# The frame every *relative* measurement is taken in.
+#
+# Frame 0, which is where the drone is assumed to be at the start of the clip,
+# but the specific value is not what matters — any single frame would do. What
+# matters is that ONE frame is used for every survivor, so that the assumed
+# flight track cancels out of the distance between two of them.
+CLUSTER_REFERENCE_FRAME: int = 0
+
+
+def bbox_to_reference_latlon(bbox: Sequence[float]) -> Tuple[float, float]:
+    """Ground position of one detection with the assumed flight track held still.
+
+    Same projection as `bbox_to_latlon`, with every detection localized against
+    a single frame's origin instead of its own. The result is NOT where the
+    person is — for that, use `bbox_to_latlon`, which is what the map plots and
+    what a hazard distance is measured against. It is where they sat in the
+    camera's own geometry, which is the only spatial relationship this clip
+    actually observed.
+
+    ── Why a relative measurement needs its own projection ──────────
+    `origin_for_frame` advances the origin along an ASSUMED constant-velocity
+    track. That is the right call for an absolute position: a survivor last
+    seen forty frames ago was last seen somewhere the drone has since flown
+    past, and pinning them under the aircraft's current position would be
+    worse. But it makes the distance between two survivors depend on how far
+    apart in TIME their last sightings were, and at 5 m/s a three-second gap
+    manufactures fifteen metres of separation between two people who may have
+    been standing next to each other.
+
+    Nothing measured that separation. It is an artifact of an assumption, and
+    it has no business deciding a rescue ranking — on the current clip it put
+    the highest-confidence detection in the whole scene second from the bottom
+    of the queue, because its last sighting was three seconds after everyone
+    else's. Measuring the cluster term here instead confines the flight-track
+    assumption to the map pin, where it is disclosed, and keeps it out of the
+    scoring.
+
+    The choice of reference frame does not affect any distance: shifting every
+    point by the same offset leaves the gaps between them unchanged.
+    """
+    return bbox_to_latlon(bbox, CLUSTER_REFERENCE_FRAME)

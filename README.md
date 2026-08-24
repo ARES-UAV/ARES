@@ -59,23 +59,56 @@ The approach is evaluated against conventional strategies — grid/lawnmower, ra
 
 Four detection experiments are complete. Full analysis in [`experiments/MODEL_SELECTION.md`](./experiments/MODEL_SELECTION.md).
 
-| Model | Trained on | Evaluated on | P | R | mAP50 | mAP50-95 | ms/img |
-|---|---|---|---:|---:|---:|---:|---:|
-| YOLOv8n | COCO (baseline) | C2A test | 0.312 | 0.189 | 0.131 | 0.060 | — |
-| YOLOv8n | C2A fine-tuned | C2A test | 0.843 | 0.728 | 0.774 | 0.488 | 4.4 |
-| YOLOv8s | COCO (baseline) | C2A test | 0.335 | 0.242 | 0.173 | 0.085 | 8.2 |
-| YOLOv8s | C2A fine-tuned | C2A test | **0.861** | **0.764** | **0.812** | **0.544** | 8.1 |
-| YOLOv12s | C2A + VisDrone | *combined val* | 0.845 | 0.717 | 0.775 | 0.494 | in progress |
+All rows evaluated on the **same** C2A test split — 2,043 images, 72,523 instances — at `imgsz=640`, `max_det=1000`. Latency on a Tesla T4.
 
-C2A test split: 2,043 images / 72,523 instances. Latency measured on a Tesla T4.
+| Model | Trained on | Epochs | GFLOPs | P | R | mAP50 | mAP50-95 | ms/img |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| YOLOv8n | COCO (baseline) | — | 8.1 | 0.312 | 0.189 | 0.131 | 0.060 | — |
+| YOLOv8n | C2A | 50 | 8.1 | 0.843 | 0.728 | 0.776 | 0.489 | **4.09** |
+| YOLOv8s | COCO (baseline) | — | 28.6 | 0.335 | 0.242 | 0.173 | 0.085 | — |
+| YOLOv8s | C2A | 50 | 28.4 | 0.861 | 0.764 | 0.814 | 0.545 | 8.84 |
+| **YOLOv12s** | **C2A + VisDrone** | **60** | **23.2** | **0.869** | **0.790** | **0.834** | **0.572** | 12.84 |
 
-**Key finding.** Domain-specific fine-tuning is transformative: a COCO-pretrained YOLOv8n finds fewer than one survivor in five (recall 0.189); fine-tuned on disaster imagery it finds nearly three in four (0.728) — a 286% relative gain in recall from training data alone.
+**YOLOv12s is the deployed model** — best on every metric, and by the widest margin on recall, which is the one that matters when a missed survivor is the failure the system exists to prevent. It finds 790 of every 1,000 survivors against the next model's 764. It was also trained on the broader C2A + VisDrone combination and still wins on C2A's own test split, so the wider training data cost nothing on the narrower domain.
 
-**Open comparison.** The YOLOv12s row was measured on a different, harder validation set that includes dense VisDrone urban scenes, so it is *not* directly comparable to the rows above it. Cross-evaluation on the common C2A split is pending before a final model is selected.
+**YOLOv8n is the edge fallback** — 2.9× fewer FLOPs and 3.1× faster, still reaching 0.728 recall. If onboard hardware cannot sustain the heavier model, that swap is already trained and already measured.
 
-### Detection threshold
+**Key finding.** Domain-specific fine-tuning matters more than architecture: a COCO-pretrained YOLOv8n finds fewer than one survivor in five (recall 0.189); fine-tuned on disaster imagery the same network finds nearly three in four (0.728) — a **285% relative gain in recall from training data alone**.
 
-The deployed model runs at a deliberately low confidence threshold — **~0.18**, rather than the 0.5 default. In search and rescue the costs are asymmetric: a false alarm costs a rescuer seconds, a missed survivor cannot be recovered. The system is therefore tuned for recall over precision, and surfaces this as a **High Recall** detection mode rather than hiding it.
+**Stated caveat.** The YOLOv8 models trained for 50 epochs and YOLOv12s for 60. This is therefore not a controlled architecture comparison and is not presented as one — it establishes which model to ship, which was the question being asked. Full analysis in [`experiments/MODEL_SELECTION.md`](./experiments/MODEL_SELECTION.md).
+
+### Detection threshold — and what it buys
+
+The deployed model runs at **confidence 0.18**, deliberately below the 0.5 default. In search and rescue the costs are asymmetric: a false alarm costs a rescuer seconds, a missed survivor cannot be recovered.
+
+The table above reports recall at the balanced best-F1 point, which is what makes models comparable. At the actual operating threshold the figure is higher:
+
+| Threshold | Recall | Missed per 1,000 survivors |
+|---|---:|---:|
+| 0.50 — library default | 0.740 | 260 |
+| **0.18 — ARES operating point** | **0.831** | **169** |
+
+**Running at 0.18 rather than the default finds 91 more survivors per thousand.** The threshold also sits on a flat region of the recall curve — recall varies by only 0.028 across 0.10–0.25 — so the system is not sensitive to small changes in that choice.
+
+The dashboard surfaces this as a **High Recall** detection mode rather than hiding it.
+
+---
+
+## Command Dashboard
+
+A mission-replay console. It plays a clip alongside the detections recorded from it, localizes each survivor, ranks them, and logs what happened — every panel reading the same clock.
+
+- **Detection feed** — video with bounding boxes and track IDs, driven by a shared playback clock
+- **Survivor map** — Leaflet, positions from pixel→GPS, tiles served locally so it works with no network
+- **Priority queue** — survivors ranked, with the scoring formula printed underneath
+- **Mission event log** — acquisitions, cluster formation and priority escalations, every line derived from detections
+- **Mission parameters** — every constant the system depends on, each tagged `assumed`, `derived`, `chosen` or `measured`
+
+Two properties are enforced rather than checked. Every count on screen derives from a single survivor array, so the header, the queue and the map cannot disagree. And the event log's closing bands equal the survivor endpoint's by construction.
+
+**The dashboard shows no UAV telemetry** — no battery, GPS fix, link quality, storage, flight mode or weather. There is no aircraft in this prototype, so any value in those fields would be invented rather than sensed. The parameters panel names them explicitly as absent and says why.
+
+The demo replays a pre-computed detections file rather than running inference live. Identical to a viewer, and it removes every live-inference failure mode from the demonstration.
 
 ---
 
@@ -138,7 +171,7 @@ ARES is deliberately explicit about which capabilities are implemented and which
 |---|---|
 | On-device AI inference | Built |
 | Emergency alerting / priority scoring | Built |
-| Command centre dashboard | In progress |
+| Command centre dashboard | Built |
 | Geo-tagged mapping | Built |
 | Offline resilience | Built — a consequence of on-device inference |
 | Multi-sensor fusion (RGB + thermal) | Partial — public thermal datasets, not physical hardware |
@@ -166,8 +199,8 @@ ARES/
 │   ├── MODEL_SELECTION.md  Detection model comparison and analysis
 │   └── Perception/C2A/     YOLOv8n and YOLOv8s baselines and fine-tunes
 ├── hardware/               UAV hardware and CAD
-├── backend/                FastAPI dashboard API          (in progress)
-├── frontend/               Vite + React command dashboard  (in progress)
+├── backend/                FastAPI dashboard API
+├── frontend/               Vite + React command dashboard
 ├── tools/                  Development utilities
 ├── CLAUDE.md               Working context and project conventions
 ├── BUILD_ORDER.md          Dashboard implementation sequence

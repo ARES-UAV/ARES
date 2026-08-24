@@ -66,8 +66,11 @@ Derived fields the backend adds (latitude, longitude, priority score) are comput
 
 Current: **YOLOv12s**, single `person` class, trained on combined C2A + VisDrone. Epoch 44 of 100 — P 0.845, R 0.717, mAP50 0.775, mAP50-95 0.494. Interim weights: `ares_detect_v0.9.pt`.
 
-- Operating confidence threshold: **~0.18, deliberately low.** Tuned for recall over precision because a missed survivor costs far more than a false alarm. Surface on the dashboard as **"Detection Mode: High Recall"**.
-- `max_det` must be **1000**, not the default 300 — scenes routinely exceed 300 people.
+- Operating confidence threshold: **0.18, deliberately low.** Recall at that threshold is **0.831** against 0.740 at the 0.5 default — 91 more survivors found per thousand. Surface on the dashboard as **"Detection Mode: High Recall"**.
+- `max_det` must be **1000**, not the default 300.
+- **`DETECTION_IMGSZ = 960`.** Detection runs on a 1280-wide clip; at 640 a 24 px person is downscaled to 12 px before the network sees them, and detections stop being stable. 960 gave +29% detections and doubled the share above 0.70 confidence. **The on-device benchmark must target 960, not 640** — the shipped detections were produced at that size.
+- **Persistence is a duration, not a frame count.** `MIN_TRACK_SECONDS = 2.5`, with `MIN_TRACK_FRAMES = int(MIN_TRACK_SECONDS * CLIP_FPS)` — 60 frames at 24 fps, 3 at the Pi's ~1.5 fps. A hardcoded frame count silently means an eighth of a second in one place and two seconds in the other.
+- **Maximum operating altitude ~40 m**, predicted from geometry and confirmed on real footage: above it a person spans under 24 px and detection quality collapses (4% of detections above 0.70 confidence, versus 32% on lower-altitude footage).
 - On-device target: **Raspberry Pi 4 Model B**, CPU only. Expect a low FPS figure and display it honestly.
 
 **Before changing model architecture, read `experiments/MODEL_SELECTION.md`.** This repo already contains trained YOLOv8n and YOLOv8s models whose relationship to YOLOv12s is not yet established — they were measured on a different test split.
@@ -99,17 +102,6 @@ Drone GPS origin, altitude and FOV are assumed constants per clip. That assumpti
 
 Nadir-pointing camera, known altitude `H`, flat local terrain. `H`, FOV and `(lat0, lon0)` are **fixed constants per demo clip** — there is no live telemetry in the prototype.
 
-The drone does not hover. `(lat0, lon0)` is its position at **frame 0**, and the origin advances from there along an **assumed constant-velocity track** — `DRONE_SPEED_MS` and `DRONE_HEADING_DEG` in the config module, heading as a compass bearing (0 = north, 90 = east, clockwise):
-
-```
-t        = frame_id / fps
-distance = DRONE_SPEED_MS * t
-north_m += distance * cos(heading)      # bearing convention: north takes cos
-east_m  += distance * sin(heading)      # and east takes sin, not the reverse
-```
-
-That track is an assumption of the **same disclosed class as altitude and FOV** — stated in the pitch and on the map panel, not hidden. Without it every survivor in the clip lands inside one ~23 m camera footprint no matter how long the drone flew, which is not what a search flight looks like. Each detection is localized against the origin for *its own* `frame_id`.
-
 ```
 GSD      = 2 * H * tan(FOV / 2) / image_width    # metres per pixel
 
@@ -134,7 +126,43 @@ At 640 px input with a 60° FOV, a 1.7 m person spans ~47 px at 20 m altitude an
 
 ## Priority scoring
 
-Ranks survivors for rescue order. Keep it **simple and explainable** — a judge will ask how it works and "a neural network decides" is a bad answer. Inputs: detection confidence, cluster size, hazard proximity. A transparent weighted formula beats a clever opaque one. Weights live in the config module.
+Ranks survivors for rescue order. Keep it **simple and explainable** — a judge will ask how it works and "a neural network decides" is a bad answer. A weighted average of three normalised 0–1 terms: detection confidence, cluster size (survivors within `CLUSTER_RADIUS_M`), and hazard proximity. Weights, radius and thresholds all live in the config module; `priority.py` holds arithmetic and no numbers.
+
+**Bands are an ordinal ramp, not four statuses** — quarters of the 0–1 range:
+
+| Band | Score |
+|---|---|
+| Low | below 0.25 |
+| Medium | 0.25 and above |
+| High | 0.50 and above |
+| Critical | 0.75 and above |
+
+There is deliberately **no "clear" band and nothing green in the ramp** — every row is someone who still needs reaching.
+
+**When `HAZARDS` is empty, the hazard term is dropped and the remaining weights renormalise.** It is never scored zero. Zero would read as "checked, nothing nearby" and would depress every score by the hazard weight; dropping it reads as "not measured", which is the truth. The dashboard says so on screen. Hazard classification is Phase 2 — do not populate `HAZARDS` with invented entries to make the ranking look livelier.
+
+---
+
+## Dashboard build state (24 Aug 2026)
+
+Stages 0–5 complete. Running at `localhost:5173` against `localhost:8000`.
+
+**Built and verified:** detection feed with bbox overlay on a shared playback clock · survivor map with moving-origin localization · reconciled stat header · survivor priority queue with the four-band ramp · mission event log · assumed-parameters panel · offline map tiles served locally · validated palette with self-hosted fonts.
+
+**Endpoints:** `/api/detections` · `/api/survivors` · `/api/config` · `/api/events` · `/api/health` · `/tiles/{z}/{x}/{y}.png`
+
+**Key invariants — do not break these:**
+
+- Every count on screen derives from **one** `survivorsFound` array. The header renders its `.length`, the queue renders its rows, the map plots its members. There is no second tally anywhere, so the three cannot disagree.
+- **The header shows three counts, and the gap between them is the point.** Raw detections this frame · unique track IDs so far · confirmed survivors. The gap between the last two is the price of the high-recall threshold — flicker and ID switches — and persistence filtering is what removes it. Showing all three is a stronger answer than hiding the difference.
+- The event log's closing bands equal `/api/survivors` by construction — the final sample is forced. Asserted, not assumed.
+- Priority is re-assessed at `EVENT_SAMPLE_INTERVAL_S`, not per frame. Per-frame scoring emits ~277 band changes on detector confidence noise alone. The sampling rate is stated in the panel footer; it is a disclosed design decision, not a fudge factor.
+- Scores print at three decimals in the log and two in the table. Deliberate: 0.7499 rounds to "0.75" at two decimals and would read as contradicting a legend saying critical begins at 0.75.
+- Map scroll-wheel zoom is **disabled**. The page scrolls, Leaflet eats wheel events over the panel, and one tick moved the map 196 m off the survivors mid-session. Buttons and drag-pan still work.
+
+**Still outstanding:** static-mode bundle (waits on final data shape) · real detections replacing the fixture · Pi 4 FPS benchmark · Robin's persistence filter, `score_breakdown` and `position_spread_m`.
+
+**Panels that must never be built:** battery, GPS signal, telemetry link, packet loss, storage, flight mode, weather, and any mission-control action button. There is no aircraft — every one of those would be a typed number presented as sensed. See `DASHBOARD_SPEC_TRIAGE.md`.
 
 ---
 
@@ -144,7 +172,7 @@ From a design review; not optional.
 
 - **Counts must reconcile across every section.** Header saying 12 while the table shows 5 was the first mockup's biggest flaw. Derive every count from one shared state.
 - **Show the de-duplicated tracked count next to the raw detection count.** Two numbers, both labelled.
-- **Survivors get their own colour, not red.** Red already carries "high priority" and "fire hazard".
+- **Survivor cyan is a mark colour only** — boxes, pins, selection gutters. Never text, never a priority band. When a survivor line needs cyan, use a left gutter stripe, not coloured type.
 - **RGB and thermal views must look genuinely different**, not the same image filtered.
 - **Display the measured on-device FPS** and the **"Detection Mode: High Recall"** indicator on screen.
 - **Make priority planning visible on the map** — annotate routes and reroutes rather than claiming adaptivity in text.
@@ -188,13 +216,17 @@ If a change touches the JSON contract, it affects all three. Flag it rather than
 
 ## Conventions
 
+- **Backend work runs inside the project venv**: `source .venv/bin/activate` before invoking Python or uvicorn. Without it `fastapi` is not importable and endpoints cannot be exercised — code gets written but never actually run.
 - Python: type hints on function signatures; Pydantic models for anything crossing an API boundary.
-- Keep tunable constants (altitude, FOV, origin coordinates, threshold, scoring weights) in a single config module. Judges ask to see these.
+- Keep tunable constants (altitude, FOV, origin coordinates, drone speed and heading, threshold, scoring weights, sampling intervals) in `backend/config.py` and serve them at `/api/config`. Judges ask to see these, and the panel that displays them reads from that endpoint so it cannot drift.
+- **Colour comes from `frontend/src/tokens.css` and nowhere else.** No raw hex outside that file. The palette was validated computationally for colourblind separation — substituting a value by eye can silently reintroduce a failure. Canvas and Leaflet cannot resolve `var()`, so `theme.js` reads computed values off `:root` for those two.
+- **No gradients.** Flat surfaces only. A blue-to-dark gradient background is the most recognisable generative-AI tell and nothing in the token file produces one.
+- **Every video asset gets `-movflags +faststart`.** Without it the browser downloads the whole file before it can report duration — 15 seconds of "Loading clip…" before controls enable.
 - **Never commit model weights, datasets, or video.** Weights go to GitHub Releases. See `.gitignore`.
 - Every experiment records: config, dataset version, model version, parameters, results, conclusion — and **the test split it was measured on**, which is how the current YOLOv8-vs-YOLOv12 ambiguity arose.
 - Prefer boring, working solutions. This codebase is judged on 5 September.
 - **Never commit secrets** — API keys, tokens, credentials, private endpoints. This file is public; treat everything in it as readable by anyone.
-- Backend work runs inside the project venv: source .venv/bin/activate before invoking Python or uvicorn. Without it fastapi is not importable and endpoints cannot be exercised.
+
 ---
 
 ## Naming consistency
