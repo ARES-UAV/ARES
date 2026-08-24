@@ -120,3 +120,5 @@ desktop.ini
 .claude/settings.local.json
 frontend/public/demo_clip.mp4
 .venv/
+.venv/
+.venv-ml/
