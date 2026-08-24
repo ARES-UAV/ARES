@@ -194,7 +194,7 @@ If a change touches the JSON contract, it affects all three. Flag it rather than
 - Every experiment records: config, dataset version, model version, parameters, results, conclusion — and **the test split it was measured on**, which is how the current YOLOv8-vs-YOLOv12 ambiguity arose.
 - Prefer boring, working solutions. This codebase is judged on 5 September.
 - **Never commit secrets** — API keys, tokens, credentials, private endpoints. This file is public; treat everything in it as readable by anyone.
-
+- Backend work runs inside the project venv: source .venv/bin/activate before invoking Python or uvicorn. Without it fastapi is not importable and endpoints cannot be exercised.
 ---
 
 ## Naming consistency

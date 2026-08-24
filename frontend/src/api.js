@@ -2,13 +2,15 @@
  * Backend access for the dashboard.
  *
  * The base URL is configurable so the dashboard can point at something other
- * than the dev server later. CLAUDE.md also requires a path where the frontend
- * works with the backend switched off — that will load a static JSON file
- * through this same module, so keep fetching in here rather than in components.
+ * than the dev server later. It lives in `config.js` rather than here because
+ * the map's tile URL is built from it too — the backend serves the cached
+ * OpenStreetMap tiles — and those two must not be able to drift apart.
+ *
+ * CLAUDE.md also requires a path where the frontend works with the backend
+ * switched off — that will load a static JSON file through this same module,
+ * so keep fetching in here rather than in components.
  */
-import { FALLBACK_CONFIG } from './config.js'
-
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000'
+import { API_BASE, FALLBACK_CONFIG } from './config.js'
 
 /**
  * Fetch JSON from an API path, turning the backend's error `detail` into the
@@ -36,6 +38,22 @@ async function getJson(path) {
 
 export function fetchDetections() {
   return getJson('/api/detections')
+}
+
+/**
+ * The clip's mission event timeline.
+ *
+ * Only the half of the log that needs server-side maths: cluster formation and
+ * priority bands. The other half — replay start, first detections, the closing
+ * summary — is derived in `missionLog.js` from the survivor roster the
+ * dashboard already holds, so the log's acquisition lines and the header's
+ * survivor count are one list rather than two that must agree.
+ *
+ * A failure here degrades the log rather than removing it, and the panel says
+ * which half is missing.
+ */
+export function fetchEvents() {
+  return getJson('/api/events')
 }
 
 export function fetchSurvivors() {

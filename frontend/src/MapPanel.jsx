@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
+// Leaflet's own stylesheet is imported in main.jsx, NOT here. It has to load
+// before index.css or its light-theme defaults win the cascade on equal
+// specificity and the zoom buttons and scale bar stay white on a dark
+// dashboard. Import order is the only thing deciding that, so it lives in the
+// one file that states the order deliberately.
 import {
-  COLORS,
   MAP_DEFAULT_ZOOM,
   MAP_FIT_MAX_ZOOM,
   MAP_MAX_NATIVE_ZOOM,
@@ -10,6 +13,7 @@ import {
   TILE_ATTRIBUTION,
   TILE_URL,
 } from './config.js'
+import { token, SURVIVOR, SELECTION_HALO } from './theme.js'
 
 /**
  * Survivor positions on an OpenStreetMap base layer.
@@ -80,11 +84,11 @@ export default function MapPanel({
   const markersRef = useRef(new Map())
   const fittedRef = useRef(false)
 
-  // Tiles need internet and venue wifi fails (CLAUDE.md, demo-day constraint
-  // 3). A tile server that cannot be reached otherwise renders as a silent
-  // grey rectangle, which looks like a broken dashboard rather than a missing
-  // network — so say which it is.
-  const [tilesFailed, setTilesFailed] = useState(false)
+  // Tiles come from the backend's bundled cache, not the internet (CLAUDE.md,
+  // demo-day constraint 3 — venue wifi fails). Missing tiles otherwise render
+  // as a silent grey rectangle, which looks like a broken dashboard rather
+  // than a base map that has run out — so say which it is.
+  const [tilesMissing, setTilesMissing] = useState(false)
 
   // Kept in a ref so the map-creation effect below never re-runs — and so does
   // not destroy and rebuild the whole map — just because App handed down a new
@@ -120,6 +124,18 @@ export default function MapPanel({
       // metres, and without it a viewer has no way to tell whether the pins
       // are metres or kilometres apart.
       attributionControl: true,
+      // Off, deliberately, and this is a demo-day decision rather than a
+      // preference. The dashboard is taller than a 1280x-something projector,
+      // so the page scrolls — and a Leaflet map swallows the wheel events that
+      // would have scrolled it, zooming instead. Measured: one wheel tick with
+      // the cursor over the panel moves the map a full zoom level, and a few
+      // ticks put the survivors off-screen entirely. On stage that is someone
+      // scrolling down to the priority queue and arriving at an empty map they
+      // now have to fix in front of judges.
+      //
+      // The +/- control and drag-to-pan are untouched, so nothing is actually
+      // lost: zooming is still available, it just cannot happen by accident.
+      scrollWheelZoom: false,
     })
 
     L.control.scale({ imperial: false }).addTo(map)
@@ -130,16 +146,23 @@ export default function MapPanel({
       attribution: TILE_ATTRIBUTION,
     })
 
-    let anyTileLoaded = false
-    tiles.on('tileload', () => {
-      anyTileLoaded = true
-      setTilesFailed(false)
+    // Reported per VIEW, not latched for the session. The tiles are a bundled
+    // box now, so a gap is no longer only the offline case it used to be —
+    // panning or zooming past the edge of the bundle is the ordinary way to
+    // find one, and it must be recoverable: pan back inside and the banner has
+    // to go away again. So the count resets when Leaflet starts loading a
+    // view and is judged when it finishes.
+    //
+    // `load` fires once the visible tiles are settled, errors included, which
+    // is why this does not flicker on every individual 404 during a pan.
+    let errorsThisView = 0
+    tiles.on('loading', () => {
+      errorsThisView = 0
     })
-    // A single failed tile at the edge of the viewport is normal. Nothing
-    // loading at all is not — that is the offline case worth reporting.
     tiles.on('tileerror', () => {
-      if (!anyTileLoaded) setTilesFailed(true)
+      errorsThisView += 1
     })
+    tiles.on('load', () => setTilesMissing(errorsThisView > 0))
 
     tiles.addTo(map)
 
@@ -172,10 +195,15 @@ export default function MapPanel({
       let marker = markers.get(survivor.track_id)
 
       if (!marker) {
+        // Leaflet writes these as SVG presentation attributes, which do not
+        // resolve `var()` — so the token is read for its computed value here
+        // rather than referenced. tokens.css is still the only place it is
+        // written down. See theme.js.
+        const survivorColor = token(SURVIVOR)
         marker = L.circleMarker([survivor.latitude, survivor.longitude], {
           radius: MARKER_RADIUS,
-          color: COLORS.survivor,
-          fillColor: COLORS.survivor,
+          color: survivorColor,
+          fillColor: survivorColor,
         })
         marker.on('click', () => onSelectTrackRef.current(survivor.track_id))
         bindTrackTooltip(
@@ -217,6 +245,9 @@ export default function MapPanel({
   // header's disagree with what is on screen, and would also make the map jump
   // as pins appeared.
   useEffect(() => {
+    const survivorColor = token(SURVIVOR)
+    const haloColor = token(SELECTION_HALO)
+
     for (const survivor of survivors ?? []) {
       const marker = markersRef.current.get(survivor.track_id)
       if (!marker) continue
@@ -228,8 +259,12 @@ export default function MapPanel({
         radius: selected ? MARKER_RADIUS_SELECTED : MARKER_RADIUS,
         weight: selected ? 3 : 2,
         opacity: discovered ? 1 : 0.5,
-        color: selected ? '#ffffff' : COLORS.survivor,
-        fillColor: COLORS.survivor,
+        // The selected pin is ringed in ink, not in a ramp colour: those mean
+        // rank, and a pin that turned orange when it was clicked would read as
+        // a change in priority. Not cyan either — a cyan ring around a cyan
+        // circle carries nothing.
+        color: selected ? haloColor : survivorColor,
+        fillColor: survivorColor,
         fillOpacity: discovered ? 0.85 : 0.15,
       })
       if (selected) marker.bringToFront()
@@ -250,17 +285,15 @@ export default function MapPanel({
   }, [survivors, selectedTrackId])
 
   return (
-    <section className="flex flex-col">
-      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-          Survivor map
-        </h2>
+    <section className="flex h-full min-h-0 flex-col">
+      <div className="mb-2 flex shrink-0 flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h2 className="eyebrow">Survivor map</h2>
         {/* Deliberately NOT "N of M located". Every tracked survivor has a
             position; this is how many the clip has reached by the current
             frame, which is the header's "survivors tracked" figure and the
             same prop. "Located" invited the reading that localization had
             failed for the rest. */}
-        <span className="text-[11px] tabular-nums text-slate-500">
+        <span className="figure text-eyebrow text-ink-muted">
           {survivorsError
             ? 'positions unavailable'
             : survivorsSoFar === null
@@ -274,19 +307,40 @@ export default function MapPanel({
           this banner would have to fight; a banner stacked under a "+" button
           hides the very word that says what is wrong. Taking a row costs a
           line of vertical space only when the tiles have actually failed. */}
-      {tilesFailed && (
-        <div className="mb-2 rounded-md border border-amber-900/60 bg-amber-950/30 px-3 py-2 text-[11px] leading-relaxed text-amber-300">
-          Map tiles unreachable — survivor positions are still plotted, the base
-          map is not.
+      {tilesMissing && (
+        <div className="mb-2 shrink-0 rounded-md border border-edge bg-surface-2 px-3 py-2 text-eyebrow leading-relaxed text-ink-soft">
+          Map tiles unavailable for this view — survivor positions are still
+          plotted, the base map is not. Tiles are cached on disk for the search
+          area only; positions do not come from the tile server.
         </div>
       )}
 
-      <div className="relative isolate overflow-hidden rounded-lg border border-slate-800">
-        <div ref={containerRef} className="h-[24rem] w-full bg-slate-900" />
+      {/* The map takes whatever height the row has left rather than a fixed
+          24rem: the four operational panels have to fit above the fold at
+          1280×720, so the row's height is the budget and the map is sized from
+          it. Leaflet is already watched by a ResizeObserver that calls
+          invalidateSize, so it re-tiles correctly at any size this produces. */}
+      <div className="relative isolate min-h-0 flex-1 overflow-hidden rounded-lg border border-edge">
+        <div ref={containerRef} className="h-full w-full bg-surface-1" />
+
+        {/* Loading. The base map is already drawn underneath — this covers only
+            the claim about survivors, because an empty map with no pins and no
+            message reads as "no survivors found", which is a different and
+            much worse statement than "not known yet". */}
+        {survivors === null && !survivorsError && (
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-surface-1/90 px-6 text-center">
+            <div className="skeleton h-2 w-40" />
+            <p className="text-fine text-ink-muted">Loading survivor positions…</p>
+          </div>
+        )}
 
         {survivorsError && (
-          <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-950/85 px-6 text-center text-sm text-slate-400">
-            Could not load survivor positions — {survivorsError}
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-2 bg-surface-1/95 px-6 text-center">
+            <p className="text-body font-semibold text-ink">Positions unavailable</p>
+            <p className="text-fine text-ink-soft">{survivorsError}</p>
+            <p className="text-eyebrow text-ink-muted">
+              The clip and its detection overlay are unaffected.
+            </p>
           </div>
         )}
       </div>
@@ -294,19 +348,18 @@ export default function MapPanel({
       {/* The assumption behind every pin, stated on the panel rather than
           buried in the pitch. A judge asking "how do you know where they are?"
           should be able to read the answer off the screen. */}
-      <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+      <p className="mt-2 shrink-0 text-eyebrow leading-relaxed text-ink-muted">
         Positions derived from pixel offset at a fixed{' '}
-        <span className="tabular-nums text-slate-400">{config.altitude_m} m</span> altitude
+        <span className="figure text-ink-soft">{config.altitude_m} m</span> altitude
         and{' '}
-        <span className="tabular-nums text-slate-400">{config.camera_fov_deg}°</span> FOV
+        <span className="figure text-ink-soft">{config.camera_fov_deg}°</span> FOV
         over flat terrain, along an assumed constant-velocity track of{' '}
-        <span className="tabular-nums text-slate-400">{config.drone_speed_ms} m/s</span>{' '}
+        <span className="figure text-ink-soft">{config.drone_speed_ms} m/s</span>{' '}
         on heading{' '}
-        <span className="tabular-nums text-slate-400">{config.drone_heading_deg}°</span>.
-        No live telemetry — altitude, FOV and that track are per-clip constants.
-        Hollow markers are survivors the clip has not reached yet — they are
-        exactly the ones with no row in the priority queue below. Click a marker
-        or a table row to highlight that track in all three panels.
+        <span className="figure text-ink-soft">{config.drone_heading_deg}°</span>.
+        Per-clip constants, not live telemetry. Hollow markers are survivors the
+        clip has not reached yet — exactly the ones with no row in the priority
+        queue. Click a marker or a row to highlight that track in all three panels.
       </p>
     </section>
   )

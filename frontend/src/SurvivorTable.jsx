@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { COLORS, priorityBand } from './config.js'
+import { paint, priorityBand } from './config.js'
 
 /**
  * The ranked survivor list — one row per de-duplicated person.
@@ -20,14 +20,22 @@ import { COLORS, priorityBand } from './config.js'
  * `onSelectTrack` a map marker click calls, with the same toggle-to-clear
  * behaviour, so a row, a pin and a bounding box are three views of one
  * selection rather than three things that need keeping in step.
+ *
+ * Every number in here is a `.figure`, `.score`, `.coord` or a `td.num` —
+ * the class hooks tokens.css defines, which is what puts `--font-data` and
+ * `tabular-nums` on them. A proportional digit in a coordinate column makes
+ * the decimal points wander, and a column of coordinates whose points do not
+ * line up cannot be scanned at all.
  */
 
 /** Column header cell. Sticky, so the columns stay named while the list scrolls. */
-function Th({ children }) {
+function Th({ children, numeric = false }) {
   return (
     <th
       scope="col"
-      className="sticky top-0 z-10 whitespace-nowrap bg-slate-900 px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400"
+      className={`sticky top-0 z-10 border-b border-edge bg-surface-2 px-3 py-2 text-eyebrow font-semibold tracking-wider whitespace-nowrap text-ink-muted uppercase ${
+        numeric ? 'text-right' : 'text-left'
+      }`}
     >
       {children}
     </th>
@@ -37,33 +45,46 @@ function Th({ children }) {
 /**
  * The priority cell: a swatch, the score, and the band's name in words.
  *
- * The word is not optional. Colour alone is unreadable to anyone with a colour
- * vision deficiency and unreliable on a projector at the back of a room, so
- * the ramp always carries its label (CLAUDE.md's dashboard review, and the
- * reason survivor cyan never appears in this column — cyan means survivor, and
- * every row here is one).
+ * The word is not optional. The four steps are an ORDINAL RAMP — one hue,
+ * monotone light to dark — which is what makes the ordering survivable for a
+ * viewer with a colour vision deficiency, but a ramp still only tells you
+ * "darker than that one", never which band this is. Colour alone is also
+ * unreliable on a projector at the back of a room. So the label is always
+ * rendered beside the swatch, never the swatch on its own.
+ *
+ * Survivor cyan never appears in this column. Cyan means "this is a
+ * detection", and every row here is one — colouring priority in it would say
+ * nothing, and using it for one band would break its meaning everywhere else.
  */
 function PriorityCell({ survivor }) {
   const band = priorityBand(survivor.priority_band)
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2.5">
       <span
         aria-hidden="true"
-        className="h-2.5 w-2.5 shrink-0 rounded-sm"
+        className="h-3 w-3 shrink-0 rounded-sm"
         style={{ backgroundColor: band.color }}
       />
-      <span className="w-9 text-right font-semibold tabular-nums text-slate-100">
+      <span className="score w-9 text-right font-semibold text-ink">
         {survivor.priority.toFixed(2)}
       </span>
-      <span
-        className="text-[11px] font-semibold uppercase tracking-wide"
-        style={{ color: band.color }}
-      >
-        {band.label}
-      </span>
+      <span className="w-16 text-fine font-semibold text-ink-soft">{band.label}</span>
     </div>
   )
+}
+
+/** Placeholder rows while the roster is in flight. */
+function SkeletonRows() {
+  return Array.from({ length: 4 }, (_, i) => (
+    <tr key={i} className="border-t border-edge-soft">
+      {Array.from({ length: 6 }, (__, j) => (
+        <td key={j} className="px-3 py-2.5">
+          <div className="skeleton h-3" style={{ width: j === 0 ? '9rem' : '4rem' }} />
+        </td>
+      ))}
+    </tr>
+  ))
 }
 
 /**
@@ -105,14 +126,12 @@ export default function SurvivorTable({
   const rows = survivors ?? []
 
   return (
-    <section className="flex flex-col">
-      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-          Survivor priority queue
-        </h2>
+    <section className="flex h-full min-h-0 flex-col">
+      <div className="mb-2 flex shrink-0 flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h2 className="eyebrow">Survivor priority queue</h2>
         {/* Same prop as the rows and as the header's survivor count. Not a
             separate tally that has to be checked against them. */}
-        <span className="text-[11px] tabular-nums text-slate-500">
+        <span className="figure text-eyebrow text-ink-muted">
           {survivorsError
             ? 'unavailable'
             : survivors === null
@@ -121,31 +140,42 @@ export default function SurvivorTable({
         </span>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-slate-800">
+      {/* The list takes the row's leftover height and scrolls inside it. The
+          ramp legend and the scoring formula that used to sit under here are
+          reference material an operator reads once, so they moved below the
+          fold — this panel changes while the clip plays and has to stay whole
+          and on screen. The band's name is still spelled out on every row, so
+          nothing here depends on the legend being visible. */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-edge">
         {survivorsError ? (
-          <p className="px-4 py-6 text-center text-sm text-slate-400">
-            Could not load the survivor list — {survivorsError}
-          </p>
+          <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
+            <p className="text-body font-semibold text-ink">Survivor list unavailable</p>
+            <p className="text-fine text-ink-soft">{survivorsError}</p>
+            <p className="text-eyebrow text-ink-muted">
+              Rescue order cannot be shown without it. The clip, the detection
+              overlay and the per-frame count above are unaffected.
+            </p>
+          </div>
         ) : (
-          <div ref={scrollRef} className="max-h-[22rem] overflow-y-auto">
-            <table className="w-full border-collapse text-sm">
+          <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
+            <table className="w-full border-collapse text-fine">
               <thead>
                 <tr>
                   <Th>Priority</Th>
                   <Th>Track</Th>
                   <Th>First seen</Th>
-                  <Th>Confidence</Th>
-                  <Th>Latitude</Th>
-                  <Th>Longitude</Th>
+                  <Th numeric>Confidence</Th>
+                  <Th numeric>Latitude</Th>
+                  <Th numeric>Longitude</Th>
                 </tr>
               </thead>
               <tbody>
-                {rows.length === 0 && (
+                {survivors === null && <SkeletonRows />}
+
+                {survivors !== null && rows.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-6 text-center text-slate-500">
-                      {survivors === null
-                        ? 'Loading survivor positions…'
-                        : 'No survivors found yet — rows appear as the clip reaches them.'}
+                    <td colSpan={6} className="px-4 py-8 text-center text-ink-muted">
+                      No survivors found yet — rows appear as the clip reaches them.
                     </td>
                   </tr>
                 )}
@@ -166,16 +196,16 @@ export default function SurvivorTable({
                         }
                       }}
                       // The selected row is marked in survivor cyan, matching
-                      // the map pin and the bounding box. The priority colours
-                      // in the first column are never borrowed for this: they
-                      // mean escalation, and a row that turned orange because
-                      // it was clicked would read as a change in priority.
-                      className={`cursor-pointer border-t border-slate-800/80 outline-none transition-colors ${
-                        selected ? 'bg-slate-800/80' : 'hover:bg-slate-900'
-                      } focus-visible:bg-slate-800`}
+                      // the map pin and the bounding box. The priority ramp in
+                      // the first column is never borrowed for this: those
+                      // colours mean rank, and a row that darkened because it
+                      // was clicked would read as a change in priority.
+                      className={`cursor-pointer border-t border-edge-soft outline-none transition-colors ${
+                        selected ? 'bg-surface-2' : 'hover:bg-surface-2/60'
+                      }`}
                       style={
                         selected
-                          ? { boxShadow: `inset 3px 0 0 0 ${COLORS.survivor}` }
+                          ? { boxShadow: `inset 3px 0 0 0 ${paint('--survivor')}` }
                           : undefined
                       }
                       // The whole breakdown, for the judge who asks about one
@@ -193,22 +223,22 @@ export default function SurvivorTable({
                       <td className="px-3 py-2">
                         <PriorityCell survivor={survivor} />
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2 font-semibold tabular-nums text-slate-200">
+                      <td className="num px-3 py-2 font-semibold whitespace-nowrap text-ink">
                         #{survivor.track_id}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2 tabular-nums text-slate-400">
+                      <td className="num px-3 py-2 whitespace-nowrap text-ink-soft">
                         frame {survivor.first_frame}
-                        <span className="ml-1.5 text-slate-600">
+                        <span className="ml-1.5 text-ink-muted">
                           {(survivor.first_frame / config.clip_fps).toFixed(1)} s
                         </span>
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2 tabular-nums text-slate-300">
+                      <td className="num px-3 py-2 text-right whitespace-nowrap text-ink-soft">
                         {survivor.confidence.toFixed(2)}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2 tabular-nums text-slate-300">
+                      <td className="coord px-3 py-2 text-right whitespace-nowrap text-ink-soft">
                         {survivor.latitude.toFixed(5)}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2 tabular-nums text-slate-300">
+                      <td className="coord px-3 py-2 text-right whitespace-nowrap text-ink-soft">
                         {survivor.longitude.toFixed(5)}
                       </td>
                     </tr>
@@ -220,46 +250,6 @@ export default function SurvivorTable({
         )}
       </div>
 
-      {/* The formula, on screen, in the numbers actually in force — they come
-          from /api/config, so changing backend/config.py changes this sentence.
-          A judge asking how the ranking works should be able to read the answer
-          rather than be told it. */}
-      <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
-        Priority is a weighted average of detection confidence (
-        <span className="tabular-nums text-slate-400">{config.weight_confidence}</span>),
-        cluster size — survivors within{' '}
-        <span className="tabular-nums text-slate-400">{config.cluster_radius_m} m</span> (
-        <span className="tabular-nums text-slate-400">{config.weight_cluster_size}</span>
-        ), and hazard proximity (
-        <span className="tabular-nums text-slate-400">
-          {config.weight_hazard_proximity}
-        </span>
-        ).{' '}
-        {config.hazard_count > 0 ? (
-          <>
-            Scored against{' '}
-            <span className="tabular-nums text-slate-400">{config.hazard_count}</span> known
-            hazard {config.hazard_count === 1 ? 'position' : 'positions'}.
-          </>
-        ) : (
-          <>
-            The hazard term is <span className="text-slate-400">not scored</span> — hazard
-            classification is Phase 2, so there is no hazard layer yet and the other two
-            weights are renormalised. That is not a claim that the area is clear.
-          </>
-        )}{' '}
-        Bands: <span style={{ color: COLORS.critical }}>critical</span> ≥{' '}
-        <span className="tabular-nums text-slate-400">
-          {config.priority_critical_at.toFixed(2)}
-        </span>
-        , <span style={{ color: COLORS.serious }}>serious</span> ≥{' '}
-        <span className="tabular-nums text-slate-400">
-          {config.priority_serious_at.toFixed(2)}
-        </span>
-        , <span style={{ color: COLORS.warning }}>warning</span> below that — there is no
-        &ldquo;clear&rdquo; band, because every row here is someone who still needs
-        reaching. Select a row to highlight that survivor on the map and in the video.
-      </p>
     </section>
   )
 }

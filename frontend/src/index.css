@@ -1,20 +1,212 @@
 @import "tailwindcss";
 
-/**
- * Leaflet ships a light-themed skin. These are the few pieces of it that would
- * otherwise sit as bright white rectangles on a dark dashboard. Kept here
- * rather than in MapPanel because they override Leaflet's own stylesheet and
- * need to load after it.
- */
+/* ═══════════════════════════════════════════════════════════════════
+   Tokens into Tailwind
+   ═══════════════════════════════════════════════════════════════════
+
+   `@theme inline` publishes the tokens in tokens.css as Tailwind utilities
+   WITHOUT copying their values: with `inline`, `bg-surface-1` compiles to
+   `background-color: var(--surface-1)`, so tokens.css stays the one place a
+   colour is written down and this file only gives it a class name.
+
+   That is what makes "no raw hex outside tokens.css" enforceable rather than
+   aspirational — a component says `text-ink-soft`, and there is no value here
+   for it to drift away from.
+
+   Type sizes are aliased to ROLE names rather than step numbers. `text-title`
+   survives someone inserting a step; `text-step-3` does not.
+
+   Spacing is deliberately absent. The token scale (4 / 8 / 12 / 16 / 24 / 32)
+   is already exactly Tailwind's 1 / 2 / 3 / 4 / 6 / 8, so re-exporting it
+   would create a second name for the same number and invite the two to
+   disagree. Components use the Tailwind numbers and get the token scale.       */
+
+@theme inline {
+  --color-surface-0:         var(--surface-0);
+  --color-surface-1:         var(--surface-1);
+  --color-surface-2:         var(--surface-2);
+
+  --color-edge:              var(--border);
+  --color-edge-soft:         var(--border-soft);
+
+  --color-ink:               var(--ink);
+  --color-ink-soft:          var(--ink-soft);
+  --color-ink-muted:         var(--ink-muted);
+
+  --color-survivor:          var(--survivor);
+  --color-survivor-dim:      var(--survivor-dim);
+
+  --color-priority-low:      var(--priority-low);
+  --color-priority-medium:   var(--priority-medium);
+  --color-priority-high:     var(--priority-high);
+  --color-priority-critical: var(--priority-critical);
+
+  --color-hazard:            var(--hazard);
+
+  --color-unmeasured-bg:     var(--unmeasured-bg);
+  --color-unmeasured-ink:    var(--unmeasured-ink);
+
+  /* Role names for the type scale in tokens.css. */
+  --text-eyebrow:            var(--step-0);
+  --text-fine:               var(--step-1);
+  --text-body:               var(--step-2);
+  --text-title:              var(--step-3);
+  --text-figure:             var(--step-4);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Base
+   ═══════════════════════════════════════════════════════════════════ */
+
+html {
+  background: var(--surface-0);
+}
+
+body {
+  background: var(--surface-0);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--step-2);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The eyebrow treatment from the token file's comment, applied once rather
+   than respelled as four utility classes on every panel heading. */
+.eyebrow {
+  font-size: var(--step-0);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+/* Keyboard focus. Survivor cyan is the selection colour on this dashboard and
+   focus is a kind of selection, so it is the honest choice here — it marks a
+   detection-related target, never text. */
+:where(a, button, input, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--survivor);
+  outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Playback scrubber
+   ═══════════════════════════════════════════════════════════════════
+
+   A range input cannot be styled through Tailwind utilities — the track and
+   the thumb are vendor pseudo-elements — so it is written out once here in
+   tokens. It is survivor cyan because it is a playback control and not a
+   priority reading; there is no priority meaning to misread from it.
+
+   Height is generous on purpose: this gets dragged in front of a room, on a
+   projector, by someone who is talking at the same time.                       */
+
+.scrub {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 20px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.scrub::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  /* Filled portion is painted with a gradient driven by --played, set inline
+     from the playback clock. One paint, no second element to keep in step. */
+  background: linear-gradient(
+    to right,
+    var(--survivor) 0 var(--played, 0%),
+    var(--surface-2) var(--played, 0%) 100%
+  );
+}
+
+.scrub::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(
+    to right,
+    var(--survivor) 0 var(--played, 0%),
+    var(--surface-2) var(--played, 0%) 100%
+  );
+}
+
+.scrub::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--survivor);
+  border: 2px solid var(--surface-0);
+}
+
+.scrub::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--survivor);
+  border: 2px solid var(--surface-0);
+}
+
+.scrub:disabled {
+  cursor: default;
+}
+
+.scrub:disabled::-webkit-slider-thumb {
+  background: var(--ink-muted);
+}
+
+.scrub:disabled::-moz-range-thumb {
+  background: var(--ink-muted);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Skeletons
+   ═══════════════════════════════════════════════════════════════════
+
+   A loading placeholder must not look like a value. These are the
+   "not-measured" tokens — deliberately colourless, so a panel that has not
+   loaded reads as absent rather than as a reading of zero.                     */
+
+.skeleton {
+  background: var(--unmeasured-bg);
+  border-radius: 4px;
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Leaflet skin
+   ═══════════════════════════════════════════════════════════════════
+
+   Leaflet ships a light-themed skin. These are the pieces of it that would
+   otherwise sit as bright white rectangles on a dark dashboard. Kept here
+   rather than in MapPanel because they override Leaflet's own stylesheet and
+   need to load after it.
+
+   Every colour is a token. The translucent panels use color-mix rather than a
+   hand-mixed rgba, so they follow the surface tokens instead of being a fifth
+   near-black that happens to look similar.                                     */
 
 /* Track labels beside each survivor marker. Cyan is the survivor colour and is
    never used as a text colour, so the label is a dark chip with a cyan edge —
    the colour still identifies it, the number stays readable. */
 .leaflet-tooltip.ares-track-tooltip {
-  background: rgb(2 6 23 / 0.85);
-  border: 1px solid #22d3ee;
-  color: #e2e8f0;
-  font-size: 11px;
+  background: color-mix(in srgb, var(--surface-0) 88%, transparent);
+  border: 1px solid var(--survivor);
+  color: var(--ink);
+  font-family: var(--font-data);
+  font-size: var(--step-0);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   padding: 1px 5px;
@@ -31,33 +223,47 @@
 /* Attribution is a licence requirement for OpenStreetMap tiles, so it stays —
    it is toned down, not removed. */
 .leaflet-container {
-  background: #0f172a;
-  font-family: inherit;
+  background: var(--surface-1);
+  font-family: var(--font-ui);
 }
 
 .leaflet-control-attribution {
-  background: rgb(2 6 23 / 0.75) !important;
-  color: #64748b !important;
+  background: color-mix(in srgb, var(--surface-0) 78%, transparent) !important;
+  color: var(--ink-muted) !important;
   font-size: 10px;
 }
 
 .leaflet-control-attribution a {
-  color: #94a3b8 !important;
+  color: var(--ink-soft) !important;
 }
 
 .leaflet-control-scale-line {
-  background: rgb(2 6 23 / 0.75);
-  border-color: #475569;
-  color: #cbd5e1;
+  background: color-mix(in srgb, var(--surface-0) 78%, transparent);
+  border-color: var(--border);
+  color: var(--ink-soft);
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The control's outer frame. Leaflet draws it as a translucent black outline,
+   which on a near-black surface is invisible on one side and a smudge on the
+   other. */
+/* `.leaflet-touch .leaflet-bar` is where the outline actually comes from, and
+   it outranks a bare `.leaflet-bar` on specificity — both selectors are listed
+   so the rule wins on touch and non-touch alike. */
+.leaflet-bar,
+.leaflet-touch .leaflet-bar {
+  border: 1px solid var(--border);
+  box-shadow: none;
 }
 
 .leaflet-bar a {
-  background: #1e293b;
-  color: #e2e8f0;
-  border-bottom-color: #334155;
+  background: var(--surface-1);
+  color: var(--ink-soft);
+  border-bottom-color: var(--border);
 }
 
 .leaflet-bar a:hover {
-  background: #334155;
-  color: #f1f5f9;
+  background: var(--surface-2);
+  color: var(--ink);
 }

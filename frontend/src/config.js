@@ -13,9 +13,20 @@
  *                     backend cannot be reached, and the header says so.
  *
  *   everything else — genuinely frontend-only: the palette, where the browser
- *                     loads the clip from, the tile server. The backend has no
- *                     opinion on these and never sends them.
+ *                     loads the clip from, where the backend lives. The backend
+ *                     has no opinion on these and never sends them.
  */
+
+/**
+ * Where the backend is.
+ *
+ * Lives here rather than in `api.js` because it is not only api.js's any more:
+ * the map's tile URL is built from it too, since the tiles are served by the
+ * same FastAPI process. One definition, so pointing the dashboard at a
+ * different host moves the data and the base map together instead of leaving
+ * the map fetching tiles from a server that is no longer there.
+ */
+export const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000'
 
 /**
  * Clip and camera constants, used ONLY when `/api/config` is unreachable.
@@ -59,13 +70,41 @@
  *                        only. The conversion itself happens server-side; the
  *                        frontend never recomputes a position from them.
  *
+ *   ground_footprint_m   2 * H * tan(FOV/2) — the ground width one frame
+ *                        covers. DERIVED, and derived server-side by the same
+ *                        `ground_sample_distance` the survivor positions come
+ *                        out of, so the figure the mission-parameters panel
+ *                        prints is arithmetically the one the map pins were
+ *                        placed with. The fallback below is that formula
+ *                        evaluated at the fallback altitude and FOV.
+ *
+ *   device_fps,          Measured inference throughput on the target device,
+ *   device_name          and the device it refers to. `null` means exactly
+ *                        that: nobody has run the benchmark yet. The
+ *                        mission-parameters panel shows a dash and "not yet
+ *                        measured" rather than a number — an invented FPS
+ *                        figure is the kind of thing one follow-up question
+ *                        destroys. It comes from the backend like every other
+ *                        constant, so the real measurement lands on screen by
+ *                        editing `backend/config.py` and nothing else.
+ *
  *   weight_*,            The priority formula's weights, cluster radius and
- *   cluster_radius_m,    band thresholds. The survivor table prints the actual
- *   priority_*_at        formula from these, so a judge reading the screen sees
+ *   cluster_radius_m,    the three cuts of the four-band ramp. The survivor
+ *   priority_*_at        table prints the actual formula from these, so a
+ *                        judge reading the screen sees
  *                        the arithmetic that ran rather than a caption someone
  *                        forgot to update. The scoring itself is server-side in
  *                        `backend/priority.py`; the frontend never recomputes a
  *                        score, it only explains one.
+ *
+ *   event_sample_        How often the mission event log re-assesses every
+ *   interval_s           survivor's priority, in seconds of playback. The log
+ *                        panel prints this in its disclosure line, so what a
+ *                        judge reads is the cadence that actually ran. It is a
+ *                        sampling rate, not smoothing: re-scoring every frame
+ *                        floods the log with tracks flickering across a band
+ *                        threshold on detector confidence noise. See
+ *                        EVENT_SAMPLE_INTERVAL_S in backend/config.py.
  *
  *   hazard_count         How many known hazard positions the backend scored
  *                        against. 0 is the honest current state — hazard
@@ -85,13 +124,18 @@ export const FALLBACK_CONFIG = {
   origin_lon: 91.7362,
   drone_speed_ms: 5.0,
   drone_heading_deg: 45.0,
+  ground_footprint_m: 23.094010767585026,
+  device_fps: null,
+  device_name: 'Raspberry Pi 4 Model B',
   weight_confidence: 0.4,
   weight_cluster_size: 0.3,
   weight_hazard_proximity: 0.3,
   cluster_radius_m: 15.0,
   hazard_count: 0,
-  priority_serious_at: 0.45,
-  priority_critical_at: 0.7,
+  event_sample_interval_s: 1.0,
+  priority_medium_at: 0.25,
+  priority_high_at: 0.5,
+  priority_critical_at: 0.75,
 }
 
 /**
@@ -103,101 +147,142 @@ export const FALLBACK_CONFIG = {
 export const CLIP_SRC = '/demo_clip.mp4'
 
 /**
- * The dashboard palette.
+ * The dashboard palette lives in `tokens.css`, not here.
  *
- * Survivors get their own colour and it is deliberately not red: red already
- * means "hazard" and "critical priority" (CLAUDE.md, dashboard requirements).
+ * Nothing in this file holds a colour value. These are token NAMES, and the
+ * rule the whole frontend follows is that a hex literal appears in exactly one
+ * file: components reference a role, and the role is defined once. That is not
+ * tidiness — the token file's values were measured against a validator for
+ * lightness monotonicity, step separation and colour-vision-deficiency
+ * distance, and a hex copied into a component is a value that silently stops
+ * being the measured one.
  *
- * `survivor` marks survivors and nothing else — bounding boxes, map pins, the
- * dot beside the survivor count. It is never used as a text colour, because a
- * cyan number reads as a category rather than a value and the whole point of
- * the colour is that it means one specific thing.
+ * Two roles matter most and they are deliberately kept apart:
  *
- * The other four are status colours, ordered by escalation. They apply to
- * priority and hazard state, never to survivors.
+ *   `--survivor`     marks survivor DETECTIONS and nothing else — bounding
+ *                    boxes, map pins, the selected row's edge, the playback
+ *                    scrubber. Never a text colour and never a priority band:
+ *                    a cyan number reads as a category rather than a value,
+ *                    and every row in the survivor table is a survivor, so
+ *                    colouring priority in cyan would say nothing.
+ *
+ *   `--priority-*`   the four steps of the ordinal ramp below. One hue,
+ *                    monotone light to dark. They mean rank, not status.
  */
-export const COLORS = {
-  survivor: '#22d3ee', // cyan — survivor marks ONLY, never text
-  good: '#4ade80', // status: clear / rescued
-  warning: '#fbbf24', // status: medium priority
-  serious: '#fb923c', // status: high priority
-  critical: '#f87171', // status: hazard, critical priority
+
+/** CSS `var()` reference for a token name, for inline styles. */
+export function paint(tokenName) {
+  return `var(${tokenName})`
 }
 
-/** Survivor overlay colours, drawn on the video canvas. */
-export const SURVIVOR_COLOR = COLORS.survivor
-export const SURVIVOR_LABEL_TEXT = '#04212b'
+/** Survivor overlay colour tokens, resolved for canvas in `theme.js`. */
+export { SURVIVOR as SURVIVOR_TOKEN, ON_SURVIVOR as SURVIVOR_LABEL_TOKEN } from './theme.js'
 
 /**
  * The priority ramp: how `Survivor.priority_band` is rendered.
  *
- * Three bands, escalating, taken straight from the status colours above. There
- * is no fourth "clear" band — the backend never emits one, because the
- * lowest-priority person in a disaster zone still needs rescuing and a green
- * row would tell an operator otherwise.
+ * An ORDINAL RAMP, not four status colours. The four steps are one hue
+ * darkening monotonically, so the ordering survives a projector, a photocopy
+ * and a viewer with a colour vision deficiency. The previous version was a
+ * green-amber-orange-red rainbow, which failed twice over: a rainbow for
+ * ordered data, and a red-green ramp that collapses for roughly 8% of men.
+ * See the note at the top of tokens.css for the measurements.
  *
- * Survivor cyan is deliberately absent. Cyan means "this is a survivor" and
- * every row in the table is one, so colouring a row by priority in cyan would
- * say nothing; using it for one band would break its meaning everywhere else.
+ * `step` is the rank, 1 lowest. It is what the ramp legend and the swatch
+ * stack are drawn from, so the visual order comes from the data rather than
+ * from the order someone happened to type the keys in.
  *
  * The `label` is not decoration. Colour alone excludes anyone with a colour
- * vision deficiency and anyone reading a projector at the back of a room, so
- * the word is always rendered beside the swatch — never the swatch on its own.
+ * vision deficiency and anyone reading a projector from the back of a room, so
+ * the word is ALWAYS rendered beside the swatch — never the swatch on its own.
+ *
+ * There is no "clear" band. `low` is the bottom of the ramp, drawn in a pale
+ * alarm colour rather than a green, because the lowest-priority person in a
+ * disaster zone still needs rescuing.
  */
 export const PRIORITY_BANDS = {
-  warning: { color: COLORS.warning, label: 'Warning' },
-  serious: { color: COLORS.serious, label: 'Serious' },
-  critical: { color: COLORS.critical, label: 'Critical' },
+  low: { step: 1, token: '--priority-low', label: 'Low' },
+  medium: { step: 2, token: '--priority-medium', label: 'Medium' },
+  high: { step: 3, token: '--priority-high', label: 'High' },
+  critical: { step: 4, token: '--priority-critical', label: 'Critical' },
+}
+
+/** The ramp in rank order, lowest first. Legends read this, never the object. */
+export const PRIORITY_RAMP = Object.entries(PRIORITY_BANDS)
+  .map(([name, band]) => ({ name, ...band }))
+  .sort((a, b) => a.step - b.step)
+
+/**
+ * Band names this frontend understands but the backend no longer emits.
+ *
+ * The ramp used to be three status bands. If an older `backend/priority.py`
+ * is running — Robin's version of that module is still to land, and it may be
+ * branched from before the rename — the dashboard renders the right step
+ * instead of falling through to "Unknown". Cheap insurance against a mismatch
+ * discovered on stage.
+ */
+const LEGACY_BANDS = {
+  warning: 'medium',
+  serious: 'high',
 }
 
 /**
  * Render details for a band string, tolerating one this build does not know.
  *
- * If the backend gains a band the frontend has not been taught, the row shows
- * the raw name in the lowest style rather than rendering a blank cell — an
- * unknown priority must still be visible.
+ * An unrecognised band shows its raw name at the TOP of the ramp, not the
+ * bottom. Getting this wrong in the safe-looking direction would quietly rank
+ * someone last because a string did not match; erring upward is the failure a
+ * search-and-rescue dashboard should have.
  */
 export function priorityBand(band) {
-  return PRIORITY_BANDS[band] ?? { color: COLORS.warning, label: band ?? 'Unknown' }
+  const key = PRIORITY_BANDS[band] ? band : LEGACY_BANDS[band]
+  const known = PRIORITY_BANDS[key]
+  if (known) return { ...known, name: key, color: paint(known.token) }
+  return {
+    step: PRIORITY_BANDS.critical.step,
+    token: PRIORITY_BANDS.critical.token,
+    color: paint(PRIORITY_BANDS.critical.token),
+    label: band ?? 'Unknown',
+    name: band ?? 'unknown',
+  }
 }
 
 /**
- * Measured inference throughput on the target device.
+ * Map tiles — served by the backend from disk, not fetched from the internet.
  *
- * `null` means exactly that: nobody has run the benchmark yet. The header
- * renders a dash and says "not yet measured" rather than showing a number,
- * because an invented FPS figure on a dashboard a judge is reading is the kind
- * of thing one follow-up question destroys. Set this to the real measurement
- * once `ai/` produces one — the header picks it up with no other change.
+ * Demo-day constraint 3 in CLAUDE.md: tiles need internet and venue wifi
+ * fails. `tools/fetch_tiles.py` downloads the OpenStreetMap tiles covering the
+ * demo area into `backend/data/tiles/`, and `GET /tiles/{z}/{x}/{y}.png`
+ * serves them. Nothing on the map's path leaves the machine on demo day.
  *
- * This lives here rather than coming from the backend because the dashboard
- * has to work with the backend switched off (CLAUDE.md, demo-day constraint 2).
- * It must stay in step with whatever the benchmark records.
- */
-export const DEVICE_FPS = null
-export const DEVICE_NAME = 'Raspberry Pi 4 Model B'
-
-/**
- * Map tiles.
+ * Still OpenStreetMap, so still no API key (constraint 4), and still OSM's
+ * data — the attribution stays and says the tiles are a local cache.
  *
- * OpenStreetMap needs no API key (CLAUDE.md, demo-day constraint 4). It does
- * need internet, which venue wifi may not provide — the map panel detects
- * failing tiles and says so on screen rather than showing a silent grey void.
- * Before 5 September this should point at a cached tile set or a static
- * georeferenced image; that swap is a change to these two lines and nothing
- * else.
+ * The banner in MapPanel does not go away, it changes meaning: it used to
+ * report a dead network, and now reports a view outside the bundled box. Both
+ * are the same fact on screen — pins are still plotted, the base map is not —
+ * so the panel needs no change. Zooming or panning far enough gets 404s from
+ * the backend and the banner appears, which is the honest signal that the
+ * cache has run out rather than that the map is broken.
+ *
+ * One thing this trades away: with the backend switched off there are now no
+ * tiles at all, where before an internet connection would have supplied them.
+ * That is the demo-day shape on purpose — the venue is likelier to lose wifi
+ * than the laptop is to lose its own uvicorn — but constraint 2's
+ * backend-off path is a pin-only map, and the banner is what says so.
  *
  * The two zoom ceilings are not the same number and the difference matters.
- * OSM renders no tiles past zoom 19, but at 20 m altitude the camera covers
- * only about 23 m of ground — at zoom 19 that entire search area is some 70 px
- * wide and nine survivors land on top of each other. MAX_NATIVE_ZOOM stops
- * Leaflet requesting tiles that do not exist; MAX_ZOOM lets it keep zooming
- * past that by upscaling the last real tile. The base map goes soft, which is
- * the honest signal that it has run out of detail while the survivor positions
- * have not.
+ * OSM renders no tiles past zoom 19, so nothing past 19 was ever fetched;
+ * meanwhile at 20 m altitude the camera covers only about 23 m of ground, so
+ * at zoom 19 that entire search area is some 70 px wide and nine survivors
+ * land on top of each other. MAX_NATIVE_ZOOM stops Leaflet requesting tiles
+ * that do not exist; MAX_ZOOM lets it keep zooming past that by upscaling the
+ * last real tile. The base map goes soft, which is the honest signal that it
+ * has run out of detail while the survivor positions have not.
  */
-export const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-export const TILE_ATTRIBUTION = '&copy; OpenStreetMap contributors'
+export const TILE_URL = `${API_BASE}/tiles/{z}/{x}/{y}.png`
+export const TILE_ATTRIBUTION =
+  '&copy; OpenStreetMap contributors &middot; tiles cached locally'
 export const MAP_MAX_NATIVE_ZOOM = 19
 export const MAP_MAX_ZOOM = 22
 export const MAP_DEFAULT_ZOOM = 20

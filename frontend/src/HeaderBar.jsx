@@ -1,5 +1,3 @@
-import { COLORS, DEVICE_FPS, DEVICE_NAME } from './config.js'
-
 /**
  * The dashboard's top status bar.
  *
@@ -7,41 +5,68 @@ import { COLORS, DEVICE_FPS, DEVICE_NAME } from './config.js'
  * cannot drift out of step with the video, the map or the survivor table. This
  * component computes nothing — it is handed the numbers.
  *
- * `tabular-nums` is on every figure. Without it the proportional digits shift
- * width as the count changes and the whole bar twitches while the clip plays,
- * which reads as instability in a dashboard whose job is to look trustworthy.
+ * Two rows, and the split is a layout decision made for 1280px, which is
+ * projector resolution and the only width that actually has to work. Six stat
+ * cells in one strip needed about 1250px before they wrapped into a ragged
+ * second line; an identity row above three wide stat cells holds at 1280 with
+ * room to spare and puts the numbers that change during playback on their own
+ * baseline, where the eye can find them from the back of a room.
+ *
+ * It is also kept THIN, because it is row one of four and the other three have
+ * to fit under it at 1280×720 without scrolling. App measures this bar and
+ * hands the rest of the viewport to the operational panels, so a loose line of
+ * padding here is a row the survivor queue does not get.
+ *
+ * Every figure carries `.figure` from tokens.css, which is what puts
+ * `--font-data` and `tabular-nums` on it. Without that the proportional digits
+ * shift width as counts change and the whole bar twitches while the clip
+ * plays, which reads as instability in a dashboard whose job is to look
+ * trustworthy.
  */
 
-/** One cell of the bar. `mark` is an optional colour swatch beside the label. */
-function Stat({ label, sublabel, mark, children }) {
+/** Small caps label above a value. */
+function Label({ mark, children }) {
   return (
-    <div className="flex-1 px-5 py-3 min-w-[11rem]">
-      <div className="flex items-center gap-1.5">
-        {mark && (
-          <span
-            aria-hidden="true"
-            className="h-2 w-2 shrink-0 rounded-sm"
-            style={{ backgroundColor: mark }}
-          />
-        )}
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-          {label}
-        </span>
-      </div>
-
-      <div className="mt-1">{children}</div>
-
-      <div className="mt-0.5 text-[11px] tabular-nums text-slate-500">{sublabel}</div>
+    <div className="flex items-center gap-1.5">
+      {mark && (
+        <span
+          aria-hidden="true"
+          className="h-2 w-2 shrink-0 rounded-sm bg-survivor"
+        />
+      )}
+      <span className="eyebrow">{children}</span>
     </div>
   )
 }
 
-/** A large figure. Slate, never a status colour — the colours carry meaning. */
+/**
+ * One cell of the stat strip.
+ *
+ * Padding and internal margins are deliberately tight. This bar is row one of a
+ * layout whose other three rows have to fit in the same 720px, and every pixel
+ * it takes comes straight out of the survivor queue's row count. The figure
+ * itself is NOT shrunk to pay for that — it is the number someone reads from
+ * the back of a room, and 34px is what makes that work.
+ */
+function Stat({ label, sublabel, mark, children }) {
+  return (
+    <div className="flex-1 border-l border-edge-soft px-4 py-2 first:border-l-0">
+      <Label mark={mark}>{label}</Label>
+      <div className="mt-1">{children}</div>
+      <div className="figure mt-0.5 text-eyebrow text-ink-muted">{sublabel}</div>
+    </div>
+  )
+}
+
+/**
+ * A large figure. Ink, never a ramp colour — the priority ramp means rank and
+ * survivor cyan means "this is a detection", and a count is neither.
+ */
 function Figure({ children, muted = false }) {
   return (
     <span
-      className={`text-3xl font-semibold leading-none tabular-nums ${
-        muted ? 'text-slate-600' : 'text-slate-100'
+      className={`figure text-figure leading-none font-semibold ${
+        muted ? 'text-ink-muted' : 'text-ink'
       }`}
     >
       {children}
@@ -49,16 +74,36 @@ function Figure({ children, muted = false }) {
   )
 }
 
-/** A small caps pill, tinted by a palette colour. */
-function Pill({ color, children }) {
+/**
+ * A small caps pill for a caveat.
+ *
+ * Deliberately drawn in the "not measured" tokens rather than a ramp step. A
+ * pill saying "not yet measured" in an alarm colour would read as a priority
+ * reading; the token file's answer to an unmeasured value is that it should
+ * look absent, not like a state.
+ */
+function Caveat({ children }) {
   return (
-    <span
-      className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
-      style={{ color, backgroundColor: `${color}1f` }}
-    >
+    <span className="inline-flex items-center rounded bg-unmeasured-bg px-1.5 py-0.5 text-eyebrow font-semibold tracking-wide text-unmeasured-ink uppercase">
       {children}
     </span>
   )
+}
+
+/**
+ * Today, as the mission date.
+ *
+ * Computed rather than written down. A placeholder date is stale the day after
+ * someone types it and reads as an unfinished dashboard (CLAUDE.md's design
+ * review says exactly this), and there is no date this could be other than the
+ * day it is being run.
+ */
+function missionDate() {
+  return new Date().toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
 }
 
 /**
@@ -74,8 +119,15 @@ function Pill({ color, children }) {
  * @param {object=} props.selectedSurvivor    the survivor selected on the map
  * @param {number|null} props.selectedTrackId
  * @param {function} props.onClearSelection
+ * @param {function=} props.ref             App's callback ref. It measures this
+ *                                          bar and gives the operational block
+ *                                          exactly the rest of the viewport, so
+ *                                          the four live panels sit above the
+ *                                          fold. React 19 passes `ref` as an
+ *                                          ordinary prop; no forwardRef needed.
  */
 export default function HeaderBar({
+  ref,
   config,
   configOffline,
   frameDetectionCount,
@@ -85,40 +137,58 @@ export default function HeaderBar({
   selectedTrackId,
   onClearSelection,
 }) {
-  const fpsMeasured = DEVICE_FPS !== null
-
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/95 backdrop-blur">
-      <div className="flex flex-wrap items-stretch divide-x divide-slate-800">
-        <div className="flex items-center gap-3 px-5 py-3">
-          <span className="text-lg font-semibold tracking-tight text-slate-100">ARES</span>
-          <div className="hidden sm:block">
-            <span className="block text-[11px] leading-tight text-slate-500">
-              Adaptive Rescue
-              <br />
-              and Exploration System
-            </span>
-            {/* The dashboard renders whether or not the backend is up
-                (CLAUDE.md, demo-day constraint 2). When it is down the clip and
-                camera constants below come from the frontend's own copy, and
-                saying so is the difference between a resilient dashboard and
-                one quietly showing stale numbers. */}
-            {configOffline && (
-              <span className="mt-1 inline-block">
-                <Pill color={COLORS.warning}>offline · local constants</Pill>
-              </span>
-            )}
-          </div>
+    <header ref={ref} className="sticky top-0 z-50 border-b border-edge bg-surface-1">
+      {/* ── Identity row ──────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-edge-soft px-4 py-2">
+        <div className="flex items-baseline gap-2.5">
+          <span className="text-title leading-none font-bold tracking-tight text-ink">
+            ARES
+          </span>
+          <span className="hidden text-fine text-ink-muted sm:inline">
+            Adaptive Rescue and Exploration System
+          </span>
         </div>
 
+        <div className="flex items-baseline gap-2">
+          <span className="eyebrow">Mission date</span>
+          <span className="figure text-fine text-ink-soft">{missionDate()}</span>
+        </div>
+
+        <div className="ml-auto flex flex-wrap items-center gap-x-6 gap-y-2">
+          {/* Required on screen (CLAUDE.md, dashboard requirements). The
+              threshold is the reason for the mode, so it is printed next to
+              it rather than left as a claim. */}
+          <div className="flex items-baseline gap-2">
+            <span className="eyebrow">Detection mode</span>
+            <span className="text-fine font-semibold text-ink">High Recall</span>
+            <span className="figure text-eyebrow text-ink-muted">
+              confidence {config.confidence_threshold.toFixed(2)} and above
+            </span>
+          </div>
+
+          {/* On-device FPS is NOT here. It lives in the mission-parameters
+              panel with a provenance tag beside it, because the honest form of
+              that figure is "not yet measured" and a bare dash in the header
+              cannot carry that. Duplicating it would also mean two "not
+              measured" pills on one screen saying the same thing. */}
+
+          {/* The dashboard renders whether or not the backend is up
+              (CLAUDE.md, demo-day constraint 2). When it is down the clip and
+              camera constants come from the frontend's own copy, and saying so
+              is the difference between a resilient dashboard and one quietly
+              showing stale numbers. */}
+          {configOffline && <Caveat>offline · local constants</Caveat>}
+        </div>
+      </div>
+
+      {/* ── Stat strip ────────────────────────────────────────────── */}
+      <div className="flex flex-wrap">
         {/* Two counts, deliberately worded so they cannot be read as the same
             thing: one is per-frame and raw, the other is cumulative and
-            de-duplicated. The first mockup's worst flaw was a header count that
-            disagreed with the table below it. */}
-        <Stat
-          label="Raw detections"
-          sublabel="this frame · before de-duplication"
-        >
+            de-duplicated. The first mockup's worst flaw was a header count
+            that disagreed with the table below it. */}
+        <Stat label="Raw detections" sublabel="this frame · before de-duplication">
           <Figure>{frameDetectionCount}</Figure>
         </Stat>
 
@@ -137,7 +207,7 @@ export default function HeaderBar({
               ? 'survivor list unavailable'
               : `unique IDs so far · ${survivorsInClip} in full clip`
           }
-          mark={COLORS.survivor}
+          mark
         >
           <Figure muted={survivorsSoFar === null}>
             {survivorsSoFar === null ? '—' : survivorsSoFar}
@@ -155,7 +225,7 @@ export default function HeaderBar({
               ? `${selectedSurvivor.latitude.toFixed(5)}, ${selectedSurvivor.longitude.toFixed(5)}`
               : 'click a map marker or a table row'
           }
-          mark={selectedTrackId !== null ? COLORS.survivor : undefined}
+          mark={selectedTrackId !== null}
         >
           <div className="flex items-center gap-2">
             <Figure muted={selectedTrackId === null}>
@@ -165,33 +235,12 @@ export default function HeaderBar({
               <button
                 type="button"
                 onClick={onClearSelection}
-                className="rounded border border-slate-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400 hover:border-slate-500 hover:text-slate-200"
+                className="rounded border border-edge px-1.5 py-0.5 text-eyebrow font-semibold tracking-wide text-ink-soft uppercase hover:border-ink-muted hover:text-ink"
               >
                 clear
               </button>
             )}
           </div>
-        </Stat>
-
-        {/* Honest by construction: no benchmark has been run, so no number is
-            shown. See DEVICE_FPS in config.js. */}
-        <Stat
-          label="On-device FPS"
-          sublabel={DEVICE_NAME}
-        >
-          <div className="flex items-center gap-2">
-            <Figure muted={!fpsMeasured}>{fpsMeasured ? DEVICE_FPS.toFixed(1) : '—'}</Figure>
-            {!fpsMeasured && <Pill color={COLORS.warning}>not yet measured</Pill>}
-          </div>
-        </Stat>
-
-        <Stat
-          label="Detection mode"
-          sublabel={`confidence ≥ ${config.confidence_threshold.toFixed(2)} · recall over precision`}
-        >
-          <span className="text-xl font-semibold leading-none text-slate-100">
-            High Recall
-          </span>
         </Stat>
       </div>
     </header>

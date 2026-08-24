@@ -1,0 +1,94 @@
+/* ═══════════════════════════════════════════════════════════════════
+   ARES — design tokens
+   Validated with the dataviz palette checker, dark surface #0B1013.
+   Do not substitute values by eye — re-run the validator if you change one.
+
+   Two things changed from the first pass and both were measured, not tasted:
+
+   1. The old palette was Tailwind's -400 steps (cyan-400, green-400,
+      amber-400, orange-400, red-400). Those are tuned for LIGHT surfaces —
+      every one of them failed the dark-mode lightness band.
+
+   2. Priority was a green→amber→orange→red rainbow. That is two failures
+      at once: a rainbow ramp for ordered data, and a red-green ramp that
+      collapses for ~8% of men. Measured, "serious" #fb923c and "critical"
+      #f87171 sat at ΔE 10.6 — below the 15 floor, meaning even a viewer
+      with full colour vision struggles to tell the two most urgent bands
+      apart. On a rescue dashboard that is a real defect.
+
+      Priority is now an ORDINAL ramp: one hue, monotone light→dark.
+      Passes lightness monotonicity, step gaps, and light-end contrast.
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Surfaces ─────────────────────────────────────────────────────
+     Near-black with a slight cool-green bias — deliberately not
+     Tailwind slate, which reads as "dark mode website" rather than
+     instrument glass.                                              */
+  --surface-0:      #0B1013;   /* page ground */
+  --surface-1:      #121A1E;   /* panels */
+  --surface-2:      #1A252A;   /* raised: rows, chips, hover */
+
+  --border:         #22323A;
+  --border-soft:    #18242A;
+
+  /* ── Text ─────────────────────────────────────────────────────────
+     Warm-neutral greys, not pure white — full white on near-black
+     glares on a projector.                                         */
+  --ink:            #E6EDEF;
+  --ink-soft:       #A8B8BE;
+  --ink-muted:      #6B7F87;
+
+  /* ── Survivor mark ────────────────────────────────────────────────
+     ONE job: survivor detections — boxes, pins, selection.
+     Never used for text, never for a priority band.
+     ΔE vs every priority step: 18–22 (CVD) / 28–30 (normal).       */
+  --survivor:       #22A7BD;
+  --survivor-dim:   rgba(34, 167, 189, 0.35);   /* unselected / trailing */
+
+  /* ── Priority — ORDINAL RAMP, light → dark ───────────────────────
+     Hue spread 24°, monotone lightness, all step gaps ≥ 0.06.
+     ALWAYS paired with its text label. Colour alone is never the
+     encoding — a projector, a photocopy or a colourblind judge must
+     still read the band.                                            */
+  --priority-low:      #FFCE9E;
+  --priority-medium:   #FB9A4A;
+  --priority-high:     #E06A1F;
+  --priority-critical: #A8410C;
+
+  /* ── Hazard (Phase 2, unused until the classifier exists) ─────────
+     Reserved. Deliberately outside the priority ramp so a hazard can
+     never be mistaken for a priority band.                          */
+  --hazard:         #D63A5C;
+
+  /* ── Not-measured / assumed ───────────────────────────────────────
+     Deliberately colourless. A value we haven't measured should read
+     as absent, not as a state. Muted ink on a raised surface.       */
+  --unmeasured-bg:  var(--surface-2);
+  --unmeasured-ink: var(--ink-muted);
+
+  /* ── Type ─────────────────────────────────────────────────────────
+     Mono on every figure. Digits that change 24×/sec must not jitter,
+     and mono is what makes a readout look like an instrument.       */
+  --font-data:      'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  --font-ui:        'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --step-0:  11px;   /* eyebrow / unit labels — uppercase, .12em tracking */
+  --step-1:  13px;   /* table body, sublabels */
+  --step-2:  15px;   /* body */
+  --step-3:  20px;   /* panel titles */
+  --step-4:  34px;   /* stat figures */
+
+  /* ── Spacing ──────────────────────────────────────────────────────
+     One scale. Inconsistent padding is what makes a dashboard look
+     amateur, far more than colour does.                             */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px;
+  --sp-4: 16px; --sp-5: 24px; --sp-6: 32px;
+}
+
+/* Every figure on screen. Non-negotiable — without it the detection
+   count visibly jitters as digit widths change during playback. */
+.figure, .stat-value, td.num, .coord, .score {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+}

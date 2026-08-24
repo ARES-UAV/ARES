@@ -9,9 +9,10 @@ from typing import Dict, List
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
-from backend import config, localize, priority
-from backend.schemas import ClipConfig, Detection, Health, Survivor
+from backend import config, events as events_module, localize, priority
+from backend.schemas import ClipConfig, Detection, Health, MissionEvent, Survivor
 
 VERSION = "0.1.0"
 
@@ -56,6 +57,12 @@ def clip_config() -> ClipConfig:
         origin_lon=config.ORIGIN_LON,
         drone_speed_ms=config.DRONE_SPEED_MS,
         drone_heading_deg=config.DRONE_HEADING_DEG,
+        # Computed here rather than restated: `ground_sample_distance` is what
+        # `localize` scales every pixel offset by, so the footprint the panel
+        # shows is arithmetically the same one the map pins came out of.
+        ground_footprint_m=localize.ground_sample_distance() * config.FRAME_WIDTH,
+        device_fps=config.DEVICE_FPS,
+        device_name=config.DEVICE_NAME,
         weight_confidence=config.WEIGHT_CONFIDENCE,
         weight_cluster_size=config.WEIGHT_CLUSTER_SIZE,
         weight_hazard_proximity=config.WEIGHT_HAZARD_PROXIMITY,
@@ -64,8 +71,45 @@ def clip_config() -> ClipConfig:
         # whether to say the hazard term is scored or inactive, and that
         # sentence has to follow the list rather than someone's memory of it.
         hazard_count=len(config.HAZARDS),
-        priority_serious_at=config.PRIORITY_SERIOUS_AT,
+        event_sample_interval_s=config.EVENT_SAMPLE_INTERVAL_S,
+        priority_medium_at=config.PRIORITY_MEDIUM_AT,
+        priority_high_at=config.PRIORITY_HIGH_AT,
         priority_critical_at=config.PRIORITY_CRITICAL_AT,
+    )
+
+
+@app.get("/tiles/{z}/{x}/{y}.png", response_class=FileResponse)
+def tile(z: int, x: int, y: int) -> FileResponse:
+    """One cached OpenStreetMap tile.
+
+    Demo-day constraint 3 in CLAUDE.md: map tiles need internet and venue wifi
+    fails. `tools/fetch_tiles.py` downloads the tiles covering the demo area
+    into `config.TILES_DIR` ahead of time, and Leaflet points here instead of
+    at openstreetmap.org — so the base map survives a dead network.
+
+    Only tiles inside the bundled box exist. A zoom or pan outside it 404s,
+    which is what the map panel's existing "tiles unreachable" banner already
+    handles: the pins stay, the base map goes. That is the intended fallback,
+    not a failure to fix here.
+
+    Path traversal is not a concern: `z`, `x` and `y` are typed as `int`, so
+    FastAPI rejects anything that is not a bare integer before this runs and
+    no separator can reach the filesystem.
+    """
+    path = config.TILES_DIR / str(z) / str(x) / f"{y}.png"
+    if not path.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"Tile {z}/{x}/{y} is not in the bundled set. Fetch the demo "
+                f"area with: python tools/fetch_tiles.py"
+            ),
+        )
+    # Tiles never change once fetched — they are a frozen snapshot of the demo
+    # area, not a live layer — so let the browser keep them for the session
+    # rather than re-asking on every pan.
+    return FileResponse(
+        path, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"}
     )
 
 
@@ -104,6 +148,29 @@ def _load_detections() -> List[Detection]:
 def detections() -> List[Detection]:
     """Every detection record for the loaded clip, in frame order."""
     return _load_detections()
+
+
+@app.get("/api/events", response_model=List[MissionEvent])
+def events() -> List[MissionEvent]:
+    """The clip's mission event timeline, in frame order.
+
+    What the dashboard's event log plays back against the playback clock. Every
+    event is derived from the same detections file the other two endpoints read
+    — see `backend.events` for how, and CLAUDE.md's demo footage policy for why
+    there is no other way to get a line into this list.
+
+    Only the two kinds that need server-side maths are here: cluster formation,
+    which needs `backend.localize`, and priority bands, which need
+    `backend.priority`. Replay start, first detections and the closing summary
+    are derived by the frontend from the survivor roster it already holds, so
+    the log's acquisition lines are the header's survivor count rather than a
+    second count of the same people.
+
+    The final `priority_band` events assess the roster at the clip's last
+    frame, which is the same computation `/api/survivors` runs — so the bands
+    the log closes on are the bands the table shows, by construction.
+    """
+    return events_module.derive_events(_load_detections())
 
 
 @app.get("/api/survivors", response_model=List[Survivor])

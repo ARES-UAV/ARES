@@ -36,6 +36,11 @@ data/interim/
 detections*.json
 !**/fixture_detections.json
 
+# Cached OpenStreetMap tiles — downloaded by tools/fetch_tiles.py, not
+# authored. A few hundred PNGs that git would keep forever, re-fetchable
+# in a few minutes, and OSM's data rather than ours to redistribute.
+backend/data/tiles/
+
 # ── Python ─────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]

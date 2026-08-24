@@ -5,7 +5,7 @@ format is agreed across detection, tracking, localization and the dashboard —
 it must not be changed unilaterally.
 """
 
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -68,6 +68,25 @@ class ClipConfig(BaseModel):
         description="Assumed track bearing; 0 = north, 90 = east, clockwise",
     )
 
+    # Derived, not configured: the width of ground one frame covers, from
+    # `localize.ground_sample_distance` — the same function the survivor
+    # positions come out of. It is sent rather than left to the frontend so
+    # the footprint on the mission-parameters panel and the footprint the map
+    # pins were computed with are one number, and the panel can honestly tag
+    # the row "derived" and print the formula that produced it.
+    ground_footprint_m: float = Field(
+        ..., gt=0, description="2 * H * tan(FOV / 2) — frame ground width, metres"
+    )
+
+    # The only value on the dashboard that could ever be tagged "measured",
+    # and it is null until someone measures it. The panel renders a dash and
+    # "not yet measured" while it is null rather than inventing a plausible
+    # number; nothing else changes when the real figure lands here.
+    device_fps: Optional[float] = Field(
+        None, gt=0, description="Measured on-device inference FPS; null = not benchmarked"
+    )
+    device_name: str = Field(..., description="The device that figure refers to")
+
     # Priority scoring. The dashboard prints the formula next to the ranked
     # table using these, so what a judge reads on screen is the arithmetic that
     # actually ran rather than a caption someone has to remember to update.
@@ -85,7 +104,17 @@ class ClipConfig(BaseModel):
             "all — hazard classification is Phase 2 — not that the area is clear"
         ),
     )
-    priority_serious_at: float = Field(..., ge=0.0, le=1.0)
+    # How often the mission event log re-assesses priority, in seconds of
+    # playback. The log panel states this on screen, so the disclosure follows
+    # backend/config.py rather than a number someone typed into a caption.
+    event_sample_interval_s: float = Field(
+        ..., gt=0, description="Playback seconds between priority re-assessments"
+    )
+
+    # The three cuts of the four-band priority ramp. The dashboard prints them
+    # verbatim, so changing backend/config.py changes what is on screen.
+    priority_medium_at: float = Field(..., ge=0.0, le=1.0)
+    priority_high_at: float = Field(..., ge=0.0, le=1.0)
     priority_critical_at: float = Field(..., ge=0.0, le=1.0)
 
 
@@ -118,10 +147,55 @@ class Survivor(BaseModel):
     )
     priority_band: str = Field(
         ...,
-        description="Status ramp band: warning | serious | critical",
+        description="Ordinal priority ramp band: low | medium | high | critical",
     )
     cluster_size: int = Field(
         ...,
         ge=0,
         description="Other survivors within CLUSTER_RADIUS_M of this one",
+    )
+
+
+class MissionEvent(BaseModel):
+    """One thing that happened during the clip, at the frame it happened on.
+
+    The dashboard's event log renders these against the playback clock. Every
+    field is derived from the detection records by `backend.events` — nothing
+    here is authored, and nothing here is a status message someone wrote for a
+    demo. See the demo footage policy in CLAUDE.md: a log line that cannot be
+    traced back to a detection is the same failure as a hand-drawn box.
+
+    Two kinds cross this boundary, and only two, because only these two need
+    `backend.localize` and `backend.priority` to be derived at all:
+
+      `cluster_formed`  a set of survivors first found within CLUSTER_RADIUS_M
+                        of each other. `track_ids` is the whole membership.
+
+      `priority_band`   a survivor's band was assessed. `from_band` is null on
+                        the first assessment of a track and carries the
+                        previous band on every change after that.
+
+    The log's other lines — replay start, each track's first detection, the
+    end-of-clip summary — are NOT here. The frontend derives those from the
+    survivor roster it already holds, so the number of acquisition lines *is*
+    the header's survivor count rather than a second tally that has to agree
+    with it.
+    """
+
+    frame_id: int = Field(..., ge=0, description="Frame the event happened on")
+    kind: str = Field(..., description="cluster_formed | priority_band")
+
+    # priority_band only.
+    track_id: Optional[int] = Field(None, ge=0)
+    from_band: Optional[str] = Field(
+        None, description="Previous band; null on a track's first assessment"
+    )
+    to_band: Optional[str] = Field(None, description="Band assessed at this frame")
+    score: Optional[float] = Field(
+        None, ge=0.0, le=1.0, description="The score that produced `to_band`"
+    )
+
+    # cluster_formed only. Sorted, so the rendered line is stable between runs.
+    track_ids: List[int] = Field(
+        default_factory=list, description="Cluster membership, ascending"
     )

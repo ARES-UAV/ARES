@@ -108,17 +108,28 @@ def hazard_score(
 
 
 def band_for(score: float) -> str:
-    """Map a score to the dashboard's status ramp.
+    """Map a score to the dashboard's priority ramp.
 
-    Three bands, no fourth. There is no "clear" band on purpose: the
-    lowest-priority person in a disaster zone still needs rescuing, and a green
-    survivor row would tell an operator otherwise.
+    Four ordinal bands: low, medium, high, critical. They are an ORDER, not
+    four statuses — the dashboard renders them as one hue darkening in four
+    steps, so the ramp still reads as a ranking on a projector and to a viewer
+    with a colour vision deficiency. The band name is always shown beside the
+    swatch there; colour is never the only encoding.
+
+    "low" is the bottom of the ramp, not a "clear" band. The lowest-priority
+    person in a disaster zone still needs rescuing, and nothing in this ramp is
+    green.
+
+    Thresholds are the quarters of the 0-1 score range, in `backend.config`.
+    This module contains the arithmetic and no numbers.
     """
     if score >= config.PRIORITY_CRITICAL_AT:
         return "critical"
-    if score >= config.PRIORITY_SERIOUS_AT:
-        return "serious"
-    return "warning"
+    if score >= config.PRIORITY_HIGH_AT:
+        return "high"
+    if score >= config.PRIORITY_MEDIUM_AT:
+        return "medium"
+    return "low"
 
 
 def score_all(survivors: Sequence[SurvivorPoint]) -> List[PriorityBreakdown]:
