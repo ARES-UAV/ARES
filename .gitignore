@@ -119,3 +119,4 @@ desktop.ini
 # Ignore only per-machine local settings.
 .claude/settings.local.json
 frontend/public/demo_clip.mp4
+.venv/
