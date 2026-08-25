@@ -53,6 +53,9 @@ const KIND_RANK = {
   replay_start: 0,
   survivor_confirmed: 1,
   cluster_formed: 2,
+  // Same rank: a group forming and that group gaining a member are the same
+  // class of fact, and the two never land on one frame.
+  cluster_grew: 2,
   priority_assessed: 3,
   priority_changed: 3,
   clip_end: 4,
@@ -125,11 +128,15 @@ export function buildMissionLog({ events, survivors, index, lastFrame }) {
 
   // ── The backend's timeline ───────────────────────────────────────
   for (const event of events ?? []) {
-    if (event.kind === 'cluster_formed') {
+    if (event.kind === 'cluster_formed' || event.kind === 'cluster_grew') {
+      // Two kinds, one shape. The backend splits them because a single group
+      // accumulating members emits one event per new member, and calling all
+      // of them formations claims a group count the geometry does not support
+      // — on this clip, nineteen lines describing one group of 23.
       entries.push({
         id: `cluster-${event.frame_id}-${event.track_ids.join('-')}`,
         frame: event.frame_id,
-        kind: 'cluster_formed',
+        kind: event.kind,
         trackIds: event.track_ids,
       })
     } else if (event.kind === 'priority_band') {

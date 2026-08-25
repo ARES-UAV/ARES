@@ -11,6 +11,11 @@ without `backend.localize` and `backend.priority`:
   cluster_formed   a set of survivors first seen within CLUSTER_RADIUS_M of one
                    another. Needs ground positions, so it needs the projection.
 
+  cluster_grew     that same group, with a newly confirmed survivor in it. Split
+                   from the above because one group accumulating members over a
+                   clip would otherwise emit a run of `cluster_formed` lines and
+                   read as many separate clusters.
+
   priority_band    a survivor's band, first assessed and then whenever it
                    changes. Needs the scoring formula.
 
@@ -238,14 +243,35 @@ def _walk(detections: Sequence[Detection]) -> Tuple[List[MissionEvent], Dict[int
         cluster_geometry = _cluster_positions(latest, track_ids)
 
         # ── Clusters: every frame, each membership set once ──────────
+        #
+        # A membership set that is a strict SUPERSET of one already reported is
+        # the same group with someone new in it, not a second group. The
+        # distinction is the whole reason there are two kinds here: on the demo
+        # clip every survivor ends up inside one 11 m patch, so nineteen
+        # distinct membership sets are emitted and all nineteen describe one
+        # group growing 2 -> 23. Reporting each of them as a cluster FORMING
+        # reads as nineteen clusters, which is a straight contradiction of the
+        # panel next to it saying there is one group.
+        #
+        # Why the group grows at all is worth knowing, because it is not what
+        # the word suggests: nobody walks together. A track joins the roster at
+        # the frame it is CONFIRMED (see `backend.tracks`), so the membership
+        # curve is the confirmation curve. "Grew" here means the system found
+        # another member of a group that was always there.
         for members in _clusters(track_ids, cluster_geometry):
             key = frozenset(members)
             if key in seen_clusters:
                 continue
+            # `>` is strict superset on a frozenset. Checked against every set
+            # already reported rather than only the last one, because two
+            # groups can grow independently before merging.
+            grew = any(key > reported for reported in seen_clusters)
             seen_clusters.add(key)
             events.append(
                 MissionEvent(
-                    frame_id=frame_id, kind="cluster_formed", track_ids=members
+                    frame_id=frame_id,
+                    kind="cluster_grew" if grew else "cluster_formed",
+                    track_ids=members,
                 )
             )
 
@@ -292,7 +318,10 @@ def _walk(detections: Sequence[Detection]) -> Tuple[List[MissionEvent], Dict[int
     # Frame order first. Within a frame, clusters before priority, because a
     # cluster forming is what moved the score that the band change reports —
     # the log should read in the order the causation ran.
-    kind_rank = {"cluster_formed": 0, "priority_band": 1}
+    # Both cluster kinds share rank 0: they are the same class of fact about
+    # the same geometry, and a growth line and a formation line never land on
+    # one frame anyway.
+    kind_rank = {"cluster_formed": 0, "cluster_grew": 0, "priority_band": 1}
     events.sort(
         key=lambda e: (e.frame_id, kind_rank[e.kind], e.track_id or 0)
     )

@@ -122,6 +122,18 @@ DRONE_HEADING_DEG: float = 45.0   # north-east
 # that a person crossing the frame is still confirmed well before they leave
 # it — median track length on this clip is 11 frames, and the tracks that
 # clear 60 are the ones the eye also reads as people.
+# ── What "2.5 seconds" actually counts ─────────────────────────────
+# DISTINCT FRAMES the track was detected in, not elapsed time. `backend.tracks`
+# confirms a track on its MIN_TRACK_FRAMES-th sighting, so a track the detector
+# only catches in half the frames it is alive for takes twice as long in wall
+# clock to confirm: on the current clip track 1409 runs from frame 181 to 311 —
+# 5.2 s — and confirms at frame 306, its 60th sighting.
+#
+# Counting evidence is the right rule; a track seen 60 times is well-evidenced
+# however long it took. But it means the NAME is a rule statement rather than a
+# measurement of any particular track, and anything on screen has to say
+# "seen in N frames" rather than "tracked for N seconds" or it is claiming
+# something this code does not do.
 MIN_TRACK_SECONDS: float = 2.5
 
 # Derived. `int()` truncates, so a rate slow enough to make this 0 or 1 leaves

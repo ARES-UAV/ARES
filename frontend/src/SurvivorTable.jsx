@@ -195,8 +195,8 @@ export default function SurvivorTable({
                 {survivors !== null && rows.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-4 py-8 text-center text-ink-muted">
-                      No survivors confirmed yet — a track has to hold for{' '}
-                      {config.min_track_seconds ?? FALLBACK_CONFIG.min_track_seconds}s
+                      No survivors confirmed yet — a track has to be seen in{' '}
+                      {config.min_track_frames ?? FALLBACK_CONFIG.min_track_frames} frames
                       before it counts as a person, so the first rows appear a
                       little after the first detections do.
                     </td>
@@ -236,7 +236,7 @@ export default function SurvivorTable({
                       title={
                         `Priority ${survivor.priority.toFixed(3)} — ` +
                         `confidence ${survivor.confidence.toFixed(2)}, ` +
-                        `${survivor.cluster_size} survivor(s) within ` +
+                        `${survivor.cluster_size} other survivor(s) within ` +
                         `${config.cluster_radius_m} m` +
                         // Both terms report their own absence rather than
                         // letting a reader assume a number they cannot see was

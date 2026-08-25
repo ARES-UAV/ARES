@@ -118,6 +118,21 @@ function Caveat({ children }) {
  * decimals turning a round rule into "3.00 s" — a number that looks measured
  * when it is a chosen constant.
  */
+/**
+ * The persistence rule in the unit it is APPLIED in.
+ *
+ * `seconds()` below states the rule; this states what the rule costs a track.
+ * They are not interchangeable, and the header uses this one: confirmation
+ * counts DISTINCT FRAMES a track was detected in, not elapsed time. A track
+ * detected in half the frames it is alive for exists for twice the duration
+ * before it confirms — on this clip, track 1409 ran 125 frames and confirmed
+ * on its 60th sighting. "Tracked for 2.5 s" would be a claim the code does not
+ * make; "seen in 60 frames" is exactly what it does.
+ */
+function trackedFrames(config) {
+  return config.min_track_frames ?? FALLBACK_CONFIG.min_track_frames
+}
+
 function seconds(value) {
   // `??` for a backend running from before this field existed — the same
   // tolerance MissionParameters applies to `ground_footprint_m`. The bundled
@@ -212,7 +227,7 @@ export default function HeaderBar({
             <span className="text-fine font-semibold text-ink">High Recall</span>
             <span className="figure text-eyebrow text-ink-muted">
               confidence {config.confidence_threshold.toFixed(2)} and above ·
-              confirmed after {seconds(config.min_track_seconds)} s tracked
+              confirmed on {trackedFrames(config)} frames of sightings
             </span>
           </div>
 
@@ -278,7 +293,7 @@ export default function HeaderBar({
           sublabel={
             survivorsSoFar === null
               ? 'survivor list unavailable'
-              : `tracked ≥ ${seconds(config.min_track_seconds)} s · ${survivorsInClip} in full clip`
+              : `seen in ≥${trackedFrames(config)} frames · ${survivorsInClip} in full clip`
           }
           mark
         >

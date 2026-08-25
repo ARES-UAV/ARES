@@ -1,0 +1,916 @@
+<title>ARES</title>
+<meta name="description" content="ARES — a UAV search-and-rescue system. Onboard AI detects survivors, counts them without double-counting, maps them, and ranks them for rescue. Built for Smart India Hackathon 2026.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   ARES — public site
+   Committed dark. This is instrument glass, not a document: the
+   product is a dark command dashboard and the site is its world.
+   Every colour is painted explicitly so the page holds on any ground.
+   Palette lifted verbatim from frontend/src/tokens.css, which was
+   validated for lightness monotonicity, step separation and CVD
+   distance.
+   ═══════════════════════════════════════════════════════════════════ */
+:root{
+  --void:#070B0D;
+  --ground:#0B1013;
+  --panel:#121A1E;
+  --raised:#1A252A;
+  --line:#22323A;
+  --line-soft:#162228;
+
+  --ink:#E6EDEF;
+  --ink-soft:#A8B8BE;
+  --dim:#6B7F87;
+
+  --cy:#22A7BD;
+  --cy-deep:#0E7285;
+  --cy-ink:#06181C;
+  --cy-1:rgba(34,167,189,.09);
+  --cy-2:rgba(34,167,189,.20);
+  --cy-3:rgba(34,167,189,.40);
+
+  --p1:#FFCE9E; --p2:#FB9A4A; --p3:#E06A1F; --p4:#A8410C;
+  --flag:#FB9A4A;
+
+  --disp:'Archivo','Helvetica Neue',Arial,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--ground);color:var(--ink);
+  font-family:var(--mono);font-size:14.5px;line-height:1.6;
+  overflow-x:hidden;-webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--cy);color:var(--cy-ink)}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+
+/* ── overlays ─────────────────────────────────────────────────── */
+.progress{position:fixed;top:0;left:0;height:2px;width:0;z-index:200;
+  background:linear-gradient(90deg,var(--cy),var(--p2));box-shadow:0 0 10px var(--cy-3)}
+.scan{position:fixed;inset:0;pointer-events:none;z-index:190;opacity:.5;
+  background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.014) 0 1px,transparent 1px 3px)}
+.gridfield{position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.55;
+  background-image:linear-gradient(var(--line-soft) 1px,transparent 1px),linear-gradient(90deg,var(--line-soft) 1px,transparent 1px);
+  background-size:64px 64px;
+  mask-image:radial-gradient(120% 90% at 50% 0%,#000 12%,transparent 72%);
+  -webkit-mask-image:radial-gradient(120% 90% at 50% 0%,#000 12%,transparent 72%)}
+
+/* ── type ─────────────────────────────────────────────────────── */
+h1,h2,h3,.disp{font-family:var(--disp);font-weight:800;letter-spacing:-.032em;line-height:.9;text-transform:uppercase}
+h1{font-size:clamp(46px,8.6vw,116px)}
+h2{font-size:clamp(32px,5.4vw,66px)}
+h3{font-size:17px;letter-spacing:.01em;font-weight:700}
+.kick{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
+.mark{display:flex;align-items:center;gap:13px;margin-bottom:26px;
+  font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft)}
+.mark::after{content:'';flex:1;height:1px;background:var(--line)}
+.mark .sq{width:8px;height:8px;background:var(--cy);flex:0 0 auto;animation:sq 2.6s ease-in-out infinite}
+@keyframes sq{50%{transform:rotate(45deg);background:var(--p2)}}
+.lead{max-width:54ch;margin-top:20px;color:var(--ink-soft);font-size:15px}
+em.hi{font-style:normal;color:var(--cy)}
+em.am{font-style:normal;color:var(--p2)}
+
+/* ── buttons ──────────────────────────────────────────────────── */
+.btn{display:inline-block;font-family:var(--disp);font-weight:700;font-size:12px;
+  letter-spacing:.1em;text-transform:uppercase;padding:12px 24px;cursor:pointer;
+  background:var(--cy);color:var(--cy-ink);border:1.5px solid var(--cy);
+  transition:box-shadow .18s ease,transform .18s ease;will-change:transform}
+.btn:hover{box-shadow:5px 5px 0 var(--cy-deep)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--cy);color:var(--cy);box-shadow:5px 5px 0 var(--panel)}
+.btn:focus-visible{outline:2px solid var(--p2);outline-offset:4px}
+
+/* ── ops strip ────────────────────────────────────────────────── */
+.ops{border-bottom:1px solid var(--line);background:var(--void);position:relative;z-index:2}
+.ops .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  padding:7px 24px;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.ops b{color:var(--cy);font-weight:500}
+
+/* ── nav ──────────────────────────────────────────────────────── */
+nav{position:sticky;top:0;z-index:60;background:rgba(11,16,19,.9);backdrop-filter:blur(10px);
+  border-bottom:1.5px solid var(--line)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:58px}
+.logo{font-family:var(--disp);font-weight:900;font-size:21px;letter-spacing:.02em}
+.logo i{font-style:normal;color:var(--cy);animation:bl 1.7s steps(2,start) infinite}
+@keyframes bl{50%{opacity:.2}}
+.nlinks{display:flex;gap:24px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.nlinks a{position:relative;padding:4px 0}
+.nlinks a::after{content:'';position:absolute;left:0;bottom:0;width:0;height:1.5px;background:var(--cy);transition:width .22s}
+.nlinks a:hover{color:var(--ink)}.nlinks a:hover::after{width:100%}
+@media(max-width:880px){.nlinks{display:none}}
+
+/* ── hero ─────────────────────────────────────────────────────── */
+.hero{padding:72px 0 56px;border-bottom:1.5px solid var(--line);position:relative;overflow:hidden;z-index:2}
+.hero::before{content:'';position:absolute;top:-220px;left:-140px;width:620px;height:620px;border-radius:50%;
+  background:radial-gradient(circle,var(--cy-2),transparent 62%);animation:pulse 8s ease-in-out infinite;pointer-events:none}
+@keyframes pulse{50%{transform:scale(1.16);opacity:.6}}
+.hero .wrap{position:relative;z-index:2}
+.hgrid{display:grid;grid-template-columns:1.15fr .85fr;gap:46px;align-items:start}
+@media(max-width:980px){.hgrid{grid-template-columns:1fr}}
+.tagline{display:inline-block;border:1px solid var(--line);padding:5px 13px;margin-bottom:24px;
+  font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft);background:var(--panel)}
+h1 .ln{display:block;overflow:hidden}
+h1 .ln span{display:inline-block;transform:translateY(112%);animation:rise .85s cubic-bezier(.22,1,.36,1) forwards}
+h1 .ln:nth-child(2) span{animation-delay:.13s}
+h1 .ln:nth-child(3) span{animation-delay:.26s}
+@keyframes rise{to{transform:translateY(0)}}
+h1 .n{color:var(--cy)}
+.hsub{margin:26px 0 30px;max-width:48ch;color:var(--ink-soft);font-size:15px;
+  animation:fu .9s .5s cubic-bezier(.22,1,.36,1) backwards}
+.hsub b{color:var(--ink);font-weight:500}
+.hctas{display:flex;gap:12px;flex-wrap:wrap;animation:fu .9s .64s cubic-bezier(.22,1,.36,1) backwards}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:24px;animation:fu .9s .78s cubic-bezier(.22,1,.36,1) backwards}
+.chip{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;border:1px solid var(--line);
+  padding:5px 10px;color:var(--dim);background:var(--panel)}
+.chip b{color:var(--cy);font-weight:500}
+@keyframes fu{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+
+/* ── terminal ─────────────────────────────────────────────────── */
+.term{border:1.5px solid var(--line);background:var(--void);box-shadow:6px 6px 0 var(--panel);
+  animation:fu .9s .54s cubic-bezier(.22,1,.36,1) backwards;will-change:transform}
+.tbar{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;
+  border-bottom:1.5px solid var(--line);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.live{display:flex;align-items:center;gap:7px;color:var(--cy);font-weight:700}
+.live::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--cy);animation:bl 1.2s steps(2,start) infinite}
+.tbody{padding:14px 15px 16px;font-size:11.5px;line-height:2.05;min-height:326px}
+.tl{opacity:0;transform:translateY(5px);transition:opacity .32s,transform .32s;white-space:pre-wrap}
+.tl.on{opacity:1;transform:none}
+.c-dim{color:var(--dim)} .c-ar{color:var(--cy)} .c-ok{color:var(--cy);font-weight:700}
+.c-w{color:var(--p2)} .c-hold{background:var(--p4);color:var(--ink);padding:0 5px}
+.tfoot{border-top:1px solid var(--line);padding:8px 14px;font-size:9.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between}
+
+/* ── marquee ──────────────────────────────────────────────────── */
+.mq{border-bottom:1.5px solid var(--line);background:var(--cy);color:var(--cy-ink);overflow:hidden;padding:10px 0;position:relative;z-index:2}
+.mqt{display:flex;width:max-content;animation:sc 30s linear infinite}
+.mq:hover .mqt{animation-play-state:paused}
+.mqt span{font-family:var(--disp);font-weight:800;font-size:12.5px;letter-spacing:.16em;
+  text-transform:uppercase;padding:0 24px;white-space:nowrap}
+.mqt span i{font-style:normal;opacity:.45;padding-left:48px}
+@keyframes sc{to{transform:translateX(-50%)}}
+
+/* ── sections ─────────────────────────────────────────────────── */
+section{padding:84px 0;border-bottom:1.5px solid var(--line);position:relative;z-index:2}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);border:1.5px solid var(--line);margin-top:44px;background:var(--panel)}
+.stat{padding:28px 22px;border-right:1.5px solid var(--line);transition:background .2s}
+.stat:last-child{border-right:none}
+.stat:hover{background:var(--raised)}
+.stat .num{font-family:var(--disp);font-weight:800;font-size:clamp(30px,4.2vw,52px);
+  letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
+.stat .num em{font-style:normal;color:var(--cy)}
+.stat .num small{font-size:.4em;color:var(--dim)}
+.stat .lbl{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-top:10px;line-height:1.5}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}
+  .stat:nth-child(2){border-right:none}.stat:nth-child(-n+2){border-bottom:1.5px solid var(--line)}}
+@media(max-width:560px){.stats{grid-template-columns:1fr}
+  .stat{border-right:none;border-bottom:1.5px solid var(--line)}.stat:last-child{border-bottom:none}}
+
+/* ═══ THE DEDUP VISUALISER ═══════════════════════════════════ */
+.viz{margin-top:42px;border:1.5px solid var(--line);background:var(--void);box-shadow:7px 7px 0 var(--panel);overflow:hidden}
+.vz-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:11px 16px;border-bottom:1.5px solid var(--line);
+  font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.vz-stage{position:relative;height:290px;overflow:hidden;
+  background:
+    radial-gradient(90% 70% at 30% 10%,rgba(34,167,189,.07),transparent 60%),
+    linear-gradient(#080D10,#0D141A)}
+.vz-terrain{position:absolute;inset:0;opacity:.5;
+  background-image:
+    linear-gradient(rgba(90,110,120,.10) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(90,110,120,.10) 1px,transparent 1px);
+  background-size:44px 44px}
+.vz-sweep{position:absolute;top:0;bottom:0;width:2px;background:linear-gradient(transparent,var(--cy),transparent);
+  box-shadow:0 0 14px var(--cy);opacity:0}
+.det{position:absolute;border:1.5px solid var(--cy);opacity:0;
+  box-shadow:0 0 0 1px rgba(0,0,0,.5);transition:opacity .18s,border-color .3s,transform .3s}
+.det::after{content:attr(data-c);position:absolute;top:-15px;left:-1px;
+  font-family:var(--mono);font-size:8.5px;letter-spacing:.04em;color:var(--cy);
+  background:var(--void);padding:0 3px;white-space:nowrap}
+.det.ghost{border-color:var(--p3);border-style:dashed}
+.det.ghost::after{color:var(--p3)}
+.det.dead{opacity:0!important;transform:scale(.72)}
+.det.keep{border-width:2px;box-shadow:0 0 12px var(--cy-3)}
+.vz-phase{position:absolute;left:16px;bottom:14px;font-family:var(--disp);font-weight:800;
+  font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink);
+  text-shadow:0 2px 12px rgba(0,0,0,.9)}
+.vz-phase i{font-style:normal;color:var(--cy)}
+.vz-cnt{display:grid;grid-template-columns:repeat(3,1fr);border-top:1.5px solid var(--line)}
+.vz-c{padding:15px 16px;border-right:1px solid var(--line)}
+.vz-c:last-child{border-right:none}
+.vz-c .v{font-family:var(--disp);font-weight:800;font-size:clamp(22px,3.2vw,32px);line-height:1;
+  letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.vz-c .k{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-top:8px}
+.vz-c.a .v{color:var(--ink-soft)} .vz-c.b .v{color:var(--p2)} .vz-c.c .v{color:var(--cy)}
+.vz-foot{padding:11px 16px;border-top:1px solid var(--line);color:var(--dim);
+  font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.vz-foot b{color:var(--cy);font-weight:500}
+@media(max-width:640px){.vz-stage{height:220px}}
+
+/* ── steps ────────────────────────────────────────────────────── */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:44px}
+.step{border:1.5px solid var(--line);background:var(--panel);padding:20px;position:relative;
+  transition:transform .18s,box-shadow .18s,border-color .18s}
+.step:hover{transform:translate(-3px,-3px);box-shadow:5px 5px 0 var(--cy-deep);border-color:var(--cy)}
+.step .n{font-family:var(--disp);font-weight:900;font-size:44px;line-height:1;
+  color:transparent;-webkit-text-stroke:1.4px var(--line);transition:.2s}
+.step:hover .n{-webkit-text-stroke-color:var(--cy)}
+.step h3{margin:14px 0 7px;font-family:var(--disp);text-transform:uppercase}
+.step p{font-size:12px;color:var(--ink-soft);line-height:1.55}
+.step .tg{position:absolute;top:13px;right:13px;font-size:9px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+.flowline{margin-top:22px;text-align:center;font-family:var(--disp);font-weight:800;font-size:12px;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
+.flowline em{font-style:normal;color:var(--cy)}
+@media(max-width:900px){.steps{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.steps{grid-template-columns:1fr}}
+
+/* ── recall ───────────────────────────────────────────────────── */
+.rcl{display:grid;grid-template-columns:1.05fr .95fr;gap:44px;align-items:center;margin-top:44px}
+@media(max-width:900px){.rcl{grid-template-columns:1fr;gap:28px}}
+.rb{margin-bottom:26px}
+.rb .rt{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.rb .rn{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.rb .rval{font-family:var(--disp);font-weight:800;font-size:27px;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.rtrack{height:32px;background:var(--panel);border:1.5px solid var(--line);position:relative;overflow:hidden}
+.rfill{height:100%;width:0;transition:width 1.2s cubic-bezier(.22,.9,.28,1)}
+.rb.base .rfill{background:var(--raised);border-right:2px solid var(--dim)}
+.rb.base .rval{color:var(--ink-soft)}
+.rb.ours .rfill{background:linear-gradient(90deg,var(--cy-deep),var(--cy));box-shadow:0 0 18px var(--cy-2)}
+.rb.ours .rval{color:var(--cy)}
+.rscale{display:flex;justify-content:space-between;font-size:9.5px;color:var(--dim);margin-top:5px;letter-spacing:.1em}
+.delta{border:1.5px solid var(--cy);background:var(--cy-1);padding:22px;box-shadow:6px 6px 0 var(--panel)}
+.delta .big{font-family:var(--disp);font-weight:900;font-size:clamp(30px,4.6vw,48px);line-height:1;
+  letter-spacing:-.04em;color:var(--cy)}
+.delta p{margin-top:12px;font-size:13px;color:var(--ink-soft)}
+.card{border:1.5px solid var(--line);background:var(--panel);padding:26px}
+.card p{font-size:13px;color:var(--ink-soft);margin-top:12px;line-height:1.6}
+.card p:first-of-type{margin-top:10px}
+.card .fn{font-size:10px;letter-spacing:.18em;color:var(--p2);font-weight:700;text-transform:uppercase}
+
+/* ── scope ────────────────────────────────────────────────────── */
+.tw{border:1.5px solid var(--line);background:var(--panel);margin-top:44px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:520px}
+th{text-align:left;font-size:9.5px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--dim);padding:14px 20px;border-bottom:1.5px solid var(--line)}
+td{padding:14px 20px;border-bottom:1px solid var(--line-soft);vertical-align:middle;font-size:13.5px}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--raised)}
+td.cap{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.01em;font-size:13px}
+td.nt{color:var(--dim);font-size:12px}
+.pill{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  padding:4px 9px;white-space:nowrap;border:1px solid}
+.pill.b{color:var(--cy);border-color:var(--cy-3);background:var(--cy-1)}
+.pill.p{color:var(--p2);border-color:rgba(251,154,74,.4);background:rgba(251,154,74,.08)}
+.pill.d{color:var(--dim);border-color:var(--line);background:var(--raised)}
+
+/* ── honesty trio ─────────────────────────────────────────────── */
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1.5px solid var(--line);margin-top:16px;background:var(--panel)}
+.tri{padding:26px 24px;border-right:1.5px solid var(--line);transition:background .2s}
+.tri:last-child{border-right:none}
+.tri:hover{background:var(--raised)}
+.tri .fn{font-size:10px;letter-spacing:.18em;color:var(--cy);font-weight:700;text-transform:uppercase}
+.tri h3{margin:12px 0 9px;font-family:var(--disp);text-transform:uppercase;font-size:18px}
+.tri p{font-size:12.5px;color:var(--ink-soft);line-height:1.6}
+@media(max-width:880px){.trio{grid-template-columns:1fr}
+  .tri{border-right:none;border-bottom:1.5px solid var(--line)}.tri:last-child{border-bottom:none}}
+
+/* ── footprint diagram ────────────────────────────────────────── */
+.fp{margin-top:42px;border:1.5px solid var(--line);background:var(--void);padding:26px 20px;overflow-x:auto;
+  box-shadow:7px 7px 0 var(--panel)}
+.fp svg{display:block;margin:0 auto;min-width:540px}
+
+/* ── shots ────────────────────────────────────────────────────── */
+.shot{border:1.5px dashed var(--line);background:var(--panel);aspect-ratio:16/9;
+  display:grid;place-content:center;text-align:center;gap:7px;padding:22px}
+.shot .h{font-family:var(--disp);font-weight:700;font-size:17px;text-transform:uppercase;color:var(--ink-soft)}
+.shot .f{font-size:10px;letter-spacing:.12em;color:var(--dim)}
+.shot img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* ── team ─────────────────────────────────────────────────────── */
+.team{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:44px}
+@media(max-width:760px){.team{grid-template-columns:1fr}}
+.mem{border-top:1.5px solid var(--cy);background:var(--panel);padding:22px}
+.mem .nm{font-family:var(--disp);font-weight:800;font-size:24px;text-transform:uppercase;letter-spacing:-.01em}
+.mem p{margin-top:9px;font-size:12.5px;color:var(--ink-soft);line-height:1.55}
+
+/* ── signoff / footer ─────────────────────────────────────────── */
+.signoff{text-align:center;padding:100px 0;border-bottom:none}
+.signoff h2{font-size:clamp(34px,6.4vw,80px)}
+.signoff .hctas{justify-content:center;margin-top:32px;animation:none}
+.signoff .beta{margin-top:18px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+footer{border-top:1.5px solid var(--line);padding:30px 0;position:relative;z-index:2;background:var(--void)}
+footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;
+  font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+footer .fine{margin-top:18px;font-size:10px;letter-spacing:.04em;text-transform:none;color:var(--dim);line-height:1.8;max-width:80ch}
+
+/* ── reveal ───────────────────────────────────────────────────── */
+.rv{opacity:0;transform:translateY(26px);transition:opacity .7s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1)}
+.rv.in{opacity:1;transform:none}
+.d1{transition-delay:.08s}.d2{transition-delay:.16s}.d3{transition-delay:.24s}
+
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:.001s!important;animation-iteration-count:1!important;transition-duration:.001s!important}
+  .rv{opacity:1;transform:none}
+  h1 .ln span{transform:none}
+}
+</style>
+
+<div class="progress" id="bar"></div>
+<div class="scan"></div>
+<div class="gridfield"></div>
+
+<div class="ops">
+  <div class="wrap">
+    <span>MISSION 001 · <b>VISDRONE-VID</b></span>
+    <span>26.4059°N 92.2335°E</span>
+    <span>ALT <b>20 M</b> · FOV <b>60°</b> · NADIR</span>
+    <span>SIH 2026 · HARDWARE EDITION</span>
+  </div>
+</div>
+
+<nav>
+  <div class="wrap">
+    <a class="logo" href="#">A<i>R</i>ES</a>
+    <div class="nlinks">
+      <a href="#count">THE COUNT</a>
+      <a href="#pipeline">PIPELINE</a>
+      <a href="#recall">THE DECISION</a>
+      <a href="#scope">SCOPE</a>
+      <a href="#edge">ON-DEVICE</a>
+    </div>
+    <a class="btn" href="https://github.com/dewangdhakad/ARES">SOURCE →</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap hgrid">
+    <div>
+      <span class="tagline">AUTONOMOUS RESCUE &amp; ENVIRONMENTAL INTELLIGENCE SYSTEM</span>
+      <h1>
+        <span class="ln"><span><em class="n">7,081</em> BOXES.</span></span>
+        <span class="ln"><span><em class="n">23</em> PEOPLE.</span></span>
+        <span class="ln"><span>ONE ANSWER.</span></span>
+      </h1>
+      <p class="hsub">
+        A detector over a disaster zone returns thousands of boxes. A rescue coordinator
+        needs <b>how many, where, and who first</b>. ARES is everything in between —
+        running on the aircraft, so losing the network costs the video feed and nothing else.
+      </p>
+      <div class="hctas">
+        <a class="btn" href="#count">SEE THE COUNT →</a>
+        <a class="btn ghost" href="#scope">WHAT'S REAL</a>
+      </div>
+      <div class="chips">
+        <span class="chip"><b>YOLOv12s</b> · 960 PX</span>
+        <span class="chip"><b>CONF 0.18</b> HIGH RECALL</span>
+        <span class="chip"><b>BYTETRACK</b> DE-DUP</span>
+        <span class="chip"><b>PI 4</b> ON-DEVICE</span>
+        <span class="chip"><b>NO</b> API KEYS</span>
+      </div>
+    </div>
+
+    <div class="term">
+      <div class="tbar"><span>MISSION EVENT LOG · REPLAY</span><span class="live">LIVE</span></div>
+      <div class="tbody" id="tlog"></div>
+      <div class="tfoot"><span>DEMO_CLIP · 320 FRAMES</span><span>24 FPS · 1280×720</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="mq">
+  <div class="mqt" id="mq">
+    <span>7,081 DETECTIONS <i>◆</i></span><span>333 TRACK IDS <i>◆</i></span><span>23 SURVIVORS <i>◆</i></span><span>RECALL 0.831 <i>◆</i></span><span>1.8 CM / PIXEL <i>◆</i></span><span>23 M FOOTPRINT <i>◆</i></span><span>2.5 S PERSISTENCE <i>◆</i></span><span>ZERO INVENTED DATA <i>◆</i></span>
+  </div>
+</div>
+
+<!-- ═══ THE COUNT ═══════════════════════════════════════════════ -->
+<section id="count">
+  <div class="wrap">
+    <div class="mark rv"><span class="sq"></span> § 01 — THE HARD PART</div>
+    <h2 class="rv">DETECTING IS EASY.<br>COUNTING <em class="hi">IS NOT.</em></h2>
+    <p class="lead rv d1">
+      A person walks in and out of frame six times. Six people, or one? A detector has no
+      memory between frames — and at a threshold tuned to miss nobody, it also reports every
+      shadow. Watch what that costs, and what removes it.
+    </p>
+
+    <div class="viz rv d1">
+      <div class="vz-top">
+        <span>DE-DUPLICATION · SCHEMATIC</span>
+        <span class="live" id="vzPhaseTag">DETECTING</span>
+      </div>
+      <div class="vz-stage" id="vzStage">
+        <div class="vz-terrain"></div>
+        <div class="vz-sweep" id="vzSweep"></div>
+        <div class="vz-phase" id="vzPhase">PHASE <i>01</i> — RAW DETECTION</div>
+      </div>
+      <div class="vz-cnt">
+        <div class="vz-c a"><div class="v" id="cDet">0</div><div class="k">Raw detections</div></div>
+        <div class="vz-c b"><div class="v" id="cId">0</div><div class="k">Track identities issued</div></div>
+        <div class="vz-c c"><div class="v" id="cSur">0</div><div class="k">Confirmed survivors</div></div>
+      </div>
+      <div class="vz-foot">
+        <span>SCHEMATIC — NOT MODEL OUTPUT</span>
+        <span>PERSISTENCE FILTER · <b>2.5 S</b> OF EVIDENCE REQUIRED</span>
+      </div>
+    </div>
+
+    <div class="stats rv d2">
+      <div class="stat"><div class="num"><em data-count="7081">0</em></div><div class="lbl">RAW DETECTIONS · WHOLE CLIP</div></div>
+      <div class="stat"><div class="num"><em data-count="333">0</em></div><div class="lbl">IDENTITIES THE TRACKER ISSUED</div></div>
+      <div class="stat"><div class="num"><em data-count="23">0</em></div><div class="lbl">SURVIVORS THAT HELD 2.5 S</div></div>
+      <div class="stat"><div class="num"><em data-count="7">0</em><small>%</small></div><div class="lbl">SHORT TRACKS AT THE FRAME EDGE</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ PIPELINE ════════════════════════════════════════════════ -->
+<section id="pipeline">
+  <div class="wrap">
+    <div class="mark rv"><span class="sq"></span> § 02 — ARCHITECTURE</div>
+    <h2 class="rv">FOUR STAGES.<br>ONE <em class="hi">CONTRACT.</em></h2>
+    <p class="lead rv d1">
+      Each stage exists because the one before it produces something not yet usable.
+      They exchange a single JSON format — which is what lets three people work
+      independently, and what lets the demo replay a stored file instead of inferring live.
+    </p>
+
+    <div class="steps">
+      <div class="step rv"><span class="tg">YOLOv12s</span><div class="n">1</div><h3>DETECT</h3>
+        <p>Boxes and confidences at 960 px, threshold 0.18. Finds people — but has no memory between frames.</p></div>
+      <div class="step rv d1"><span class="tg">BYTETRACK</span><div class="n">2</div><h3>TRACK</h3>
+        <p>Persistent IDs across frames, so the same person is never counted twice. Position is still in pixels.</p></div>
+      <div class="step rv d2"><span class="tg">NADIR</span><div class="n">3</div><h3>LOCALIZE</h3>
+        <p>Pixel offset → GPS from known altitude and field of view. 1.8 cm per pixel. Now they are on a map.</p></div>
+      <div class="step rv d3"><span class="tg">WEIGHTED</span><div class="n">4</div><h3>RANK</h3>
+        <p>Confidence, cluster size and hazard proximity, in a formula printed on screen. Not a black box.</p></div>
+    </div>
+    <div class="flowline rv">DETECT <em>→</em> TRACK <em>→</em> LOCALIZE <em>→</em> RANK <em>→</em> DASHBOARD</div>
+  </div>
+</section>
+
+<!-- ═══ RECALL ══════════════════════════════════════════════════ -->
+<section id="recall">
+  <div class="wrap">
+    <div class="mark rv"><span class="sq"></span> § 03 — THE DECISION THAT DEFINES IT</div>
+    <h2 class="rv">A FALSE ALARM COSTS<br>THIRTY <em class="am">SECONDS.</em></h2>
+    <p class="lead rv d1">
+      A missed survivor cannot be recovered. The costs are wildly asymmetric, so the
+      confidence threshold should be too — ours is <em class="hi">0.18</em>, not the
+      conventional 0.5, read off the validation run's precision-recall curve.
+    </p>
+
+    <div class="rcl">
+      <div class="rv">
+        <div class="rb base">
+          <div class="rt"><span class="rn">DEFAULT · CONF 0.50</span><span class="rval">0.740</span></div>
+          <div class="rtrack"><div class="rfill" data-w="74"></div></div>
+        </div>
+        <div class="rb ours">
+          <div class="rt"><span class="rn">ARES · CONF 0.18</span><span class="rval">0.831</span></div>
+          <div class="rtrack"><div class="rfill" data-w="83.1"></div></div>
+          <div class="rscale"><span>0</span><span>RECALL</span><span>1.0</span></div>
+        </div>
+        <div class="delta">
+          <div class="big">+91 / 1,000</div>
+          <p>More survivors found, for every thousand present. That is the entire argument
+          for this system's most important parameter.</p>
+        </div>
+      </div>
+
+      <div class="card rv d1">
+        <span class="fn">THE PRICE OF THAT CHOICE</span>
+        <p>At 0.18 the detector reports anything person-shaped — a shadow, a bag, a patch of
+        rubble — and the tracker gives each one an identity. That is why <b>333 identities
+        exist for 23 people</b>.</p>
+        <p>We measured those short tracks: mean confidence <em class="hi">0.42</em> against
+        <em class="hi">0.52</em> for long ones, and only <em class="hi">7%</em> starting or
+        ending at the frame edge. Low confidence, mid-frame, gone in a frame or two is
+        flicker — not someone walking out of shot.</p>
+        <p>So the filter is <b>persistence</b>, not a higher threshold. A track must hold for
+        2.5 seconds. Expressed as a duration, because that is 60 frames on this clip and
+        3 on a Raspberry Pi.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SCOPE ═══════════════════════════════════════════════════ -->
+<section id="scope">
+  <div class="wrap">
+    <div class="mark rv"><span class="sq"></span> § 04 — HONEST SCOPE</div>
+    <h2 class="rv">WHAT IS BUILT,<br>AND WHAT <em class="am">IS NOT.</em></h2>
+    <p class="lead rv d1">
+      Nothing in the "described" row is simulated, mocked or implied anywhere in the
+      product. We would rather answer hard questions about what is on the screen.
+    </p>
+
+    <div class="tw rv d1">
+      <table>
+        <thead><tr><th>CAPABILITY</th><th>STATUS</th><th>DETAIL</th></tr></thead>
+        <tbody>
+          <tr><td class="cap">On-device inference</td><td><span class="pill b">Built</span></td><td class="nt">YOLOv12s, ONNX-exported, Raspberry Pi 4 target</td></tr>
+          <tr><td class="cap">Counting &amp; tracking</td><td><span class="pill b">Built</span></td><td class="nt">ByteTrack with a measured persistence filter</td></tr>
+          <tr><td class="cap">Geo-tagged mapping</td><td><span class="pill b">Built</span></td><td class="nt">Nadir projection from assumed altitude and FOV</td></tr>
+          <tr><td class="cap">Priority ranking</td><td><span class="pill b">Built</span></td><td class="nt">A transparent weighted formula, printed on screen</td></tr>
+          <tr><td class="cap">Command dashboard</td><td><span class="pill b">Built</span></td><td class="nt">Works with the backend switched off</td></tr>
+          <tr><td class="cap">Offline resilience</td><td><span class="pill b">Built</span></td><td class="nt">A consequence of on-device inference, not a feature</td></tr>
+          <tr><td class="cap">RGB + thermal fusion</td><td><span class="pill p">Partial</span></td><td class="nt">Public thermal datasets, not physical hardware</td></tr>
+          <tr><td class="cap">Hazard classification</td><td><span class="pill p">Partial</span></td><td class="nt">3 of 7 classes — fire/smoke, flood, collapse</td></tr>
+          <tr><td class="cap">Autonomous nav · SLAM</td><td><span class="pill d">Described</span></td><td class="nt">Architecture only. Deliberately not built, and not mocked</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="trio rv d2">
+      <div class="tri">
+        <span class="fn">NO INVENTED DATA</span>
+        <h3>The hazard list is empty</h3>
+        <p>Because the classifier does not exist yet. A fire on the map would make the ranking respond to something we made up, so the scoring drops the term and says it did.</p>
+      </div>
+      <div class="tri">
+        <span class="fn">NO INVENTED TELEMETRY</span>
+        <h3>There is no battery gauge</h3>
+        <p>There is no aircraft. The dashboard shows the constants it computed with instead, each tagged assumed, chosen, derived or measured.</p>
+      </div>
+      <div class="tri">
+        <span class="fn">REAL MODEL OUTPUT</span>
+        <h3>Borrowed flight, our perception</h3>
+        <p>No drone, so the clip is a public UAV dataset. Every box on it is our trained model's actual output over that footage.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ EDGE ════════════════════════════════════════════════════ -->
+<section id="edge">
+  <div class="wrap">
+    <div class="mark rv"><span class="sq"></span> § 05 — EDGE DEPLOYMENT</div>
+    <h2 class="rv">A SEARCH UAV DOES NOT<br>NEED <em class="hi">30 FPS.</em></h2>
+    <p class="lead rv d1">
+      It needs to not miss the ground. At 20 m the camera sees 23 m of it, and the aircraft
+      takes seconds to cross its own footprint — so every patch is seen in several
+      consecutive frames even at one frame per second.
+    </p>
+
+    <div class="fp rv d1">
+      <svg viewBox="0 0 660 250" role="img" aria-label="Consecutive camera footprints overlap heavily as the drone advances, so the same survivor appears in four consecutive frames">
+        <g font-family="JetBrains Mono, monospace">
+          <text x="8" y="26" font-size="9.5" fill="#6B7F87" letter-spacing="1.4">FRAME n</text>
+          <text x="8" y="86" font-size="9.5" fill="#6B7F87" letter-spacing="1.4">n + 1</text>
+          <text x="8" y="146" font-size="9.5" fill="#6B7F87" letter-spacing="1.4">n + 2</text>
+          <text x="8" y="206" font-size="9.5" fill="#6B7F87" letter-spacing="1.4">n + 3</text>
+
+          <rect class="fpbar" x="92" y="10"  width="320" height="22" fill="rgba(34,167,189,.10)" stroke="rgba(34,167,189,.45)"/>
+          <rect class="fpbar" x="158" y="70"  width="320" height="22" fill="rgba(34,167,189,.10)" stroke="rgba(34,167,189,.45)"/>
+          <rect class="fpbar" x="224" y="130" width="320" height="22" fill="rgba(34,167,189,.10)" stroke="rgba(34,167,189,.45)"/>
+          <rect class="fpbar" x="290" y="190" width="320" height="22" fill="rgba(34,167,189,.10)" stroke="rgba(34,167,189,.45)"/>
+
+          <line x1="336" y1="0" x2="336" y2="250" stroke="#FB9A4A" stroke-width="1.3" stroke-dasharray="3 5" opacity=".8"/>
+          <circle cx="336" cy="21"  r="4.5" fill="#FB9A4A"/>
+          <circle cx="336" cy="81"  r="4.5" fill="#FB9A4A"/>
+          <circle cx="336" cy="141" r="4.5" fill="#FB9A4A"/>
+          <circle cx="336" cy="201" r="4.5" fill="#FB9A4A"/>
+
+          <text x="424" y="25"  font-size="9.5" fill="#6B7F87" letter-spacing="1.2">23 M OF GROUND</text>
+          <text x="490" y="85"  font-size="9.5" fill="#6B7F87" letter-spacing="1.2">DRONE ADVANCES</text>
+          <text x="556" y="145" font-size="9.5" fill="#6B7F87" letter-spacing="1.2">SAME PERSON</text>
+          <text x="622" y="205" font-size="9.5" fill="#FB9A4A" font-weight="700" letter-spacing="1.2">4TH LOOK</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="trio rv d2">
+      <div class="tri">
+        <span class="fn">WHY IT HOLDS</span>
+        <h3>Redundancy is free</h3>
+        <p>A miss in one frame is recovered in the next. Thirty FPS gives thirty looks at the same ground, twenty-nine redundant, at thirty times the power budget.</p>
+      </div>
+      <div class="tri">
+        <span class="fn">WHY IT IS SLOW</span>
+        <h3>Attention on a Cortex-A72</h3>
+        <p>YOLOv12 is attention-centric and trades speed for accuracy. On a Pi 4 with no accelerator that trade is real, and worth stating rather than hiding.</p>
+      </div>
+      <div class="tri">
+        <span class="fn">WHAT COMES NEXT</span>
+        <h3>Quantisation, then NCNN</h3>
+        <p>INT8 is roughly 4× smaller and much faster on CPU. NCNN is hand-optimised for ARM. Both are measurements we have not taken yet.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ RESULTS ═════════════════════════════════════════════════ -->
+<section id="results">
+  <div class="wrap">
+    <div class="mark rv"><span class="sq"></span> § 06 — MEASURED</div>
+    <h2 class="rv">THE <em class="hi">NUMBERS.</em></h2>
+    <p class="lead rv d1">
+      Trained on combined C2A and VisDrone under one unified <span style="color:var(--cy)">person</span>
+      class. Every figure from the validation run — none estimated.
+    </p>
+    <div class="stats rv d1">
+      <div class="stat"><div class="num"><em data-count="845" data-dec="3">0</em></div><div class="lbl">PRECISION · OF WHAT IT CALLS A PERSON</div></div>
+      <div class="stat"><div class="num"><em data-count="717" data-dec="3">0</em></div><div class="lbl">RECALL · AT THE DEFAULT THRESHOLD</div></div>
+      <div class="stat"><div class="num"><em data-count="775" data-dec="3">0</em></div><div class="lbl">mAP50 · SMALL AERIAL TARGETS</div></div>
+      <div class="stat"><div class="num"><em data-count="494" data-dec="3">0</em></div><div class="lbl">mAP50-95 · STRICT BOX PRECISION</div></div>
+    </div>
+    <p class="lead rv d2" style="margin-top:24px;font-size:13px">
+      For context: YOLO12s scores 48.0 mAP50-95 on COCO — mostly large, centred, well-lit
+      objects. ARES scores <em class="hi">49.4</em> on small humans seen from directly above.
+    </p>
+
+    <div class="rv d2" style="display:grid;gap:14px;margin-top:44px">
+      <div class="shot"><div class="h">Command dashboard — full view</div><div class="f">REPLACE WITH img/dashboard-full.png</div></div>
+      <div style="display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(270px,1fr))">
+        <div class="shot"><div class="h">Map &amp; rescue queue</div><div class="f">img/dashboard-map.png</div></div>
+        <div class="shot"><div class="h">Detection overlay</div><div class="f">img/dashboard-overlay.png</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ TEAM ════════════════════════════════════════════════════ -->
+<section>
+  <div class="wrap">
+    <div class="mark rv"><span class="sq"></span> § 07 — TEAM</div>
+    <h2 class="rv">WHO BUILT IT.</h2>
+    <div class="team">
+      <div class="mem rv"><div class="nm">DEWANG</div><p>Detection model, hazard classifier, on-device benchmark, backend and dashboard.</p></div>
+      <div class="mem rv d1"><div class="nm">ROBIN</div><p>Tracking, pixel-to-GPS localization, and the rescue priority scoring logic.</p></div>
+      <div class="mem rv d2"><div class="nm">UJJAINI</div><p>Pitch, presentation and the recorded demo.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="signoff">
+  <div class="wrap">
+    <div class="kick rv">§ SIGN OFF</div>
+    <h2 class="rv" style="margin-top:16px">FIND THEM FASTER.<br><em class="hi">MISS NOBODY.</em></h2>
+    <div class="hctas rv d1">
+      <a class="btn" href="https://github.com/dewangdhakad/ARES">VIEW THE SOURCE →</a>
+      <a class="btn ghost" href="https://github.com/dewangdhakad/ARES/tree/main/docs/handbook">TECHNICAL HANDBOOK</a>
+    </div>
+    <div class="beta rv d2">SMART INDIA HACKATHON 2026 · HARDWARE EDITION</div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>ARES · AUTONOMOUS RESCUE &amp; ENVIRONMENTAL INTELLIGENCE SYSTEM</span>
+    <span>SIH 2026 · HARDWARE EDITION</span>
+  </div>
+  <div class="wrap">
+    <p class="fine">
+      Demo footage from public UAV datasets (VisDrone-VID). Detections are real output from
+      our trained YOLOv12s weights over that footage. Altitude, field of view, GPS origin and
+      flight track are fixed per-clip constants, disclosed on the dashboard rather than
+      implied to be sensed. The de-duplication panel above is a schematic illustration, not
+      model output. Map tiles © OpenStreetMap contributors, cached locally.
+    </p>
+  </div>
+</footer>
+
+<script>
+(function(){
+var REDUCE = matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+/* ── scroll progress ─────────────────────────────────────────── */
+var bar=document.getElementById('bar');
+addEventListener('scroll',function(){
+  var h=document.documentElement;
+  bar.style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100)+'%';
+},{passive:true});
+
+/* ── marquee loop ────────────────────────────────────────────── */
+var mq=document.getElementById('mq'); if(mq) mq.innerHTML+=mq.innerHTML;
+
+/* ── reveal ──────────────────────────────────────────────────── */
+var rvs=document.querySelectorAll('.rv');
+if(REDUCE||!('IntersectionObserver' in window)){
+  rvs.forEach(function(e){e.classList.add('in')});
+}else{
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})
+  },{threshold:.13,rootMargin:'0px 0px -6% 0px'});
+  rvs.forEach(function(e){io.observe(e)});
+}
+
+/* ── counters ────────────────────────────────────────────────── */
+function countUp(el){
+  var end=+el.dataset.count, dec=+el.dataset.dec||0, t0=null, dur=1350;
+  function fmt(v){ return dec ? (v/1000).toFixed(3) : Math.round(v).toLocaleString('en-US'); }
+  if(REDUCE){ el.textContent=fmt(end); return; }
+  function tick(t){
+    if(t0===null)t0=t;
+    var p=Math.min((t-t0)/dur,1), e=1-Math.pow(1-p,3);
+    el.textContent=fmt(end*e);
+    if(p<1)requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+var cs=document.querySelectorAll('[data-count]');
+if(REDUCE||!('IntersectionObserver' in window)){ cs.forEach(countUp); }
+else{
+  var cio=new IntersectionObserver(function(es){
+    es.forEach(function(e){if(e.isIntersecting){countUp(e.target);cio.unobserve(e.target)}})
+  },{threshold:.55});
+  cs.forEach(function(e){cio.observe(e)});
+}
+
+/* ── recall bars ─────────────────────────────────────────────── */
+var rcl=document.querySelector('.rcl');
+function fillBars(root){
+  root.querySelectorAll('.rfill').forEach(function(f,i){
+    var w=f.dataset.w+'%';
+    if(REDUCE){f.style.width=w;return}
+    setTimeout(function(){f.style.width=w},i*240);
+  });
+}
+if(rcl){
+  if(REDUCE||!('IntersectionObserver' in window)){fillBars(rcl)}
+  else{
+    var rio=new IntersectionObserver(function(es){
+      es.forEach(function(e){if(e.isIntersecting){fillBars(e.target);rio.unobserve(e.target)}})
+    },{threshold:.32});
+    rio.observe(rcl);
+  }
+}
+
+/* ── magnetic buttons + terminal parallax ────────────────────── */
+if(!REDUCE && matchMedia('(pointer:fine)').matches){
+  document.querySelectorAll('.btn').forEach(function(b){
+    b.addEventListener('mousemove',function(e){
+      var r=b.getBoundingClientRect();
+      b.style.transform='translate('+((e.clientX-r.left-r.width/2)/5)+'px,'+((e.clientY-r.top-r.height/2)/5)+'px)';
+    });
+    b.addEventListener('mouseleave',function(){b.style.transform=''});
+  });
+  var term=document.querySelector('.term');
+  addEventListener('mousemove',function(e){
+    if(!term)return;
+    var x=(e.clientX/innerWidth-.5), y=(e.clientY/innerHeight-.5);
+    term.style.transform='translate('+(x*-9)+'px,'+(y*-7)+'px)';
+  },{passive:true});
+}
+
+/* ── mission event log ───────────────────────────────────────────
+   Structure and values follow the real /api/events payload:
+   kind, frame_id, track_id, from_band → to_band, score.            */
+var LINES=[
+  ['c-dim','$ ares replay --clip demo_clip.mp4 --fps 24'],
+  ['c-dim','  loaded 7,081 detections · 333 track ids'],
+  ['c-ar', '→ f0000  replay start'],
+  ['c-ar', '→ f0091  cluster formed · 2 survivors'],
+  ['c-ar', '→ f0181  track 1409 first seen · conf 0.802'],
+  ['c-hold','! f0181  unconfirmed — 60 frames of evidence required'],
+  ['c-ar', '→ f0235  group now 22 confirmed'],
+  ['c-w',  '→ f0306  band change · 1409  high → critical'],
+  ['c-ok', '✓ f0306  survivor 1409 CONFIRMED · group now 23'],
+  ['c-dim','  310 identities dropped — under 2.5 s of evidence'],
+  ['c-ok', '✓ 320 frames · 23 survivors · ranked, mapped']
+];
+var log=document.getElementById('tlog');
+function runLog(i){
+  if(!log)return;
+  i=i||0;
+  if(i===0)log.innerHTML='';
+  if(i>=LINES.length){ setTimeout(function(){runLog(0)},4600); return; }
+  var d=document.createElement('div');
+  d.className='tl';
+  d.innerHTML='<span class="'+LINES[i][0]+'">'+LINES[i][1]+'</span>';
+  log.appendChild(d);
+  requestAnimationFrame(function(){requestAnimationFrame(function(){d.classList.add('on')})});
+  setTimeout(function(){runLog(i+1)}, i===0?820:920);
+}
+runLog();
+
+/* ── THE DE-DUPLICATION VISUALISER ───────────────────────────────
+   A schematic, and labelled as one. It shows the MECHANISM: boxes
+   appear everywhere at a recall-first threshold, most of them are
+   flicker, and a persistence filter removes exactly those.         */
+(function(){
+  var stage=document.getElementById('vzStage');
+  if(!stage) return;
+  var sweep=document.getElementById('vzSweep'),
+      phase=document.getElementById('vzPhase'),
+      tag=document.getElementById('vzPhaseTag'),
+      cDet=document.getElementById('cDet'), cId=document.getElementById('cId'), cSur=document.getElementById('cSur');
+
+  /* 9 real survivors + 22 flicker artefacts. Deterministic layout —
+     a fixed sequence, so the schematic is the same on every load. */
+  var SEED=20260905;
+  function rnd(){ SEED=(SEED*1664525+1013904223)%4294967296; return SEED/4294967296; }
+
+  var boxes=[];
+  function build(){
+    stage.querySelectorAll('.det').forEach(function(n){n.remove()});
+    boxes=[];
+    var W=stage.clientWidth, H=stage.clientHeight;
+    var i;
+    for(i=0;i<9;i++) boxes.push(mk(W,H,true));
+    for(i=0;i<22;i++) boxes.push(mk(W,H,false));
+  }
+  function mk(W,H,real){
+    var w = real ? 20+rnd()*12 : 12+rnd()*10;
+    var h = w*(1.5+rnd()*.5);
+    var el=document.createElement('div');
+    el.className='det'+(real?'':' ghost');
+    el.style.left=(28+rnd()*(W-90))+'px';
+    el.style.top =(26+rnd()*(H-100))+'px';
+    el.style.width=w+'px'; el.style.height=h+'px';
+    var conf = real ? (0.52+rnd()*0.30) : (0.19+rnd()*0.22);
+    el.dataset.c = conf.toFixed(2);
+    stage.appendChild(el);
+    return {el:el, real:real};
+  }
+  build();
+  var rt; addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(build,240)},{passive:true});
+
+  function setPhase(n,label,tagTxt){
+    phase.innerHTML='PHASE <i>'+n+'</i> — '+label;
+    tag.textContent=tagTxt;
+  }
+  function num(el,v){ el.textContent=Math.round(v).toLocaleString('en-US'); }
+
+  var timers=[];
+  function clearAll(){ timers.forEach(clearTimeout); timers=[]; }
+  function at(ms,fn){ timers.push(setTimeout(fn,ms)); }
+
+  function cycle(){
+    clearAll();
+    boxes.forEach(function(b){ b.el.className='det'+(b.real?'':' ghost'); b.el.style.opacity='0'; });
+    num(cDet,0); num(cId,0); num(cSur,0);
+    sweep.style.transition='none'; sweep.style.left='-4px'; sweep.style.opacity='0';
+
+    /* ── phase 1 · raw detection ───────────────────────────── */
+    setPhase('01','RAW DETECTION','DETECTING');
+    boxes.forEach(function(b,i){
+      at(120+i*62, function(){
+        b.el.style.opacity='1';
+        num(cDet, 7081*((i+1)/boxes.length));
+      });
+    });
+
+    /* ── phase 2 · identities ──────────────────────────────── */
+    at(2350,function(){
+      setPhase('02','IDENTITIES ISSUED','TRACKING');
+      boxes.forEach(function(b,i){
+        at(i*46,function(){ num(cId, 333*((i+1)/boxes.length)); });
+      });
+      /* flicker: the artefacts blink, which is exactly what breaks a tracker */
+      boxes.filter(function(b){return !b.real}).forEach(function(b,i){
+        at(340+i*70, function(){ b.el.style.opacity='.25'; });
+        at(560+i*70, function(){ b.el.style.opacity='1';   });
+      });
+    });
+
+    /* ── phase 3 · persistence filter ──────────────────────── */
+    at(4300,function(){
+      setPhase('03','PERSISTENCE FILTER · 2.5 S','FILTERING');
+      sweep.style.opacity='1';
+      sweep.style.transition='left 1.9s linear';
+      sweep.style.left=(stage.clientWidth+4)+'px';
+
+      var W=stage.clientWidth, kept=0;
+      boxes.forEach(function(b){
+        var x=parseFloat(b.el.style.left);
+        var when=(x/W)*1900;
+        at(when,function(){
+          if(b.real){ b.el.classList.add('keep'); kept++; num(cSur, 23*(kept/9)); }
+          else      { b.el.classList.add('dead'); }
+        });
+      });
+      at(2050,function(){
+        sweep.style.opacity='0';
+        setPhase('04','CONFIRMED ROSTER','23 SURVIVORS');
+        num(cDet,7081); num(cId,333); num(cSur,23);
+      });
+    });
+
+    at(9200,cycle);
+  }
+
+  if(REDUCE){
+    boxes.forEach(function(b){
+      b.el.style.opacity = b.real ? '1' : '0';
+      if(b.real) b.el.classList.add('keep');
+    });
+    setPhase('04','CONFIRMED ROSTER','23 SURVIVORS');
+    num(cDet,7081); num(cId,333); num(cSur,23);
+  }else if('IntersectionObserver' in window){
+    var vio=new IntersectionObserver(function(es){
+      es.forEach(function(e){ e.isIntersecting ? cycle() : clearAll(); });
+    },{threshold:.28});
+    vio.observe(stage);
+  }else{ cycle(); }
+})();
+})();
+</script>

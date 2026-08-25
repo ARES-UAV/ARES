@@ -252,6 +252,15 @@ class MissionEvent(BaseModel):
       `cluster_formed`  a set of survivors first found within CLUSTER_RADIUS_M
                         of each other. `track_ids` is the whole membership.
 
+      `cluster_grew`    the same group with a newly confirmed survivor in it —
+                        a strict superset of a membership already reported.
+                        `track_ids` is again the WHOLE membership, not the
+                        joiners, so either kind answers "who is in this group".
+                        Kept apart from `cluster_formed` because a single group
+                        accumulating members emits one line per new member, and
+                        calling all of them formations claims a group count the
+                        geometry does not support.
+
       `priority_band`   a survivor's band was assessed. `from_band` is null on
                         the first assessment of a track and carries the
                         previous band on every change after that.
@@ -264,7 +273,9 @@ class MissionEvent(BaseModel):
     """
 
     frame_id: int = Field(..., ge=0, description="Frame the event happened on")
-    kind: str = Field(..., description="cluster_formed | priority_band")
+    kind: str = Field(
+        ..., description="cluster_formed | cluster_grew | priority_band"
+    )
 
     # priority_band only.
     track_id: Optional[int] = Field(None, ge=0)
@@ -276,7 +287,7 @@ class MissionEvent(BaseModel):
         None, ge=0.0, le=1.0, description="The score that produced `to_band`"
     )
 
-    # cluster_formed only. Sorted, so the rendered line is stable between runs.
+    # Cluster kinds only. Sorted, so the rendered line is stable between runs.
     track_ids: List[int] = Field(
         default_factory=list, description="Cluster membership, ascending"
     )

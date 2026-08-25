@@ -58,6 +58,7 @@ const TAG = {
   replay_start: 'REPLAY',
   survivor_confirmed: 'CONFIRM',
   cluster_formed: 'CLUSTER',
+  cluster_grew: 'GROUP',
   priority_assessed: 'ASSESS',
   priority_changed: 'PRIORITY',
   clip_end: 'END',
@@ -100,6 +101,7 @@ function stripeToken(entry) {
   switch (entry.kind) {
     case 'survivor_confirmed':
     case 'cluster_formed':
+    case 'cluster_grew':
       return '--survivor'
     case 'priority_assessed':
     case 'priority_changed':
@@ -174,6 +176,23 @@ function Message({
           <span className="text-ink-muted">
             {' '}
             — {entry.trackIds.length} within cluster radius
+          </span>
+        </>
+      )
+
+    // A group gaining a member, NOT a second group. Deliberately without the
+    // ID list `cluster_formed` carries: by the end of this clip the membership
+    // is 23 track IDs, which is unreadable on one log line — and every one of
+    // those survivors already has its own `survivor_confirmed` line above,
+    // because a track joins a group at the frame it is confirmed. The size is
+    // the only thing this line adds.
+    case 'cluster_grew':
+      return (
+        <>
+          <span className="text-ink">Group</span>
+          <span className="text-ink-muted">
+            {' '}
+            now {entry.trackIds.length} survivors within cluster radius
           </span>
         </>
       )
@@ -357,9 +376,9 @@ export default function EventLogPanel({
         Priority re-assessed every {config.event_sample_interval_s}s of
         playback and on every newly confirmed track, not every frame — a score
         wandering across a band threshold in between is not reported. Tracks
-        that lasted under{' '}
-        {config.min_track_seconds ?? FALLBACK_CONFIG.min_track_seconds}s never
-        appear: they are in the raw detections and on the video overlay, not in
+        seen in fewer than{' '}
+        {config.min_track_frames ?? FALLBACK_CONFIG.min_track_frames} frames
+        never appear: they are in the raw detections and on the video overlay, not in
         this log. Log clears when the clip is scrubbed backwards.
         {!pinned && ' Scrolled up: not following the clock.'}
       </p>

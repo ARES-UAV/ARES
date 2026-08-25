@@ -1,0 +1,985 @@
+<title>ARES Field Manual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap">
+
+<style>
+  /* ═══════════════════════════════════════════════════════════════
+     ARES Field Manual
+     Palette inherited from the project's own frontend/src/tokens.css —
+     the validated dark set is used verbatim; the light set is derived
+     from the same hues with contrast re-checked against a pale ground.
+     ═══════════════════════════════════════════════════════════════ */
+
+  :root {
+    --ground:      #F3F6F5;
+    --panel:       #FFFFFF;
+    --raised:      #E8EFEE;
+    --edge:        #D0DCDA;
+    --edge-soft:   #E1EAE8;
+
+    --ink:         #0E1618;
+    --ink-soft:    #445558;
+    --ink-muted:   #6C7E82;
+
+    --accent:      #0E7285;
+    --accent-ink:  #FFFFFF;
+    --accent-soft: rgba(14, 114, 133, 0.10);
+    --accent-line: rgba(14, 114, 133, 0.28);
+
+    --amber:       #B4520F;
+    --amber-soft:  rgba(180, 82, 15, 0.10);
+    --flag:        #A8410C;
+
+    --font-display: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+    --font-body:    'Newsreader', Georgia, 'Times New Roman', serif;
+    --font-data:    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --rail: 232px;
+    --measure: 68ch;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #0B1013;
+      --panel:       #121A1E;
+      --raised:      #1A252A;
+      --edge:        #22323A;
+      --edge-soft:   #18242A;
+
+      --ink:         #E6EDEF;
+      --ink-soft:    #A8B8BE;
+      --ink-muted:   #6B7F87;
+
+      --accent:      #22A7BD;
+      --accent-ink:  #0B1013;
+      --accent-soft: rgba(34, 167, 189, 0.14);
+      --accent-line: rgba(34, 167, 189, 0.34);
+
+      --amber:       #FB9A4A;
+      --amber-soft:  rgba(251, 154, 74, 0.12);
+      --flag:        #E06A1F;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #0B1013;
+    --panel:       #121A1E;
+    --raised:      #1A252A;
+    --edge:        #22323A;
+    --edge-soft:   #18242A;
+
+    --ink:         #E6EDEF;
+    --ink-soft:    #A8B8BE;
+    --ink-muted:   #6B7F87;
+
+    --accent:      #22A7BD;
+    --accent-ink:  #0B1013;
+    --accent-soft: rgba(34, 167, 189, 0.14);
+    --accent-line: rgba(34, 167, 189, 0.34);
+
+    --amber:       #FB9A4A;
+    --amber-soft:  rgba(251, 154, 74, 0.12);
+    --flag:        #E06A1F;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 17px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .mono { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+
+  .eyebrow {
+    font-family: var(--font-data);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    line-height: 1.15;
+    text-wrap: balance;
+    margin: 0;
+    letter-spacing: -0.015em;
+  }
+
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, summary:focus-visible, button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  /* ── Shell ─────────────────────────────────────────────────── */
+  .shell { display: flex; gap: 0; align-items: flex-start; }
+
+  .rail {
+    position: sticky;
+    top: 0;
+    width: var(--rail);
+    flex: 0 0 var(--rail);
+    height: 100vh;
+    overflow-y: auto;
+    padding: 28px 20px 40px;
+    border-right: 1px solid var(--edge);
+    background: var(--panel);
+  }
+  .rail-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 19px;
+    letter-spacing: -0.02em;
+    margin-bottom: 2px;
+  }
+  .rail-sub { font-size: 12px; color: var(--ink-muted); font-family: var(--font-data); margin-bottom: 22px; }
+  .rail nav { display: flex; flex-direction: column; gap: 1px; }
+  .rail nav a {
+    display: flex;
+    gap: 9px;
+    align-items: baseline;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-family: var(--font-display);
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    text-decoration: none;
+    line-height: 1.35;
+  }
+  .rail nav a:hover { background: var(--accent-soft); color: var(--ink); }
+  .rail nav a .n { font-family: var(--font-data); font-size: 11px; color: var(--ink-muted); min-width: 15px; }
+
+  main { flex: 1 1 auto; min-width: 0; padding: 0 clamp(20px, 5vw, 64px) 96px; }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  .prose { max-width: var(--measure); }
+
+  /* ── Masthead ──────────────────────────────────────────────── */
+  .mast { padding: clamp(48px, 9vw, 96px) 0 40px; border-bottom: 1px solid var(--edge); }
+  .mast h1 {
+    font-size: clamp(40px, 7vw, 68px);
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    margin: 14px 0 0;
+  }
+  .mast .lede {
+    margin: 20px 0 0;
+    font-size: 19px;
+    color: var(--ink-soft);
+    max-width: 56ch;
+  }
+  .mast-meta {
+    display: flex; flex-wrap: wrap; gap: 10px 26px;
+    margin-top: 28px;
+    font-family: var(--font-data); font-size: 12px; color: var(--ink-muted);
+  }
+  .mast-meta b { color: var(--ink); font-weight: 500; }
+
+  /* ── Funnel: the thesis ────────────────────────────────────── */
+  .funnel {
+    margin: 44px 0 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border: 1px solid var(--edge);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--panel);
+  }
+  .funnel > div { padding: 22px 20px; border-left: 1px solid var(--edge-soft); position: relative; }
+  .funnel > div:first-child { border-left: 0; }
+  .funnel .fig {
+    font-family: var(--font-data);
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(28px, 4.4vw, 42px);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+  .funnel .k { margin-top: 9px; font-family: var(--font-display); font-weight: 600; font-size: 14px; }
+  .funnel .d { margin-top: 5px; font-size: 13.5px; color: var(--ink-muted); line-height: 1.45; }
+  .funnel .last .fig { color: var(--accent); }
+  .funnel .last { background: var(--accent-soft); }
+
+  /* ── Sections ──────────────────────────────────────────────── */
+  section { padding: 64px 0 0; scroll-margin-top: 20px; }
+  section > .head { margin-bottom: 26px; }
+  section h2 { font-size: clamp(25px, 3.4vw, 33px); margin-top: 8px; }
+  section .head p { margin: 12px 0 0; color: var(--ink-soft); max-width: 60ch; font-size: 16.5px; }
+
+  /* ── Diagram ───────────────────────────────────────────────── */
+  .diagram { border: 1px solid var(--edge); border-radius: 6px; background: var(--panel); padding: 26px 20px; overflow-x: auto; }
+  .diagram svg { display: block; margin: 0 auto; min-width: 520px; }
+
+  /* ── Data table ────────────────────────────────────────────── */
+  .tablewrap { overflow-x: auto; border: 1px solid var(--edge); border-radius: 6px; background: var(--panel); }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+  thead th {
+    text-align: left;
+    font-family: var(--font-data);
+    font-size: 10.5px; font-weight: 500;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ink-muted);
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--edge);
+    white-space: nowrap;
+  }
+  tbody td { padding: 11px 16px; border-bottom: 1px solid var(--edge-soft); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover { background: var(--accent-soft); }
+  td.num { font-family: var(--font-data); font-variant-numeric: tabular-nums; font-weight: 500; white-space: nowrap; color: var(--accent); }
+  td.term { font-family: var(--font-data); font-size: 13px; white-space: nowrap; }
+
+  /* ── Q&A ───────────────────────────────────────────────────── */
+  .qgroup { margin-top: 32px; }
+  .qgroup > h3 {
+    font-size: 13px; font-family: var(--font-data); font-weight: 500;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent);
+    padding-bottom: 8px; border-bottom: 1px solid var(--accent-line); margin-bottom: 4px;
+  }
+  details.q { border-bottom: 1px solid var(--edge-soft); }
+  details.q > summary {
+    cursor: pointer; list-style: none;
+    padding: 14px 30px 14px 0; position: relative;
+    font-family: var(--font-display); font-weight: 600; font-size: 16px;
+    line-height: 1.4;
+  }
+  details.q > summary::-webkit-details-marker { display: none; }
+  details.q > summary::after {
+    content: ""; position: absolute; right: 6px; top: 21px;
+    width: 8px; height: 8px;
+    border-right: 1.6px solid var(--ink-muted); border-bottom: 1.6px solid var(--ink-muted);
+    transform: rotate(45deg); transition: transform .18s ease;
+  }
+  details.q[open] > summary::after { transform: rotate(-135deg); }
+  details.q > summary:hover { color: var(--accent); }
+  .answer { padding: 0 0 20px; max-width: var(--measure); }
+  .answer p { margin: 0 0 12px; }
+  .answer p:last-child { margin-bottom: 0; }
+  .said {
+    border-left: 2px solid var(--accent);
+    padding: 2px 0 2px 16px;
+    margin: 0 0 14px;
+    color: var(--ink);
+  }
+  .note {
+    font-family: var(--font-data); font-size: 12.5px; line-height: 1.55;
+    color: var(--ink-muted); margin: 0 0 12px;
+  }
+
+  /* ── Cards ─────────────────────────────────────────────────── */
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(258px, 1fr)); gap: 12px; }
+  .card {
+    border: 1px solid var(--edge); border-radius: 6px; background: var(--panel);
+    padding: 16px 17px;
+  }
+  .card h4 { font-size: 15px; margin-bottom: 7px; }
+  .card p { margin: 0; font-size: 14px; color: var(--ink-soft); line-height: 1.5; }
+  .card .alt {
+    margin-top: 9px; font-family: var(--font-data); font-size: 11.5px;
+    color: var(--ink-muted); line-height: 1.5;
+  }
+  .card .alt b { color: var(--ink-soft); font-weight: 500; }
+
+  /* ── Mistakes ──────────────────────────────────────────────── */
+  .miss { display: flex; gap: 15px; padding: 15px 0; border-bottom: 1px solid var(--edge-soft); }
+  .miss .tag {
+    flex: 0 0 auto; font-family: var(--font-data); font-size: 11px; font-weight: 700;
+    color: var(--amber); background: var(--amber-soft);
+    padding: 3px 7px; border-radius: 3px; height: fit-content; letter-spacing: .04em;
+  }
+  .miss h4 { font-size: 15.5px; margin-bottom: 5px; }
+  .miss p { margin: 0; font-size: 14.5px; color: var(--ink-soft); line-height: 1.55; max-width: 62ch; }
+
+  /* ── Checklist ─────────────────────────────────────────────── */
+  ul.check { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 2px; }
+  ul.check li {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 10px 12px; border-radius: 5px; font-size: 15px;
+  }
+  ul.check li:nth-child(odd) { background: var(--raised); }
+  ul.check li::before {
+    content: ""; flex: 0 0 auto; margin-top: 5px;
+    width: 12px; height: 12px; border: 1.5px solid var(--ink-muted); border-radius: 2.5px;
+  }
+
+  /* ── Parts index ───────────────────────────────────────────── */
+  .parts { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+  .part {
+    display: flex; gap: 14px; align-items: baseline;
+    border: 1px solid var(--edge); border-radius: 6px; background: var(--panel);
+    padding: 14px 16px;
+  }
+  .part .n {
+    font-family: var(--font-data); font-size: 12px; font-weight: 700;
+    color: var(--accent); min-width: 20px;
+  }
+  .part h4 { font-size: 14.5px; margin-bottom: 4px; }
+  .part p { margin: 0; font-size: 13px; color: var(--ink-muted); line-height: 1.45; }
+  .part code {
+    display: block; margin-top: 7px;
+    font-family: var(--font-data); font-size: 11px; color: var(--ink-muted);
+  }
+
+  .rule { height: 1px; background: var(--edge); margin: 0; border: 0; }
+
+  footer {
+    margin-top: 80px; padding-top: 28px; border-top: 1px solid var(--edge);
+    font-family: var(--font-data); font-size: 12px; color: var(--ink-muted);
+    line-height: 1.7;
+  }
+
+  @media (max-width: 900px) {
+    .rail { display: none; }
+    body { font-size: 16.5px; }
+    .funnel { grid-template-columns: 1fr; }
+    .funnel > div { border-left: 0; border-top: 1px solid var(--edge-soft); }
+    .funnel > div:first-child { border-top: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<div class="shell">
+
+  <aside class="rail">
+    <div class="rail-title">ARES</div>
+    <div class="rail-sub">Field Manual</div>
+    <nav>
+      <a href="#pipeline"><span class="n">01</span><span>The pipeline</span></a>
+      <a href="#numbers"><span class="n">02</span><span>Numbers to know</span></a>
+      <a href="#qa"><span class="n">03</span><span>Judge Q&amp;A</span></a>
+      <a href="#decisions"><span class="n">04</span><span>Decisions</span></a>
+      <a href="#mistakes"><span class="n">05</span><span>Mistakes</span></a>
+      <a href="#open"><span class="n">06</span><span>Still open</span></a>
+      <a href="#parts"><span class="n">07</span><span>The full handbook</span></a>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="wrap">
+
+      <header class="mast">
+        <div class="eyebrow">Autonomous Rescue &amp; Environmental Intelligence System</div>
+        <h1>ARES Field Manual</h1>
+        <p class="lede">
+          Every number on the dashboard, why it is that number, and what to say when
+          someone asks. The companion to the twelve-part handbook in
+          <span class="mono">docs/handbook/</span>.
+        </p>
+        <div class="mast-meta">
+          <span>Internal hackathon <b>5 Sep 2026</b></span>
+          <span>National submission <b>20 Sep 2026</b></span>
+          <span>Model <b>YOLOv12s</b></span>
+          <span>Target <b>Raspberry Pi 4</b></span>
+        </div>
+
+        <div class="funnel">
+          <div>
+            <div class="fig">7,081</div>
+            <div class="k">Raw detections</div>
+            <div class="d">Every box the model drew across the clip.</div>
+          </div>
+          <div>
+            <div class="fig">333</div>
+            <div class="k">Unique track IDs</div>
+            <div class="d">Every identity the tracker issued. Includes flicker and ID switches.</div>
+          </div>
+          <div class="last">
+            <div class="fig">23</div>
+            <div class="k">Confirmed survivors</div>
+            <div class="d">Tracks that persisted 2.5&nbsp;seconds. The number that matters.</div>
+          </div>
+        </div>
+      </header>
+
+      <!-- ── 01 Pipeline ──────────────────────────────────────── -->
+      <section id="pipeline">
+        <div class="head">
+          <div class="eyebrow">01 — Architecture</div>
+          <h2>Four stages, each solving what the last one leaves behind</h2>
+          <p>
+            Detection has no memory. Tracking has no location. Localization has no
+            ordering. Every stage exists because the previous one produces something
+            not yet usable.
+          </p>
+        </div>
+
+        <div class="diagram">
+          <svg viewBox="0 0 720 300" role="img" aria-label="ARES pipeline: detection to tracking to localization to priority, feeding a dashboard">
+            <defs>
+              <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+                <path d="M0,0 L8,4.5 L0,9 z" fill="currentColor"/>
+              </marker>
+            </defs>
+            <g font-family="JetBrains Mono, monospace" color="var(--ink-muted)">
+
+              <!-- boxes -->
+              <g>
+                <rect x="14" y="20" width="150" height="52" rx="5" fill="var(--raised)" stroke="var(--edge)"/>
+                <text x="89" y="42" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">1 · DETECTION</text>
+                <text x="89" y="59" text-anchor="middle" font-size="10.5" fill="var(--ink-muted)">YOLOv12s @ 960px</text>
+              </g>
+              <g>
+                <rect x="14" y="96" width="150" height="52" rx="5" fill="var(--raised)" stroke="var(--edge)"/>
+                <text x="89" y="118" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">2 · TRACKING</text>
+                <text x="89" y="135" text-anchor="middle" font-size="10.5" fill="var(--ink-muted)">ByteTrack</text>
+              </g>
+              <g>
+                <rect x="14" y="172" width="150" height="52" rx="5" fill="var(--raised)" stroke="var(--edge)"/>
+                <text x="89" y="194" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">3 · LOCALIZE</text>
+                <text x="89" y="211" text-anchor="middle" font-size="10.5" fill="var(--ink-muted)">pixel → GPS</text>
+              </g>
+              <g>
+                <rect x="14" y="248" width="150" height="52" rx="5" fill="var(--raised)" stroke="var(--edge)"/>
+                <text x="89" y="270" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">4 · PRIORITY</text>
+                <text x="89" y="287" text-anchor="middle" font-size="10.5" fill="var(--ink-muted)">weighted score</text>
+              </g>
+
+              <!-- spine -->
+              <g stroke="var(--edge)" stroke-width="1.5" fill="none">
+                <path d="M89 72 L89 96" marker-end="url(#ar)" color="var(--ink-muted)"/>
+                <path d="M89 148 L89 172" marker-end="url(#ar)" color="var(--ink-muted)"/>
+                <path d="M89 224 L89 248" marker-end="url(#ar)" color="var(--ink-muted)"/>
+              </g>
+
+              <!-- what each stage leaves behind -->
+              <g font-size="11" fill="var(--ink-muted)">
+                <text x="182" y="80">boxes, no identity</text>
+                <text x="182" y="156">identity, no position</text>
+                <text x="182" y="232">position, no ordering</text>
+              </g>
+
+              <!-- contract -->
+              <rect x="396" y="20" width="308" height="128" rx="5" fill="var(--panel)" stroke="var(--accent-line)" stroke-dasharray="4 3"/>
+              <text x="412" y="42" font-size="10.5" font-weight="700" fill="var(--accent)" letter-spacing="1.2">THE JSON CONTRACT</text>
+              <text x="412" y="65" font-size="11" fill="var(--ink)">{ frame_id, bbox, confidence,</text>
+              <text x="412" y="82" font-size="11" fill="var(--ink)">&#160; track_id, class }</text>
+              <text x="412" y="108" font-size="10.5" fill="var(--ink-muted)">Written by stages 1–2, read by 3–4.</text>
+              <text x="412" y="124" font-size="10.5" fill="var(--ink-muted)">Decouples three people's code, and</text>
+              <text x="412" y="140" font-size="10.5" fill="var(--ink-muted)">the demo from live inference.</text>
+
+              <!-- dashboard -->
+              <rect x="396" y="176" width="308" height="76" rx="5" fill="var(--accent-soft)" stroke="var(--accent-line)"/>
+              <text x="550" y="203" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">COMMAND DASHBOARD</text>
+              <text x="550" y="222" text-anchor="middle" font-size="10.5" fill="var(--ink-muted)">FastAPI → React · map, queue, log</text>
+              <text x="550" y="239" text-anchor="middle" font-size="10.5" fill="var(--ink-muted)">replays a stored file, never infers live</text>
+
+              <g stroke="var(--accent-line)" stroke-width="1.5" fill="none">
+                <path d="M164 46 L396 46" marker-end="url(#ar)" color="var(--accent)"/>
+                <path d="M164 122 L396 122" marker-end="url(#ar)" color="var(--accent)"/>
+                <path d="M550 148 L550 176" marker-end="url(#ar)" color="var(--accent)"/>
+                <path d="M164 274 L370 274 L370 214 L396 214" marker-end="url(#ar)" color="var(--accent)"/>
+              </g>
+            </g>
+          </svg>
+        </div>
+      </section>
+
+      <!-- ── 02 Numbers ───────────────────────────────────────── -->
+      <section id="numbers">
+        <div class="head">
+          <div class="eyebrow">02 — Cram sheet</div>
+          <h2>The numbers to know by heart</h2>
+          <p>If a judge points at the screen, the answer is on this table.</p>
+        </div>
+
+        <div class="tablewrap">
+          <table>
+            <thead>
+              <tr><th>Value</th><th>What it is</th><th>Why that number</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="num">0.18</td><td>Confidence threshold</td><td>A false alarm costs thirty seconds; a missed survivor cannot be recovered. Read off the PR curve.</td></tr>
+              <tr><td class="num">0.831 / 0.740</td><td>Recall at 0.18 vs 0.5</td><td>Ninety-one more people found per thousand present.</td></tr>
+              <tr><td class="num">0.845 / 0.717</td><td>Precision / recall</td><td>Epoch 44 of 100. Stopped deliberately — integration mattered more.</td></tr>
+              <tr><td class="num">0.775 / 0.494</td><td>mAP50 / mAP50-95</td><td>YOLO12s scores 48.0 on COCO. 49.4 on small aerial humans is harder.</td></tr>
+              <tr><td class="num">960</td><td>Detection input size</td><td>Swept 640 / 960 / 1280. 960 found most and fragmented least.</td></tr>
+              <tr><td class="num">1000</td><td><span class="mono">max_det</span></td><td>The default 300 silently truncates, dropping lowest-confidence first.</td></tr>
+              <tr><td class="num">2.5 s</td><td>Persistence threshold</td><td>A duration, not a frame count — 60 frames here, 3 on a Pi.</td></tr>
+              <tr><td class="num">23.09 m</td><td>Ground footprint</td><td>2 · 20 · tan(30°) at 20 m altitude, 60° FOV.</td></tr>
+              <tr><td class="num">0.018 m/px</td><td>Ground sample distance</td><td>23.09 m across 1280 px. 1.8 centimetres per pixel.</td></tr>
+              <tr><td class="num">11.38 m</td><td>Max survivor separation</td><td>All 23, at one reference frame. Under the 15 m radius, so genuinely one group.</td></tr>
+              <tr><td class="num">15 m</td><td>Cluster radius</td><td>Localization can't honestly resolve finer — error is 1–2 m.</td></tr>
+              <tr><td class="num">0.4 / 0.3 / 0.3</td><td>Priority weights</td><td>Equal-ish because no term has earned dominance on evidence yet.</td></tr>
+              <tr><td class="num">0.25 / 0.50 / 0.75</td><td>Band cuts</td><td>The quarters of the range. Not fitted to this clip's distribution.</td></tr>
+              <tr><td class="num">0.03</td><td>Band hysteresis</td><td>An eighth of a band width. Delays a change; never hides one.</td></tr>
+              <tr><td class="num">~40 m</td><td>Altitude ceiling</td><td>Above it a 1.7 m person spans under 24 px. Detection is the limit, not the maths.</td></tr>
+              <tr><td class="num">null</td><td><span class="mono">DEVICE_FPS</span></td><td>Not yet benchmarked. Renders as "not yet measured", never a guess.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ── 03 Q&A ───────────────────────────────────────────── -->
+      <section id="qa">
+        <div class="head">
+          <div class="eyebrow">03 — Defence</div>
+          <h2>Judge Q&amp;A</h2>
+          <p>
+            If you do not know, say so and say what you would do to find out.
+            A confident wrong answer is the only kind that loses the room.
+          </p>
+        </div>
+
+        <div class="qgroup">
+          <h3>Open with this, before they ask</h3>
+          <details class="q" open>
+            <summary>The sixty-second framing</summary>
+            <div class="answer">
+              <p class="said">
+                ARES detects survivors from drone imagery, tracks them so we don't double-count,
+                puts them on a map, and ranks them for rescue order.
+              </p>
+              <p class="said">
+                Three things you should know first. <b>We don't own a drone</b>, so the footage is a
+                public UAV dataset — the detections are our own model's real output over it. <b>The
+                demo replays a pre-computed file</b> rather than inferring live; the model already
+                ran. And <b>some of what we describe isn't built</b> — autonomous navigation and
+                SLAM are architecture, not code, and the dashboard doesn't pretend otherwise.
+              </p>
+              <p class="note">
+                Each of those, discovered by a judge, is a credibility hit. Volunteered, each is
+                evidence of judgment.
+              </p>
+            </div>
+          </details>
+        </div>
+
+        <div class="qgroup">
+          <h3>The model</h3>
+          <details class="q">
+            <summary>Your confidence threshold is 0.18. Isn't the default 0.5?</summary>
+            <div class="answer">
+              <p class="said">
+                It is, and we changed it deliberately. In search and rescue the costs are wildly
+                asymmetric — a false alarm costs a rescuer thirty seconds of walking, and a missed
+                survivor cannot be recovered.
+              </p>
+              <p class="said">
+                We read the threshold off the precision-recall curve from our validation run. At 0.5,
+                recall is 0.740. At 0.18, it's 0.831. That's ninety-one more people found per
+                thousand present. The price is more false positives, and we handle those downstream
+                with a persistence filter rather than by raising the threshold and losing people.
+              </p>
+              <p class="note">This is your strongest answer. Take it slowly.</p>
+            </div>
+          </details>
+          <details class="q">
+            <summary>That's epoch 44 of 100. Why did you stop?</summary>
+            <div class="answer">
+              <p class="said">
+                The Colab session died. We validated the interim weights, they were good enough, and
+                with twelve days left an integration-tested end-to-end system was worth more than the
+                one to three points of mAP the remaining epochs would likely add. Model accuracy was
+                never our bottleneck.
+              </p>
+              <p class="note">Answer honestly. This is a test of whether you'll spin.</p>
+            </div>
+          </details>
+        </div>
+
+        <div class="qgroup">
+          <h3>Counting and tracking</h3>
+          <details class="q">
+            <summary>333 track IDs but 23 survivors. Isn't the tracker broken?</summary>
+            <div class="answer">
+              <p class="said">
+                No — that gap is the price of the 0.18 threshold, and it's the other half of that
+                decision. At a recall-first threshold the detector reports anything person-shaped:
+                a shadow, a bag, a patch of rubble. The tracker gives each one an ID.
+              </p>
+              <p class="said">
+                We measured those short tracks — mean confidence 0.42 against 0.52 for long ones, and
+                only 7% starting or ending at the frame edge. Low confidence, mid-frame, gone in a
+                frame or two is flicker, not a person walking out of shot. So persistence is the
+                right filter. Dropping the confidence threshold instead would have cost real survivors.
+              </p>
+            </div>
+          </details>
+          <details class="q">
+            <summary>You had a tracking bug, didn't you?</summary>
+            <div class="answer">
+              <p class="said">
+                A bad one. We were getting 350 IDs for about 23 people. We thought it was camera
+                motion — measured it, 1.4 pixels per frame, not the cause. We thought it was
+                duplicate boxes from failing NMS — measured it, 1.12 boxes per cluster, not that either.
+              </p>
+              <p class="said">
+                It was input resolution. Detecting at 640 on a 1280-wide clip halved every frame, so a
+                24-pixel person reached the network at 12 pixels — below what the model resolves
+                reliably. Detections flickered, and no tracker can hold an identity across boxes that
+                keep vanishing. We swept 640, 960 and 1280 and took 960 on the measurements.
+              </p>
+              <p class="note">
+                Two plausible hypotheses killed by measurement before the right one. That is what
+                diagnosis looks like.
+              </p>
+            </div>
+          </details>
+          <details class="q">
+            <summary>Does the persistence filter fix everything?</summary>
+            <div class="answer">
+              <p class="said">
+                No. It removes flicker. It does not fix ID switches — where one person picks up a
+                second ID after walking behind something. Both halves persist, so both get confirmed
+                and the count is one too many. That needs a better tracker, not a longer threshold.
+              </p>
+              <p class="note">Do not oversell this. The known limitation is an asset, not a liability.</p>
+            </div>
+          </details>
+        </div>
+
+        <div class="qgroup">
+          <h3>Localization</h3>
+          <details class="q">
+            <summary>How do you get GPS from a camera?</summary>
+            <div class="answer">
+              <p class="said">
+                Nadir projection with a known altitude. A camera pointing straight down from 20 metres
+                with a 60-degree field of view sees 2 × 20 × tan(30°) — about 23 metres of ground
+                across 1280 pixels. That's 1.8 centimetres per pixel. A pixel offset from the frame
+                centre is a ground offset from the drone's position, and metres convert to degrees at
+                111,320 per degree of latitude, or that times the cosine of the latitude for longitude.
+              </p>
+            </div>
+          </details>
+          <details class="q">
+            <summary>How accurate is it?</summary>
+            <div class="answer">
+              <p class="said">
+                Good enough to put a pin on the right building. Not survey grade.
+              </p>
+              <p class="said">
+                The error budget is dominated by assumed altitude and attitude — a 10% altitude error
+                is a 10% scale error, terrain relief adds more, and a five-degree tilt off nadir shifts
+                the footprint by nearly two metres. Realistically one to two metres of relative
+                uncertainty. The flat-earth approximation contributes about a millimetre, so replacing
+                it with a proper geodesic would be theatre.
+              </p>
+              <p class="note">Never overclaim this one.</p>
+            </div>
+          </details>
+        </div>
+
+        <div class="qgroup">
+          <h3>Priority scoring</h3>
+          <details class="q">
+            <summary>So on this clip the score is just detection confidence?</summary>
+            <div class="answer">
+              <p class="said">
+                On this clip, yes, and the dashboard says so in those words. Hazards aren't measured —
+                that term is dropped. And all 23 survivors are inside an 11-metre patch, so every one
+                has the same 22 neighbours; a term with the same value in every row can't rank those
+                rows, so it's dropped too and the remaining weight renormalises.
+              </p>
+              <p class="said">
+                What's left is confidence. And ordering by confidence isn't meaningless here: at a 0.18
+                threshold a low-confidence box is about as likely to be a shadow as a person, so the
+                queue is ordered by how likely each dispatch is to find someone. We verified the
+                cluster term works when the data allows it — a synthetic scene with an isolated
+                survivor and a pair 200 metres away scores 0.0, 0.25, 0.25.
+              </p>
+              <p class="note">They may well spot this. Have it ready.</p>
+            </div>
+          </details>
+          <details class="q">
+            <summary>Why is a survivor scored 0.76 sitting in the "high" band when the cut is 0.75?</summary>
+            <div class="answer">
+              <p class="said">
+                Hysteresis, and it's stated on that panel. A band is a state that gets re-read, and the
+                confidence term jitters frame to frame — so a track parked near a cut oscillates across
+                it. Our log showed single tracks changing band five times in nine seconds, which reads
+                as an unstable assessment when what's unstable is one bounding box's confidence.
+              </p>
+              <p class="said">
+                There's a three-point deadband around each cut: climbing to critical needs 0.78,
+                falling back to high needs below 0.72. It delays a band change; it never hides one.
+              </p>
+            </div>
+          </details>
+          <details class="q">
+            <summary>Why is the hazard list empty?</summary>
+            <div class="answer">
+              <p class="said">
+                Because the hazard classifier is Phase 2 and we haven't trained it yet. We could have
+                put a fire on the map to make it look busier. Then the priority ranking would be
+                responding to something we invented.
+              </p>
+              <p class="said">
+                The scoring code treats a missing hazard layer as <i>not measured</i> and drops the term
+                entirely, rather than scoring it zero — because "no hazard nearby" and "no hazard
+                detector" are different claims.
+              </p>
+            </div>
+          </details>
+        </div>
+
+        <div class="qgroup">
+          <h3>On-device</h3>
+          <details class="q">
+            <summary>It'll only manage about 1 FPS. Isn't that useless?</summary>
+            <div class="answer">
+              <p class="said">
+                It sounds low next to video frame rates, and it's exactly what you'd expect from a
+                9-million-parameter attention model on a Cortex-A72 with no accelerator.
+              </p>
+              <p class="said">
+                It's also enough. At 20 metres altitude the camera sees 23 metres of ground, so at
+                search speed the aircraft takes about five seconds to cross its own footprint. Every
+                patch of ground is visible in five or more consecutive frames even at 1 FPS. A missed
+                detection in one frame is recovered in the next. Thirty FPS would give us thirty looks
+                at the same ground, twenty-nine of them redundant, at thirty times the power budget.
+                <b>A search UAV doesn't need 30 FPS. It needs to not miss the ground.</b>
+              </p>
+              <p class="note">This is the answer that wins the hardware round.</p>
+            </div>
+          </details>
+        </div>
+
+        <div class="qgroup">
+          <h3>Hostile</h3>
+          <details class="q">
+            <summary>This is just YOLO with a dashboard, isn't it?</summary>
+            <div class="answer">
+              <p class="said">
+                The detector is off the shelf and we'd be lying if we said otherwise. What's ours is
+                everything between a detector and a decision.
+              </p>
+              <p class="said">
+                A raw detector gives you 7,081 boxes. Getting from there to "twenty-three people, here
+                they are on a map, go to this one first" is de-duplication, evidence thresholding,
+                coordinate projection and a ranking you can explain. Every one of those has a failure
+                mode we hit and fixed. And using an off-the-shelf detector is the right call — training
+                our own architecture would be worse and would have consumed the twelve days.
+              </p>
+            </div>
+          </details>
+          <details class="q">
+            <summary>How do I know you didn't just draw those boxes?</summary>
+            <div class="answer">
+              <p class="said">
+                Scrub the video. The boxes flicker in and out on marginal detections and the confidence
+                values vary continuously — that's what a detector at a 0.18 threshold looks like.
+                Hand-drawn boxes would be steadier and cleaner than this. The script that produced the
+                file is in the repo, and you can re-run it.
+              </p>
+            </div>
+          </details>
+          <details class="q">
+            <summary>What's your biggest weakness?</summary>
+            <div class="answer">
+              <p class="said">
+                ID switches. If someone walks behind a structure and comes back out, they can pick up a
+                second identity, and both halves clear our persistence threshold, so the count is one
+                too many. We know it happens, we know persistence doesn't fix it, and the dashboard
+                states the limitation rather than implying it's solved. The fix is a
+                re-identification-capable tracker, which is more compute — a measured trade we haven't
+                made yet.
+              </p>
+              <p class="note">Never say "we don't have any."</p>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <!-- ── 04 Decisions ─────────────────────────────────────── -->
+      <section id="decisions">
+        <div class="head">
+          <div class="eyebrow">04 — Judgment</div>
+          <h2>Decisions, and what they beat</h2>
+          <p>
+            The pattern running through all of them: choose the less impressive, more
+            defensible option.
+          </p>
+        </div>
+
+        <div class="cards">
+          <div class="card">
+            <h4>YOLOv12s</h4>
+            <p>Ultralytics-native so tracking and export work without integration work. 9.3&nbsp;M params — the size where edge deployment is plausible and small-object accuracy survives.</p>
+            <p class="alt"><b>Beat:</b> YOLOv8n/s, RT-DETR, Faster R-CNN</p>
+          </div>
+          <div class="card">
+            <h4>Pre-computed replay</h4>
+            <p>The model already ran; this is what it produced. Live inference on stage adds a failure mode that proves nothing.</p>
+            <p class="alt"><b>Beat:</b> live inference during the demo</p>
+          </div>
+          <div class="card">
+            <h4>A JSON file as the contract</h4>
+            <p>Decouples three people's code — Robin needs no PyTorch install to develop localization against real data.</p>
+            <p class="alt"><b>Beat:</b> a shared Python module, a database</p>
+          </div>
+          <div class="card">
+            <h4>A transparent weighted formula</h4>
+            <p>A judge is asking how rescue order is decided. "A neural network decides" is a bad answer to that question.</p>
+            <p class="alt"><b>Beat:</b> a learned ranker, a decision tree</p>
+          </div>
+          <div class="card">
+            <h4>Drop a term, don't zero it</h4>
+            <p>A zero claims a measurement nobody made. Renormalising redistributes rather than capping everyone below 1.</p>
+            <p class="alt"><b>Beat:</b> scoring 0.0, or leaving it flat</p>
+          </div>
+          <div class="card">
+            <h4>One reference frame for distance</h4>
+            <p>The assumed track turns time separation into ground separation. At 5&nbsp;m/s a three-second gap invents fifteen metres.</p>
+            <p class="alt"><b>Beat:</b> each track's own frame origin</p>
+          </div>
+          <div class="card">
+            <h4>An ordinal priority ramp</h4>
+            <p>The old rainbow failed twice — no perceptual order, and red-green collapses for ~8% of men at ΔE&nbsp;10.6.</p>
+            <p class="alt"><b>Beat:</b> green → amber → orange → red</p>
+          </div>
+          <div class="card">
+            <h4>Mission parameters, not telemetry</h4>
+            <p>There is no aircraft. A battery bar would be six invented numbers dressed as instrument readings.</p>
+            <p class="alt"><b>Beat:</b> battery, GPS signal, link quality, weather</p>
+          </div>
+          <div class="card">
+            <h4>Persistence as a duration</h4>
+            <p>2.5&nbsp;s is 60 frames here and 3 on a Pi. Neither number is wrong; the unit is.</p>
+            <p class="alt"><b>Beat:</b> a hardcoded frame count</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 05 Mistakes ──────────────────────────────────────── -->
+      <section id="mistakes">
+        <div class="head">
+          <div class="eyebrow">05 — Corrections</div>
+          <h2>What went wrong, and how it was caught</h2>
+          <p>
+            A judge who believes you made no wrong turns believes you did not do the work.
+            Three of these were confident wrong diagnoses killed by measurement.
+          </p>
+        </div>
+
+        <div>
+          <div class="miss">
+            <span class="tag">B3</span>
+            <div>
+              <h4>"It must be camera motion"</h4>
+              <p>The drone was supposedly moving fast enough to break IoU association. Measured: 1.4&nbsp;px/frame. Not the cause.</p>
+            </div>
+          </div>
+          <div class="miss">
+            <span class="tag">B4</span>
+            <div>
+              <h4>"It must be duplicate boxes"</h4>
+              <p>NMS supposedly failing, each person spawning several tracks. Measured: 1.12 boxes per cluster. Also wrong. The real cause was input resolution.</p>
+            </div>
+          </div>
+          <div class="miss">
+            <span class="tag">B6</span>
+            <div>
+              <h4>"Attention will be worse on CPU"</h4>
+              <p>Predicted YOLOv12's attention would be disproportionately penalised without GPU bandwidth. Measured CPU ratio 2.18× against GPU 3.14× — relatively <i>better</i> than predicted.</p>
+            </div>
+          </div>
+          <div class="miss">
+            <span class="tag">B7</span>
+            <div>
+              <h4><span class="mono">min_frames = 3</span> — a unit error</h4>
+              <p>A constant written where the justification was frame-rate dependent. Three frames is 0.125&nbsp;s at 24&nbsp;fps and 2&nbsp;s at 1.5&nbsp;fps. Now expressed as a duration.</p>
+            </div>
+          </div>
+          <div class="miss">
+            <span class="tag">B9</span>
+            <div>
+              <h4>"Pick the densest sequence"</h4>
+              <p>Maximum density made de-duplication read as a broken system rather than a working filter. Moderate density lets a judge count by eye and confirm your number.</p>
+            </div>
+          </div>
+          <div class="miss">
+            <span class="tag">B10</span>
+            <div>
+              <h4>Estimating spread from eight visible rows</h4>
+              <p>Guessed 7&nbsp;×&nbsp;11&nbsp;m from a screenshot. Measured across all 23: 27&nbsp;×&nbsp;29&nbsp;m. Then measured properly at a fixed reference frame: 11.38&nbsp;m. Two wrong numbers in a row from skipping the measurement twice.</p>
+            </div>
+          </div>
+          <div class="miss">
+            <span class="tag">B11</span>
+            <div>
+              <h4>The moving-origin cluster bug</h4>
+              <p>Track 1409 — the highest-confidence detection in the clip at 0.802 — ranked 21st of 23, because its last sighting was three seconds after everyone else's. The ranking was ordering on <i>when</i> people were last seen.</p>
+            </div>
+          </div>
+          <div class="miss">
+            <span class="tag">B12</span>
+            <div>
+              <h4><span class="mono">.venv-ml</span> in the git push</h4>
+              <p>The gitignore listed <span class="mono">.venv/</span>, which does not match <span class="mono">.venv-ml/</span>. 182&nbsp;MB pushed, rejected by GitHub's 100&nbsp;MB file limit. Gitignore patterns are literal.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 06 Open ──────────────────────────────────────────── -->
+      <section id="open">
+        <div class="head">
+          <div class="eyebrow">06 — Before the 5th</div>
+          <h2>Still open</h2>
+          <p>Ordered by value. The last one is the highest-value hour left in the project.</p>
+        </div>
+
+        <ul class="check">
+          <li>Run the Pi benchmark when the SD card arrives — <b>at <span class="mono">imgsz=960</span></b>, both models, both runtimes, densest frame, active cooling</li>
+          <li>Verify the static-mode fallback with the backend actually stopped</li>
+          <li>Verify the tile cache with wifi actually off</li>
+          <li>Relabel <span class="mono">cluster_formed</span> — 19 events describe one group growing, not nineteen clusters</li>
+          <li>Change the tooltip to "22 <b>others</b> within 15 m" — <span class="mono">cluster_size</span> excludes self</li>
+          <li>Reconcile 3 m/s in CLAUDE.md against 5 m/s in <span class="mono">config.py</span></li>
+          <li>Rename <span class="mono">MIN_TRACK_SECONDS</span>, or don't put it on screen — confirmation counts detections, not elapsed time</li>
+          <li>Run <span class="mono">compare_trackers.py</span> to a conclusion; BoT-SORT's 30% cost is free offline</li>
+          <li><b>Count people by hand in three frames and compare to 23.</b> Turns "23 seems right" into a measured accuracy figure</li>
+        </ul>
+      </section>
+
+      <!-- ── 07 Parts ─────────────────────────────────────────── -->
+      <section id="parts">
+        <div class="head">
+          <div class="eyebrow">07 — The full handbook</div>
+          <h2>Twelve parts, in <span class="mono" style="font-size:.82em">docs/handbook/</span></h2>
+          <p>
+            This page is the companion. The parts below are the course — beginner to
+            advanced, every file and every function.
+          </p>
+        </div>
+
+        <div class="parts">
+          <div class="part"><span class="n">01</span><div><h4>What ARES is</h4><p>The four stages, the data contract, the three counts, real vs described.</p><code>01_what_ares_is.md</code></div></div>
+          <div class="part"><span class="n">02</span><div><h4>ML and YOLO from zero</h4><p>Every training term, precision vs recall, mAP, your actual numbers read line by line.</p><code>02_machine_learning_and_yolo.md</code></div></div>
+          <div class="part"><span class="n">03</span><div><h4>Tracking</h4><p>ByteTrack, the 333-ID bug, two wrong diagnoses, persistence filtering.</p><code>03_tracking.md</code></div></div>
+          <div class="part"><span class="n">04</span><div><h4>Export and benchmarking</h4><p>ONNX, runtimes, honest timing, and why ~1 FPS is a good answer.</p><code>04_export_and_benchmarking.md</code></div></div>
+          <div class="part"><span class="n">05</span><div><h4>The backend</h4><p>HTTP from zero, then every function in all seven Python files.</p><code>05_the_backend.md</code></div></div>
+          <div class="part"><span class="n">06</span><div><h4>The mathematics</h4><p>GSD derived, the 111,320 constant, the reference-frame proof, both scores worked by hand.</p><code>06_the_mathematics.md</code></div></div>
+          <div class="part"><span class="n">07</span><div><h4>The frontend</h4><p>React from zero, the load-bearing import order, the palette rebuild.</p><code>07_the_frontend.md</code></div></div>
+          <div class="part"><span class="n">08</span><div><h4>Tools and commands</h4><p>Eight scripts, plus every shell, git, ffmpeg and curl command you ran.</p><code>08_tools_and_commands.md</code></div></div>
+          <div class="part"><span class="n">09</span><div><h4>Decision log</h4><p>22 decisions with rejected alternatives, 14 documented mistakes, what's still open.</p><code>09_decision_log.md</code></div></div>
+          <div class="part"><span class="n">10</span><div><h4>Judge Q&amp;A</h4><p>Every question with a scripted answer, plus what never to say.</p><code>10_judge_qa.md</code></div></div>
+          <div class="part"><span class="n">11</span><div><h4>Learning path</h4><p>Where you are, what to study, in what order, from where.</p><code>11_learning_path.md</code></div></div>
+          <div class="part"><span class="n">12</span><div><h4>Glossary</h4><p>Every term, A to Z, with the ARES-specific ones marked.</p><code>12_glossary.md</code></div></div>
+        </div>
+      </section>
+
+      <footer>
+        ARES — Autonomous Rescue &amp; Environmental Intelligence System<br>
+        Detection model and dashboard: Dewang · Tracking, localization and scoring: Robin · Pitch and demo video: Ujjaini<br>
+        Palette inherited from the project's own <span class="mono">frontend/src/tokens.css</span>.
+      </footer>
+
+    </div>
+  </main>
+</div>
