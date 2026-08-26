@@ -1,0 +1,208 @@
+# ARES — the measured numbers
+
+Single source of truth. Every figure here was measured; nothing is estimated.
+Anything not measured is listed at the bottom under **Not measured**, and must
+be labelled that way wherever it appears.
+
+Last updated: 26 August 2026
+
+---
+
+## Model
+
+**YOLOv12s**, single class (`{0: 'human'}`), 9,231,267 parameters.
+Trained on combined **C2A + VisDrone**. Shipped weights: `models/yolov12s.pt`.
+
+Read directly out of the checkpoint, not from notes:
+
+```
+epoch          58        (zero-indexed → 59 completed, of a planned 100)
+epochs         100
+best_fitness   0.50397
+```
+
+> **Corrected 26 Aug.** Six files claimed "epoch 44 of 100" with weaker
+> accuracy figures. Those came from a superseded checkpoint and were never
+> re-checked against the file. Training had run 15 epochs further than the
+> notes recorded. Nothing was fabricated — a note was written once and
+> believed thereafter. **Every number in this file is traceable to an
+> artefact you can re-read.**
+
+Ship configuration (`backend/config.py`):
+
+| Setting | Value |
+|---|---|
+| `imgsz` | 960 |
+| `conf` | 0.18 |
+| `max_det` | 1000 |
+| Tracker | ByteTrack |
+
+---
+
+## Accuracy — FP32
+
+Combined C2A + VisDrone validation split.
+**2,591 images · 86,092 person instances.** Same checkpoint at both sizes.
+
+| Metric | 640 | **960 (shipped)** |
+|---|---|---|
+| Precision | 0.854 | **0.864** |
+| Recall | 0.727 | **0.774** |
+| mAP50 | 0.783 | **0.833** |
+| mAP50-95 | 0.511 | **0.577** |
+
+### Decomposing the gain
+
+Three measurements separate two variables that would otherwise be confounded:
+
+```
+mAP50-95   0.494   →   0.511   →   0.577
+           ep44         final       final
+           @640         @640        @960
+                     └───────┘  └──────────┘
+                     training     resolution
+                      +0.017        +0.066
+```
+
+**Resolution accounts for ~80 % of the improvement, finishing training ~20 %.**
+
+---
+
+## The confidence threshold
+
+Measured off the validation PR curve at 960:
+
+| | conf 0.37 (F1-optimal) | **conf 0.18 (shipped)** |
+|---|---|---|
+| Precision | 0.864 | 0.752 |
+| Recall | 0.775 | **0.824** |
+| F1 | 0.817 | 0.786 |
+
+Over 86,092 instances:
+
+```
+conf 0.37    TP 66,721    FP 10,502
+conf 0.18    TP 70,940    FP 23,395
+             ─────────    ─────────
+             +4,219       +12,893
+```
+
+> **≈ 3 extra false alarms per additional survivor found.**
+
+The line: *"We run at 0.18, not the F1-optimal 0.37. It costs 11 points of
+precision and buys 5 points of recall — about three false alarms for every extra
+person found. An operator dismisses a false box in a second; a missed survivor is
+not recoverable. We picked it off the curve, not from a default."*
+
+---
+
+## On-device — Qualcomm AI Hub
+
+Real hosted silicon. **INT8** weights and activations, `qnn_context_binary`.
+
+| | RB3 Gen 2 (QCS6490) | IQ-9075 EVK (QCS9075) |
+|---|---|---|
+| **960** | 207.56 ms · **4.8 FPS** | 61.45 ms · **16.3 FPS** |
+| **640** | 26.54 ms · 37.7 FPS | 10.48 ms · 95.4 FPS |
+| 960 → 640 ratio | 7.82× | 5.86× |
+| Peak memory (960 / 640) | 9.5 / 10.4 MB | 8.9 / 6.5 MB |
+| **NPU coverage** | **489/489 — 100 %** | **489/489 — 100 %** |
+
+**The 100 % is the headline, not the FPS.** Every layer of an attention-centric
+YOLOv12 executes on the Hexagon NPU, with nothing falling back to CPU.
+
+---
+
+## Coverage
+
+At 20 m altitude, 60° FOV, `DRONE_SPEED_MS = 5.0`:
+
+```
+footprint  = 2 × 20 × tan(30°) = 23.09 m
+crossing   = 23.09 / 5         = 4.62 s
+```
+
+| Config | Looks at each patch of ground |
+|---|---|
+| RB3 @ 960 | ~22 |
+| IQ-9075 @ 960 | ~75 |
+| RB3 @ 640 | ~174 |
+| IQ-9075 @ 640 | ~441 |
+
+**Compute is not the binding constraint.** At 22 looks, coverage is saturated;
+the remaining hard problem is per-look recall.
+
+### Why 960, with the cost named
+
+To deliver ~22 looks on the RB3:
+
+| | NPU duty cycle |
+|---|---|
+| 960 | ~100 % |
+| 640 | ~13 % |
+
+**960 costs ~7.8× the compute duty cycle for +4.7 points of recall.** The right
+call for search-and-rescue — a missed survivor is unrecoverable, shorter
+endurance is a mission-planning problem — but it is a priced trade, not a free
+win.
+
+Say *"compute duty cycle,"* not watts. AI Hub reports latency, not power.
+
+---
+
+## Open question
+
+The NPU scales far worse with resolution than a GPU does:
+
+| | 960 ÷ 640 time |
+|---|---|
+| Pixel count | 2.25× |
+| Tesla T4 GPU | 2.62× |
+| IQ-9075 NPU | 5.86× |
+| RB3 Gen 2 NPU | 7.82× |
+
+Attention's quadratic term in token count predicts at most 5.06×, so it cannot
+be the whole story; memory tiling is the likely remainder. **Not established.**
+
+Settle it by benchmarking `yolov8n` (pure convolution) at both sizes on the same
+device. If v8n scales ~2.25× and v12s ~7.8×, attention is confirmed. If both
+scale ~7×, it is memory and tiling.
+
+---
+
+## Not measured
+
+State these as unmeasured wherever they appear.
+
+| | Why it matters |
+|---|---|
+| **INT8 accuracy** | All device latencies are INT8; all accuracy figures are FP32. Never present them as one system. |
+| **Raspberry Pi 4** | Different silicon, with no neural accelerator. The Qualcomm figures do not fill a Pi row. |
+| **Power draw** | Duty cycle is a proxy, not a measurement. |
+| **Ground-truth survivor count** | Demo clip shows 23 unique tracks; no hand count to check it against. |
+
+Two labelled gaps beside eight measured numbers is a stronger position than ten
+numbers with no gaps — a table with no gaps invites the question of which
+entries were guessed.
+
+
+---
+
+## Where these numbers are wired
+
+`DEVICE_FPS` is no longer `None`. The dashboard now reads the measured figure
+through one constant, as designed:
+
+| File | Value |
+|---|---|
+| `backend/config.py` | `DEVICE_FPS = 4.8`, `DEVICE_NAME = "Dragonwing RB3 Gen 2 (QCS6490)"` |
+| `frontend/src/config.js` | same values, as the backend-offline fallback |
+| `frontend/src/HeaderBar.jsx` | renders it on screen — required by CLAUDE.md once measured |
+| `frontend/src/MissionParameters.jsx` | carries the provenance: which board, INT8, 100 % NPU, and that INT8 accuracy is separate and unmeasured |
+
+**We publish the RB3 figure, not the IQ-9075's 16.3 FPS.** It is the slower of
+the two boards and the drone-class one. Quoting the better of two measurements
+is not reporting.
+
+The `None` path is deliberately kept. It is still the honest state for any
+device nobody has put a model on, and it is what the Pi row would render.

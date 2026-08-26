@@ -296,7 +296,12 @@ export default function App() {
               on the cells stop the Leaflet canvas and the video stage forcing
               the grid past the box they are supposed to fit inside. */}
           <div className="grid min-h-0 grid-cols-1 gap-3 lg:flex-[3] lg:grid-cols-2">
-            <div className="min-h-0 min-w-0">
+            {/* `ares-panel-media` gives the video and map a floor height below
+                `lg`, where the grid is one column. Without it both collapse to
+                their intrinsic content height when stacked and the map becomes
+                an unusable sliver. Desktop is untouched — the rule is scoped
+                to max-width 1023px in index.css. */}
+            <div className="ares-panel-media min-h-0 min-w-0">
               <VideoPanel
                 index={index}
                 config={config}
@@ -310,7 +315,7 @@ export default function App() {
 
             {/* The same two survivor figures the header is given and the same
                 two the table is given — one derivation, three renderings. */}
-            <div className="min-h-0 min-w-0">
+            <div className="ares-panel-media min-h-0 min-w-0">
               <MapPanel
                 survivors={survivors}
                 survivorsError={survivorsError}

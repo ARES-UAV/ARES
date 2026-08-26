@@ -1,3 +1,6 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B1013">
 <title>ARES</title>
 <meta name="description" content="ARES — a UAV search-and-rescue system. Onboard AI detects survivors, counts them without double-counting, maps them, and ranks them for rescue. Built for Smart India Hackathon 2026.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -315,6 +318,44 @@ footer .fine{margin-top:18px;font-size:10px;letter-spacing:.04em;text-transform:
 .rv.in{opacity:1;transform:none}
 .d1{transition-delay:.08s}.d2{transition-delay:.16s}.d3{transition-delay:.24s}
 
+/* ── mobile ───────────────────────────────────────────────────────
+   Without the viewport meta above, none of the queries in this file
+   ever fired: a phone reported ~980px and scaled the whole page down.
+   These rules assume it fires and tighten what is left. */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+img,svg,video{max-width:100%}
+
+/* Wide content scrolls inside its own box; the page body never does. */
+.tw,.fp{-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.tw::after,.fp::after{content:"swipe →";display:none;font-size:9px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--dim);padding:8px 14px 0}
+
+/* Screenshots are 16:9 already — contain rather than cover so a phone
+   never silently crops the panel someone is trying to look at. */
+.shot img{object-fit:contain;background:var(--void)}
+
+@media(max-width:640px){
+  body{font-size:14px}
+  .wrap{padding:0 16px}
+  section{padding:52px 0}
+  .stat{padding:22px 18px}
+  .tri{padding:22px 18px}
+  .mem{padding:18px}
+  .fp{padding:18px 12px}
+  .tw::after,.fp::after{display:block}
+  .mqt span{font-size:11px;padding:0 16px}
+  .mqt span i{padding-left:30px}
+  th,td{padding:11px 14px}
+  /* Full-width tap targets — a 44px row beats a 28px inline link. */
+  .btn{display:block;width:100%;text-align:center;padding:14px 18px}
+  .btn+.btn{margin-top:10px}
+}
+@media(max-width:420px){
+  .wrap{padding:0 13px}
+  section{padding:44px 0}
+  .shot{aspect-ratio:4/3}
+}
+
 @media(prefers-reduced-motion:reduce){
   *{animation-duration:.001s!important;animation-iteration-count:1!important;transition-duration:.001s!important}
   .rv{opacity:1;transform:none}
@@ -359,7 +400,7 @@ footer .fine{margin-top:18px;font-size:10px;letter-spacing:.04em;text-transform:
         <span class="ln"><span>ONE ANSWER.</span></span>
       </h1>
       <p class="hsub">
-        A detector over a disaster zone returns thousands of boxes. A rescue coordinator
+        A detector over a crowded scene returns thousands of boxes. A rescue coordinator
         needs <b>how many, where, and who first</b>. ARES is everything in between —
         running on the aircraft, so losing the network costs the video feed and nothing else.
       </p>
@@ -386,7 +427,7 @@ footer .fine{margin-top:18px;font-size:10px;letter-spacing:.04em;text-transform:
 
 <div class="mq">
   <div class="mqt" id="mq">
-    <span>7,081 DETECTIONS <i>◆</i></span><span>333 TRACK IDS <i>◆</i></span><span>23 SURVIVORS <i>◆</i></span><span>RECALL 0.831 <i>◆</i></span><span>1.8 CM / PIXEL <i>◆</i></span><span>23 M FOOTPRINT <i>◆</i></span><span>2.5 S PERSISTENCE <i>◆</i></span><span>ZERO INVENTED DATA <i>◆</i></span>
+    <span>7,081 DETECTIONS <i>◆</i></span><span>333 TRACK IDS <i>◆</i></span><span>23 SURVIVORS <i>◆</i></span><span>RECALL 0.824 AT CONF 0.18 <i>◆</i></span><span>1.8 CM / PIXEL <i>◆</i></span><span>23 M FOOTPRINT <i>◆</i></span><span>2.5 S PERSISTENCE <i>◆</i></span><span>ZERO INVENTED DATA <i>◆</i></span>
   </div>
 </div>
 
@@ -470,11 +511,11 @@ footer .fine{margin-top:18px;font-size:10px;letter-spacing:.04em;text-transform:
     <div class="rcl">
       <div class="rv">
         <div class="rb base">
-          <div class="rt"><span class="rn">DEFAULT · CONF 0.50</span><span class="rval">0.740</span></div>
+          <div class="rt"><span class="rn">F1-OPTIMAL · CONF 0.37</span><span class="rval">0.775</span></div>
           <div class="rtrack"><div class="rfill" data-w="74"></div></div>
         </div>
         <div class="rb ours">
-          <div class="rt"><span class="rn">ARES · CONF 0.18</span><span class="rval">0.831</span></div>
+          <div class="rt"><span class="rn">ARES · CONF 0.18</span><span class="rval">0.824</span></div>
           <div class="rtrack"><div class="rfill" data-w="83.1"></div></div>
           <div class="rscale"><span>0</span><span>RECALL</span><span>1.0</span></div>
         </div>
@@ -496,7 +537,7 @@ footer .fine{margin-top:18px;font-size:10px;letter-spacing:.04em;text-transform:
         flicker — not someone walking out of shot.</p>
         <p>So the filter is <b>persistence</b>, not a higher threshold. A track must hold for
         2.5 seconds. Expressed as a duration, because that is 60 frames on this clip and
-        3 on a Raspberry Pi.</p>
+        12 on device at 4.8 FPS.</p>
       </div>
     </div>
   </div>
@@ -516,7 +557,7 @@ footer .fine{margin-top:18px;font-size:10px;letter-spacing:.04em;text-transform:
       <table>
         <thead><tr><th>CAPABILITY</th><th>STATUS</th><th>DETAIL</th></tr></thead>
         <tbody>
-          <tr><td class="cap">On-device inference</td><td><span class="pill b">Built</span></td><td class="nt">YOLOv12s, ONNX-exported, Raspberry Pi 4 target</td></tr>
+          <tr><td class="cap">On-device inference</td><td><span class="pill b">Built</span></td><td class="nt">YOLOv12s INT8, 100 % on the Hexagon NPU — measured on Qualcomm silicon</td></tr>
           <tr><td class="cap">Counting &amp; tracking</td><td><span class="pill b">Built</span></td><td class="nt">ByteTrack with a measured persistence filter</td></tr>
           <tr><td class="cap">Geo-tagged mapping</td><td><span class="pill b">Built</span></td><td class="nt">Nadir projection from assumed altitude and FOV</td></tr>
           <tr><td class="cap">Priority ranking</td><td><span class="pill b">Built</span></td><td class="nt">A transparent weighted formula, printed on screen</td></tr>
@@ -555,9 +596,14 @@ footer .fine{margin-top:18px;font-size:10px;letter-spacing:.04em;text-transform:
     <div class="mark rv"><span class="sq"></span> § 05 — EDGE DEPLOYMENT</div>
     <h2 class="rv">A SEARCH UAV DOES NOT<br>NEED <em class="hi">30 FPS.</em></h2>
     <p class="lead rv d1">
-      It needs to not miss the ground. At 20 m the camera sees 23 m of it, and the aircraft
-      takes seconds to cross its own footprint — so every patch is seen in several
-      consecutive frames even at one frame per second.
+      It needs to not miss the ground. We measured ours on Qualcomm AI Hub, on real
+      hosted silicon: <em class="hi">4.8 FPS</em> on a Dragonwing RB3 Gen 2 and
+      <em class="hi">16.3 FPS</em> on an IQ-9075, at 960 px INT8, under 10 MB peak memory —
+      with <em class="hi">489 of 489 layers</em> executing on the Hexagon NPU.
+    </p>
+    <p class="lead rv d1" style="margin-top:18px;font-size:13px">
+      The 100 % is the headline, not the frame rate. An attention-centric YOLOv12 maps
+      completely onto the accelerator, with nothing falling back to CPU.
     </p>
 
     <div class="fp rv d1">
@@ -582,26 +628,26 @@ footer .fine{margin-top:18px;font-size:10px;letter-spacing:.04em;text-transform:
           <text x="424" y="25"  font-size="9.5" fill="#6B7F87" letter-spacing="1.2">23 M OF GROUND</text>
           <text x="490" y="85"  font-size="9.5" fill="#6B7F87" letter-spacing="1.2">DRONE ADVANCES</text>
           <text x="556" y="145" font-size="9.5" fill="#6B7F87" letter-spacing="1.2">SAME PERSON</text>
-          <text x="622" y="205" font-size="9.5" fill="#FB9A4A" font-weight="700" letter-spacing="1.2">4TH LOOK</text>
+          <text x="600" y="205" font-size="9.5" fill="#FB9A4A" font-weight="700" letter-spacing="1.2">~22 LOOKS TOTAL</text>
         </g>
       </svg>
     </div>
 
     <div class="trio rv d2">
       <div class="tri">
-        <span class="fn">WHY IT HOLDS</span>
-        <h3>Redundancy is free</h3>
-        <p>A miss in one frame is recovered in the next. Thirty FPS gives thirty looks at the same ground, twenty-nine redundant, at thirty times the power budget.</p>
+        <span class="fn">WHAT SATURATES</span>
+        <h3>22 looks per patch</h3>
+        <p>At 4.8 FPS the aircraft gets about 22 looks at every patch of ground before it leaves the frame. Compute stopped being the binding constraint — the hard problem is per-look recall, and that is where the effort went.</p>
       </div>
       <div class="tri">
-        <span class="fn">WHY IT IS SLOW</span>
-        <h3>Attention on a Cortex-A72</h3>
-        <p>YOLOv12 is attention-centric and trades speed for accuracy. On a Pi 4 with no accelerator that trade is real, and worth stating rather than hiding.</p>
+        <span class="fn">WHY NOT FASTER</span>
+        <h3>640 buys nothing</h3>
+        <p>We measured 640 too: 37.7 FPS, about 174 looks. But detection failures across consecutive frames are correlated — a person too small to resolve stays too small. That is 152 extra chances to re-fail, for 4.7 points less recall.</p>
       </div>
       <div class="tri">
-        <span class="fn">WHAT COMES NEXT</span>
-        <h3>Quantisation, then NCNN</h3>
-        <p>INT8 is roughly 4× smaller and much faster on CPU. NCNN is hand-optimised for ARM. Both are measurements we have not taken yet.</p>
+        <span class="fn">NOT MEASURED</span>
+        <h3>INT8 accuracy</h3>
+        <p>Every latency above is INT8; every accuracy figure is FP32. They are two different models until we measure the quantised one, so we report them separately and say so.</p>
       </div>
     </div>
   </div>
@@ -617,21 +663,43 @@ footer .fine{margin-top:18px;font-size:10px;letter-spacing:.04em;text-transform:
       class. Every figure from the validation run — none estimated.
     </p>
     <div class="stats rv d1">
-      <div class="stat"><div class="num"><em data-count="845" data-dec="3">0</em></div><div class="lbl">PRECISION · OF WHAT IT CALLS A PERSON</div></div>
-      <div class="stat"><div class="num"><em data-count="717" data-dec="3">0</em></div><div class="lbl">RECALL · AT THE DEFAULT THRESHOLD</div></div>
-      <div class="stat"><div class="num"><em data-count="775" data-dec="3">0</em></div><div class="lbl">mAP50 · SMALL AERIAL TARGETS</div></div>
-      <div class="stat"><div class="num"><em data-count="494" data-dec="3">0</em></div><div class="lbl">mAP50-95 · STRICT BOX PRECISION</div></div>
+      <div class="stat"><div class="num"><em data-count="864" data-dec="3">0</em></div><div class="lbl">PRECISION · OF WHAT IT CALLS A PERSON</div></div>
+      <div class="stat"><div class="num"><em data-count="824" data-dec="3">0</em></div><div class="lbl">RECALL · AT THE SHIPPED THRESHOLD</div></div>
+      <div class="stat"><div class="num"><em data-count="833" data-dec="3">0</em></div><div class="lbl">mAP50 · SMALL AERIAL TARGETS</div></div>
+      <div class="stat"><div class="num"><em data-count="577" data-dec="3">0</em></div><div class="lbl">mAP50-95 · STRICT BOX PRECISION</div></div>
     </div>
     <p class="lead rv d2" style="margin-top:24px;font-size:13px">
       For context: YOLO12s scores 48.0 mAP50-95 on COCO — mostly large, centred, well-lit
-      objects. ARES scores <em class="hi">49.4</em> on small humans seen from directly above.
+      objects. ARES scores <em class="hi">57.7</em> on small humans seen from directly above, from 9.2 M parameters.
     </p>
 
     <div class="rv d2" style="display:grid;gap:14px;margin-top:44px">
-      <div class="shot"><img src="img/dashboard-full.png" alt="ARES command dashboard during playback"></div>
+      <div class="shot"><img src="img/dashboard-full.png" alt="ARES command dashboard mid-playback: detection feed, survivor map, priority queue and mission event log"></div>
       <div style="display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(270px,1fr))">
-        <div class="shot"><img src="img/dashboard-map.png" alt="ARES dashboard map and rescue queue"></div>
-        <div class="shot"><img src="img/dashboard-overlay.png" alt="ARES video panel with detection boxes"></div>
+        <div class="shot"><img src="img/dashboard-map.png" alt="Survivor map with the mission event log below it"></div>
+        <div class="shot"><img src="img/dashboard-overlay.png" alt="Detection overlay: bounding boxes and track identities on the demo clip"></div>
+      </div>
+    </div>
+
+    <!-- ── Trained on disaster imagery ──────────────────────────── -->
+    <div class="rv d2" style="margin-top:56px">
+      <div class="mark"><span class="sq"></span> § THE FOOTAGE, HONESTLY</div>
+      <h3 style="font-size:clamp(22px,3vw,32px);margin-bottom:16px">
+        TRAINED ON DISASTER SCENES.<br>DEMONSTRATED ON A <em class="hi">PUBLIC SEQUENCE.</em>
+      </h3>
+      <p class="lead" style="margin-top:0">
+        The clip above is a VisDrone urban sequence — dense, annotated, and public.
+        We use it because no annotated disaster <em class="am">video</em> exists at that
+        scale, and we do not own a drone. The model itself is trained on
+        <b style="color:var(--ink)">combined C2A + VisDrone</b>, and C2A is people in
+        disaster scenes.
+      </p>
+      <p class="lead" style="margin-top:14px">
+        Below: the same weights, the same thresholds — conf 0.18, imgsz 960 — run over
+        C2A disaster imagery. Nothing re-tuned for the picture.
+      </p>
+      <div class="shot" style="aspect-ratio:auto;padding:0;border-style:solid;margin-top:22px">
+        <img src="img/disaster-detections.png" alt="The same trained model detecting people in disaster imagery: collapsed structures, rubble and flood scenes, with detection counts per image" style="aspect-ratio:auto">
       </div>
     </div>
   </div>

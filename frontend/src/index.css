@@ -181,6 +181,52 @@ body {
   50%      { opacity: 0.45; }
 }
 
+/* ── Small screens ──────────────────────────────────────────────────
+   The layout is Tailwind-responsive already: every panel grid is
+   `grid-cols-1` and only becomes two columns at `lg`, and the fixed
+   ops-row height is `lg:` only. So the structure collapses correctly on
+   a phone without help.
+
+   What does NOT collapse on its own is anything with an intrinsic
+   minimum: the survivor table's six nowrap columns, the Leaflet canvas,
+   and the video element. Those get their own scroll box here rather
+   than widening the page — a dashboard whose body scrolls sideways
+   feels broken even when every panel inside it is correct.
+
+   Nothing here changes the desktop layout. All of it is below `lg`. */
+@media (max-width: 1023px) {
+  /* Panels need a real height once they are stacked, or they collapse to
+     their content and the map becomes a sliver. */
+  .ares-panel-media {
+    min-height: 240px;
+  }
+
+  /* The table keeps its six columns and scrolls inside its own box. The
+     columns are nowrap on purpose — wrapping a track ID across two lines
+     is worse than swiping. */
+  .ares-table-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Leaflet's default controls are sized for a mouse. 44px is the
+     smallest reliable touch target. */
+  .leaflet-bar a {
+    width: 34px;
+    height: 34px;
+    line-height: 34px;
+  }
+
+  /* Attribution wraps onto two lines on a narrow map and eats the
+     bottom of the canvas. */
+  .leaflet-control-attribution {
+    font-size: 9px;
+    max-width: 60vw;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .skeleton { animation: none; }
 }

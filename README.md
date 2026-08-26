@@ -5,7 +5,47 @@ An AI-assisted UAV system for disaster-zone search, survivor detection, and loca
 
 ARES aims to improve UAV search-and-rescue efficiency by dynamically adapting its search strategy according to detected survivors, uncertainty, environmental risk, and remaining mission energy.
 
-> **Project status:** Research and software prototyping. Detection, evaluation and the command dashboard are in active development; UAV integration is not yet built.
+> **Project status:** Research and software prototyping. Detection, evaluation, on-device benchmarking and the command dashboard are complete and measured; UAV integration is not built.
+
+---
+
+## Headline results
+
+Every figure below was measured. Nothing is estimated. What has *not* been measured is listed explicitly at the end of this section — see [`experiments/ARES_MEASURED_NUMBERS.md`](./experiments/ARES_MEASURED_NUMBERS.md) for the single source of truth.
+
+**Detection accuracy** — YOLOv12s, single class, combined C2A + VisDrone validation split (2,591 images, 86,092 instances). Same checkpoint at both sizes:
+
+| | 640 | **960 — deployed** |
+|---|---:|---:|
+| Precision | 0.854 | **0.864** |
+| Recall | 0.727 | **0.774** |
+| mAP50 | 0.783 | **0.833** |
+| mAP50-95 | 0.511 | **0.577** |
+
+For scale: stock YOLOv12s scores 48.0 mAP50-95 on COCO. **57.7 on small aerial humans**, from 9.2 M parameters.
+
+**On-device** — Qualcomm AI Hub, real hosted silicon, INT8, `qnn_context_binary`:
+
+| | Dragonwing RB3 Gen 2 | Dragonwing IQ-9075 EVK |
+|---|---:|---:|
+| **960 px** | 207.56 ms · **4.8 FPS** | 61.45 ms · **16.3 FPS** |
+| 640 px | 26.54 ms · 37.7 FPS | 10.48 ms · 95.4 FPS |
+| Peak memory | 9.5 / 10.4 MB | 8.9 / 6.5 MB |
+| **Layers on Hexagon NPU** | **489 / 489 — 100 %** | **489 / 489 — 100 %** |
+
+**The 100 % is the headline, not the frame rate.** Every layer of an attention-centric YOLOv12 executes on the NPU with nothing falling back to CPU.
+
+**Coverage** — at 20 m altitude the camera sees 23.09 m of ground; at 5 m/s the aircraft takes 4.6 s to cross its own footprint. At 4.8 FPS that is **~22 looks at every patch of ground**. Compute is not the binding constraint; per-look recall is.
+
+### Not measured
+
+Stated as unmeasured everywhere they appear, because a table with no gaps invites the question of which entries were guessed.
+
+| | Why it matters |
+|---|---|
+| **INT8 accuracy** | Every device latency above is INT8; every accuracy figure is FP32. They are two different models until measured. |
+| **Raspberry Pi 4** | `DEVICE_FPS = None` renders "not yet measured". Qualcomm figures do not fill a Pi row. |
+| **Power draw** | AI Hub reports latency, not watts. Duty cycle is a proxy. |
 
 ---
 
@@ -61,13 +101,15 @@ Four detection experiments are complete. Full analysis in [`experiments/MODEL_SE
 
 All rows evaluated on the **same** C2A test split — 2,043 images, 72,523 instances — at `imgsz=640`, `max_det=1000`. Latency on a Tesla T4.
 
+> **This table answers "which model do we ship?", not "how good is the shipped system?"** It holds split and resolution constant so the architectures are comparable. The deployed configuration runs at 960 px and is validated on the harder combined C2A + VisDrone split — those are the numbers in [Headline results](#headline-results) above, and they are lower here because the combined split contains dense VisDrone crowds that C2A does not.
+
 | Model | Trained on | Epochs | GFLOPs | P | R | mAP50 | mAP50-95 | ms/img |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
 | YOLOv8n | COCO (baseline) | — | 8.1 | 0.312 | 0.189 | 0.131 | 0.060 | — |
 | YOLOv8n | C2A | 50 | 8.1 | 0.843 | 0.728 | 0.776 | 0.489 | **4.09** |
 | YOLOv8s | COCO (baseline) | — | 28.6 | 0.335 | 0.242 | 0.173 | 0.085 | — |
 | YOLOv8s | C2A | 50 | 28.4 | 0.861 | 0.764 | 0.814 | 0.545 | 8.84 |
-| **YOLOv12s** | **C2A + VisDrone** | **60** | **23.2** | **0.869** | **0.790** | **0.834** | **0.572** | 12.84 |
+| **YOLOv12s** | **C2A + VisDrone** | **59** | **23.2** | **0.869** | **0.790** | **0.834** | **0.572** | 12.84 |
 
 **YOLOv12s is the deployed model** — best on every metric, and by the widest margin on recall, which is the one that matters when a missed survivor is the failure the system exists to prevent. It finds 790 of every 1,000 survivors against the next model's 764. It was also trained on the broader C2A + VisDrone combination and still wins on C2A's own test split, so the wider training data cost nothing on the narrower domain.
 
@@ -75,20 +117,22 @@ All rows evaluated on the **same** C2A test split — 2,043 images, 72,523 insta
 
 **Key finding.** Domain-specific fine-tuning matters more than architecture: a COCO-pretrained YOLOv8n finds fewer than one survivor in five (recall 0.189); fine-tuned on disaster imagery the same network finds nearly three in four (0.728) — a **285% relative gain in recall from training data alone**.
 
-**Stated caveat.** The YOLOv8 models trained for 50 epochs and YOLOv12s for 60. This is therefore not a controlled architecture comparison and is not presented as one — it establishes which model to ship, which was the question being asked. Full analysis in [`experiments/MODEL_SELECTION.md`](./experiments/MODEL_SELECTION.md).
+**Stated caveat.** The YOLOv8 models trained for 50 epochs and YOLOv12s for 59 (the shipped checkpoint records `epoch: 58`, zero-indexed). This is therefore not a controlled architecture comparison and is not presented as one — it establishes which model to ship, which was the question being asked. Full analysis in [`experiments/MODEL_SELECTION.md`](./experiments/MODEL_SELECTION.md).
 
 ### Detection threshold — and what it buys
 
 The deployed model runs at **confidence 0.18**, deliberately below the 0.5 default. In search and rescue the costs are asymmetric: a false alarm costs a rescuer seconds, a missed survivor cannot be recovered.
 
-The table above reports recall at the balanced best-F1 point, which is what makes models comparable. At the actual operating threshold the figure is higher:
+Measured at 960 px on the combined validation split, read off the PR curve:
 
-| Threshold | Recall | Missed per 1,000 survivors |
-|---|---:|---:|
-| 0.50 — library default | 0.740 | 260 |
-| **0.18 — ARES operating point** | **0.831** | **169** |
+| Threshold | Precision | Recall | F1 | Missed per 1,000 |
+|---|---:|---:|---:|---:|
+| 0.37 — F1-optimal | 0.864 | 0.775 | **0.817** | 225 |
+| **0.18 — ARES operating point** | 0.752 | **0.824** | 0.786 | **176** |
 
-**Running at 0.18 rather than the default finds 91 more survivors per thousand.** The threshold also sits on a flat region of the recall curve — recall varies by only 0.028 across 0.10–0.25 — so the system is not sensitive to small changes in that choice.
+Over 86,092 instances that is **+4,219 people found for +12,893 false alarms — about 3 extra false alarms per additional survivor.**
+
+The comparison is against the **F1 optimum**, not the 0.5 library default. Beating a default proves nothing; leaving the best-balanced point on purpose is the actual engineering decision, and 3:1 is a ratio a reviewer can evaluate immediately. An operator dismisses a false box in a second; a missed survivor is not recoverable.
 
 The dashboard surfaces this as a **High Recall** detection mode rather than hiding it.
 
@@ -188,6 +232,9 @@ Detection results are produced by running the trained model over public UAV data
 ```
 ARES/
 ├── docs/                   Research and technical documentation
+│   ├── handbook/           13-part technical handbook, beginner to advanced
+│   ├── site/               Public pitch site (GitHub Pages)
+│   ├── ARES_ROBIN_GUIDE_v4.md     Integration guide for the pipeline owner
 │   ├── project_overview.md
 │   ├── research_problem.md
 │   └── roadmap.md
@@ -196,12 +243,17 @@ ARES/
 ├── planning/               Search and adaptive planning algorithms
 ├── simulation/             Disaster and UAV simulation
 ├── experiments/            Evaluation results, one directory per experiment
+│   ├── ARES_MEASURED_NUMBERS.md   Single source of truth for every figure
+│   ├── QUALCOMM_BENCHMARK.md      On-device results from Qualcomm AI Hub
 │   ├── MODEL_SELECTION.md  Detection model comparison and analysis
 │   └── Perception/C2A/     YOLOv8n and YOLOv8s baselines and fine-tunes
 ├── hardware/               UAV hardware and CAD
 ├── backend/                FastAPI dashboard API
 ├── frontend/               Vite + React command dashboard
 ├── tools/                  Development utilities
+│   ├── qualcomm_benchmark.py      Quantize → compile → profile on AI Hub
+│   ├── fix_onnx_io.py             Repairs an Ultralytics ONNX spec violation
+│   └── benchmark.py               Local latency measurement
 ├── CLAUDE.md               Working context and project conventions
 ├── BUILD_ORDER.md          Dashboard implementation sequence
 └── requirements.txt        Backend dependencies (light — no ML stack)
@@ -227,6 +279,24 @@ pip install -r ai/requirements.txt
 
 Datasets and model weights are not stored in this repository. Trained weights are published as release assets.
 
+### Reproducing the numbers
+
+```bash
+# Accuracy — combined C2A + VisDrone validation split
+yolo val model=models/yolov12s.pt data=<combined>.yaml imgsz=960
+
+# On-device — requires a free Qualcomm AI Hub token
+python tools/fix_onnx_io.py models/yolov12s_960.onnx
+python tools/qualcomm_benchmark.py --list
+python tools/qualcomm_benchmark.py \
+    --device "Dragonwing RB3 Gen 2 Vision Kit" --device-os 1.6 --quantize
+```
+
+Two things that will silently give you wrong answers, both of which bit this project:
+
+- **`print(m.model.names)` before trusting any validation number.** A missing weights path makes Ultralytics download the stock COCO checkpoint and validate *that* — it reports plausible numbers for a model you did not train.
+- **`imgsz` must match what you ship.** The benchmark reads the input size out of the ONNX graph rather than trusting a flag, because exports that were 640 when everyone believed they were 960 have already happened here once.
+
 ---
 
 ## Roadmap
@@ -236,6 +306,12 @@ Datasets and model weights are not stored in this repository. Trained weights ar
 **UAV integration** — hardware selection · assembly · telemetry · camera integration · waypoint navigation · autonomous mission
 
 **Research validation** — controlled experiments · baseline comparison · ablation study · results · publication
+
+**Next measurements, in priority order**
+
+1. **INT8 accuracy** — closes the only gap between the accuracy and latency tables
+2. **Raspberry Pi 4** — commodity-hardware datapoint alongside the Qualcomm one
+3. **YOLOv8n resolution scaling** — v8n is pure convolution, so benchmarking it at 640 and 960 would settle whether YOLOv12s's 7.82× resolution penalty on the NPU is attention's quadratic term or a memory-tiling effect. Currently an open question, not a finding.
 
 Detailed timeline in [`docs/roadmap.md`](./docs/roadmap.md).
 
@@ -247,9 +323,9 @@ ARES Research & Development Team — three members across perception, planning, 
 
 | Track | Scope |
 |---|---|
-| Perception | Detection model, hazard classification, on-device benchmarking, dashboard |
+| Perception & platform | Detection model, hazard classifier, on-device benchmarking, backend and dashboard |
 | Pipeline | Tracking, pixel-to-GPS localization, priority scoring |
-| Presentation | Technical documentation, pitch materials, demonstration |
+| Presentation | Pitch deck, demonstration video |
 
 ---
 

@@ -503,9 +503,11 @@
             </thead>
             <tbody>
               <tr><td class="num">0.18</td><td>Confidence threshold</td><td>A false alarm costs thirty seconds; a missed survivor cannot be recovered. Read off the PR curve.</td></tr>
-              <tr><td class="num">0.831 / 0.740</td><td>Recall at 0.18 vs 0.5</td><td>Ninety-one more people found per thousand present.</td></tr>
-              <tr><td class="num">0.845 / 0.717</td><td>Precision / recall</td><td>Epoch 44 of 100. Stopped deliberately — integration mattered more.</td></tr>
-              <tr><td class="num">0.775 / 0.494</td><td>mAP50 / mAP50-95</td><td>YOLO12s scores 48.0 on COCO. 49.4 on small aerial humans is harder.</td></tr>
+              <tr><td class="num">0.824 / 0.775</td><td>Recall at 0.18 vs the F1-optimal 0.37</td><td>About 3 extra false alarms per additional survivor found.</td></tr>
+              <tr><td class="num">0.864 / 0.774</td><td>Precision / recall</td><td>At 960 px, on 2,591 images and 86,092 instances. Epoch 58 of 100.</td></tr>
+              <tr><td class="num">0.833 / 0.577</td><td>mAP50 / mAP50-95</td><td>YOLO12s scores 48.0 on COCO. 57.7 on small aerial humans is harder.</td></tr>
+              <tr><td class="num">4.8 / 16.3</td><td>FPS at 960 px, INT8</td><td>Dragonwing RB3 Gen 2 / IQ-9075. Measured on real silicon via Qualcomm AI Hub.</td></tr>
+              <tr><td class="num">489 / 489</td><td>Layers on the Hexagon NPU</td><td>100 %. Nothing falls back to CPU — this is the headline, not the FPS.</td></tr>
               <tr><td class="num">960</td><td>Detection input size</td><td>Swept 640 / 960 / 1280. 960 found most and fragmented least.</td></tr>
               <tr><td class="num">1000</td><td><span class="mono">max_det</span></td><td>The default 300 silently truncates, dropping lowest-confidence first.</td></tr>
               <tr><td class="num">2.5 s</td><td>Persistence threshold</td><td>A duration, not a frame count — 60 frames here, 3 on a Pi.</td></tr>
@@ -570,7 +572,7 @@
               </p>
               <p class="said">
                 We read the threshold off the precision-recall curve from our validation run. At 0.5,
-                recall is 0.740. At 0.18, it's 0.831. That's ninety-one more people found per
+                recall is 0.775. At our 0.18, it's 0.824 &mdash; about three extra false alarms for every additional person found. That's forty-nine more people found per
                 thousand present. The price is more false positives, and we handle those downstream
                 with a persistence filter rather than by raising the threshold and losing people.
               </p>
@@ -578,11 +580,12 @@
             </div>
           </details>
           <details class="q">
-            <summary>That's epoch 44 of 100. Why did you stop?</summary>
+            <summary>How many epochs did you train?</summary>
             <div class="answer">
               <p class="said">
-                The Colab session died. We validated the interim weights, they were good enough, and
-                with twelve days left an integration-tested end-to-end system was worth more than the
+                The shipped checkpoint records epoch 58 of a planned 100. The Colab session died. We
+                validated what we had, it was good enough, and with the time left an
+                integration-tested end-to-end system was worth more than the
                 one to three points of mAP the remaining epochs would likely add. Model accuracy was
                 never our bottleneck.
               </p>
@@ -730,19 +733,22 @@
         <div class="qgroup">
           <h3>On-device</h3>
           <details class="q">
-            <summary>It'll only manage about 1 FPS. Isn't that useless?</summary>
+            <summary>What frame rate do you actually get on device?</summary>
             <div class="answer">
               <p class="said">
-                It sounds low next to video frame rates, and it's exactly what you'd expect from a
-                9-million-parameter attention model on a Cortex-A72 with no accelerator.
+                We benchmarked on Qualcomm AI Hub, on real hosted silicon. At 960 pixels, INT8:
+                <b>4.8 FPS on a Dragonwing RB3 Gen 2, 16.3 FPS on an IQ-9075.</b> Peak memory under
+                10 MB. And <b>489 of 489 layers &mdash; 100 % &mdash; execute on the Hexagon NPU</b>,
+                with nothing falling back to CPU. The 100 % is the part we'd point at: an
+                attention-centric YOLOv12 maps completely onto your accelerator.
               </p>
               <p class="said">
-                It's also enough. At 20 metres altitude the camera sees 23 metres of ground, so at
-                search speed the aircraft takes about five seconds to cross its own footprint. Every
-                patch of ground is visible in five or more consecutive frames even at 1 FPS. A missed
-                detection in one frame is recovered in the next. Thirty FPS would give us thirty looks
-                at the same ground, twenty-nine of them redundant, at thirty times the power budget.
-                <b>A search UAV doesn't need 30 FPS. It needs to not miss the ground.</b>
+                Is 4.8 FPS enough? At 20 metres altitude the camera sees 23 metres of ground, so at
+                5 m/s the aircraft takes 4.6 seconds to cross its own footprint &mdash; about
+                <b>22 looks at every patch of ground</b>. Compute stopped being our binding
+                constraint. The remaining hard problem isn't throughput, it's whether the detector
+                finds a half-buried person at all. <b>A search UAV doesn't need 30 FPS. It needs to
+                not miss the ground.</b>
               </p>
               <p class="note">This is the answer that wins the hardware round.</p>
             </div>
@@ -962,7 +968,7 @@
           <div class="part"><span class="n">01</span><div><h4>What ARES is</h4><p>The four stages, the data contract, the three counts, real vs described.</p><code>01_what_ares_is.md</code></div></div>
           <div class="part"><span class="n">02</span><div><h4>ML and YOLO from zero</h4><p>Every training term, precision vs recall, mAP, your actual numbers read line by line.</p><code>02_machine_learning_and_yolo.md</code></div></div>
           <div class="part"><span class="n">03</span><div><h4>Tracking</h4><p>ByteTrack, the 333-ID bug, two wrong diagnoses, persistence filtering.</p><code>03_tracking.md</code></div></div>
-          <div class="part"><span class="n">04</span><div><h4>Export and benchmarking</h4><p>ONNX, runtimes, honest timing, and why ~1 FPS is a good answer.</p><code>04_export_and_benchmarking.md</code></div></div>
+          <div class="part"><span class="n">04</span><div><h4>Export and benchmarking</h4><p>ONNX, INT8 on the Hexagon NPU, two instructive compile failures, and the resolution trade priced out.</p><code>04_export_and_benchmarking.md</code></div></div>
           <div class="part"><span class="n">05</span><div><h4>The backend</h4><p>HTTP from zero, then every function in all seven Python files.</p><code>05_the_backend.md</code></div></div>
           <div class="part"><span class="n">06</span><div><h4>The mathematics</h4><p>GSD derived, the 111,320 constant, the reference-frame proof, both scores worked by hand.</p><code>06_the_mathematics.md</code></div></div>
           <div class="part"><span class="n">07</span><div><h4>The frontend</h4><p>React from zero, the load-bearing import order, the palette rebuild.</p><code>07_the_frontend.md</code></div></div>

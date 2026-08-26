@@ -62,16 +62,47 @@ Derived fields the backend adds (latitude, longitude, priority score) are comput
 
 ---
 
-## Detection model status (23 Aug 2026)
+## Detection model status (26 Aug 2026)
 
-Current: **YOLOv12s**, single `person` class, trained on combined C2A + VisDrone. Epoch 44 of 100 — P 0.845, R 0.717, mAP50 0.775, mAP50-95 0.494. Interim weights: `ares_detect_v0.9.pt`.
+Current: **YOLOv12s**, single class, trained on combined C2A + VisDrone. Shipped weights: `models/yolov12s.pt` (9,231,267 params).
 
-- Operating confidence threshold: **0.18, deliberately low.** Recall at that threshold is **0.831** against 0.740 at the 0.5 default — 91 more survivors found per thousand. Surface on the dashboard as **"Detection Mode: High Recall"**.
+**Validated on the combined C2A + VisDrone val split — 2,591 images, 86,092 instances.** Same checkpoint at both sizes:
+
+| | 640 | **960 (shipped)** |
+|---|---|---|
+| Precision | 0.854 | **0.864** |
+| Recall | 0.727 | **0.774** |
+| mAP50 | 0.783 | **0.833** |
+| mAP50-95 | 0.511 | **0.577** |
+
+The checkpoint records `epoch: 58` of a planned 100 (zero-indexed — 59 epochs completed). Earlier docs said epoch 44 with weaker numbers; that was a superseded checkpoint and the claim has been corrected everywhere.
+
+- Operating confidence threshold: **0.18, deliberately low** — chosen off the PR curve, not from a default. Measured at 960:
+
+  | | conf 0.37 (F1-optimal) | **conf 0.18 (shipped)** |
+  |---|---|---|
+  | Precision | 0.864 | 0.752 |
+  | Recall | 0.775 | **0.824** |
+  | F1 | 0.817 | 0.786 |
+
+  Over 86,092 instances that is **+4,219 people found for +12,893 false alarms — about 3 false alarms per additional survivor.** Surface on the dashboard as **"Detection Mode: High Recall"**.
 - `max_det` must be **1000**, not the default 300.
 - **`DETECTION_IMGSZ = 960`.** Detection runs on a 1280-wide clip; at 640 a 24 px person is downscaled to 12 px before the network sees them, and detections stop being stable. 960 gave +29% detections and doubled the share above 0.70 confidence. **The on-device benchmark must target 960, not 640** — the shipped detections were produced at that size.
 - **Persistence is a duration, not a frame count.** `MIN_TRACK_SECONDS = 2.5`, with `MIN_TRACK_FRAMES = int(MIN_TRACK_SECONDS * CLIP_FPS)` — 60 frames at 24 fps, 3 at the Pi's ~1.5 fps. A hardcoded frame count silently means an eighth of a second in one place and two seconds in the other.
 - **Maximum operating altitude ~40 m**, predicted from geometry and confirmed on real footage: above it a person spans under 24 px and detection quality collapses (4% of detections above 0.70 confidence, versus 32% on lower-altitude footage).
-- On-device target: **Raspberry Pi 4 Model B**, CPU only. Expect a low FPS figure and display it honestly.
+- **On-device: measured on Qualcomm AI Hub, real hosted silicon.** INT8, `qnn_context_binary`:
+
+  | | RB3 Gen 2 (QCS6490) | IQ-9075 EVK (QCS9075) |
+  |---|---|---|
+  | **960** | 207.56 ms · **4.8 FPS** | 61.45 ms · **16.3 FPS** |
+  | 640 | 26.54 ms · 37.7 FPS | 10.48 ms · 95.4 FPS |
+  | Peak memory | 9.5 / 10.4 MB | 8.9 / 6.5 MB |
+  | **NPU coverage** | **489/489 — 100 %** | **489/489 — 100 %** |
+
+  The 100 % is the headline, not the FPS: every layer of an attention-centric YOLOv12 runs on the Hexagon NPU with nothing falling back to CPU.
+
+- **Raspberry Pi 4 is still unmeasured.** `DEVICE_FPS = None` renders "not yet measured". Qualcomm figures do not fill a Pi row.
+- **INT8 accuracy is unmeasured.** All device latencies are INT8; all accuracy figures above are FP32. Never present them as one system.
 
 **Before changing model architecture, read `experiments/MODEL_SELECTION.md`.** This repo already contains trained YOLOv8n and YOLOv8s models whose relationship to YOLOv12s is not yet established — they were measured on a different test split.
 

@@ -200,13 +200,19 @@ ten-minute flight is not the number a rescue operator would experience.
 
 ---
 
-## 5. Why ~1 FPS is a good answer
+## 5. Coverage: why frame rate was never the constraint
 
-This is the most important argument in this part, and it is one that turns an
-apparent weakness into evidence of engineering judgment.
+**This section used to be titled "Why ~1 FPS is a good answer."** It was written
+when the only target was a Raspberry Pi 4 and the expected figure was around one
+frame per second, and its job was to defend that number.
 
-A judge sees "1 FPS" and thinks *that's terrible, video is 30 FPS.* You need the
-answer ready, and it is a genuinely strong one.
+It no longer has to. Section 6 records **4.8 FPS on a Dragonwing RB3 Gen 2 and
+16.3 FPS on an IQ-9075**, both measured on real silicon, both with 100 % of the
+network on the Hexagon NPU. The defensive framing is obsolete.
+
+The underlying argument, though, is not — and it got *stronger*, because it is
+what tells you the extra frames are surplus rather than necessary. Keep the
+geometry; drop the apology.
 
 ### The footprint argument
 
@@ -220,36 +226,52 @@ A drone flying forward at speed *v* crosses its own footprint in `23.09 / v`
 seconds. During that time, **the same patch of ground is visible in every frame
 captured.**
 
-| Ground speed | Time to cross footprint | Frames of the same ground at 1 FPS |
-|---|---|---|
-| 3 m/s | 7.7 s | ~8 |
-| 5 m/s | 4.6 s | ~5 |
+At `DRONE_SPEED_MS = 5.0`, that is **4.6 seconds per crossing** — and every frame
+captured in those 4.6 seconds is another look at the same patch of ground.
 
-So even at 1 FPS, a survivor gets **five to eight independent chances** to be
-detected as the drone passes over them. A missed detection in one frame is
-recovered in the next.
+| Platform | Measured FPS | Looks at each patch |
+|---|---|---|
+| *(hypothetical 1 FPS)* | 1.0 | ~5 |
+| RB3 Gen 2 @ 960 | 4.8 | **~22** |
+| IQ-9075 @ 960 | 16.3 | **~75** |
+| RB3 Gen 2 @ 640 | 37.7 | ~174 |
+| IQ-9075 @ 640 | 95.4 | ~441 |
+
+Even the pessimistic 1 FPS case gives a survivor five independent chances to be
+detected. On the RB3 it is twenty-two. A missed detection in one frame is
+recovered in the next, twenty-one times over.
 
 > **"A search UAV does not need 30 FPS. It needs to not miss the ground."**
 
-That sentence is the whole argument. Thirty FPS would give you thirty looks at
-the same patch, twenty-nine of which are redundant, at thirty times the power
-budget on a battery-limited aircraft.
+That sentence is still the whole argument, and the measurements changed which
+half of it carries the weight. The interesting claim is no longer *"1 FPS is
+enough."* It is:
+
+> **"Compute stopped being the binding constraint. At 4.8 FPS every patch of
+> ground is already seen ~22 times, so the remaining question is not how fast the
+> model runs — it is whether the detector finds a half-buried person at all. That
+> is a recall problem, and it is where we spent the effort."**
+
+That reframe is worth more than the speed number by itself, because it tells a
+judge you know which of your constraints actually binds.
 
 ### The number to quote, and where it comes from
 
-`backend/config.py` is the authority: `DRONE_SPEED_MS = 5.0`. So the figure to
-use on stage is **4.6 seconds and five or more looks**, not eight.
-
-An earlier draft of this handbook flagged a conflict with `CLAUDE.md`, which
-used to state 7.7 seconds — implying 3 m/s. That line is no longer in
-`CLAUDE.md`, so there is nothing left to reconcile in the repo. What matters is
-that the pitch, the deck and this handbook all derive the figure from the one
-constant rather than quoting a remembered number:
+`backend/config.py` is the authority: `DRONE_SPEED_MS = 5.0`. Derive the figure
+every time rather than quoting a remembered one:
 
 ```
-23.09 m footprint ÷ 5 m/s = 4.6 s per crossing
-4.6 s at 1 FPS = ~5 consecutive frames of the same ground
+23.09 m footprint ÷ 5 m/s   = 4.6 s per crossing
+4.6 s × 4.8 FPS  (RB3)      = ~22 consecutive frames of the same ground
+4.6 s × 16.3 FPS (IQ-9075)  = ~75 consecutive frames of the same ground
 ```
+
+An earlier draft flagged a conflict with `CLAUDE.md`, which once stated 7.7
+seconds — implying 3 m/s. That line is gone from `CLAUDE.md`, so there is
+nothing left to reconcile. The lesson stands regardless: **the pitch, the deck
+and this handbook all compute from the one constant.** The moment three
+documents each carry their own remembered number, one of them is wrong and
+nobody knows which.
 
 One caveat worth being precise about if a judge presses. `DRONE_SPEED_MS` is a
 per-clip localization constant — the assumed track that spreads survivors along
@@ -258,64 +280,323 @@ choice that would be set by mission planning, not by this file. On the
 prototype they are the same number, and saying so is more honest than implying
 the 5 m/s was chosen as a search doctrine.
 
-### The honest framing
+---
 
-> "We measured it on the target device and it is [X] FPS at 960 pixels. That
-> sounds low next to video frame rates, and it is exactly what you would expect
-> from a 9-million-parameter attention model on a Cortex-A72 with no accelerator.
-> It is also enough: at our search altitude the aircraft takes about five seconds
-> to cross its own camera footprint, so every patch of ground is seen in several
-> consecutive frames. We would rather report the real number than a burst figure
-> the device can't sustain."
+## 6. The Qualcomm benchmark — the result that changed the story
 
-**That is a better answer than a fast number, because it demonstrates you
-understand your own system's requirements.**
+Qualcomm authored the SIH problem statement. Qualcomm also runs **AI Hub**, a
+free service that compiles your model and profiles it on **physically real
+devices** in their lab. That combination is not a coincidence you should waste.
+
+`tools/qualcomm_benchmark.py` runs the whole chain: quantize → compile → profile.
+
+### The measurements
+
+All runs: **YOLOv12s, INT8 weights + INT8 activations, QNN context binary.**
+
+| | RB3 Gen 2 (QCS6490) | IQ-9075 EVK (QCS9075) |
+|---|---|---|
+| **960 latency** | 207.56 ms · **4.8 FPS** | 61.45 ms · **16.3 FPS** |
+| **640 latency** | 26.54 ms · 37.7 FPS | 10.48 ms · 95.4 FPS |
+| **960 → 640 ratio** | **7.82×** | **5.86×** |
+| Peak memory (960 / 640) | 9.5 / 10.4 MB | 8.9 / 6.5 MB |
+| Layers on NPU | 489 / 489 | 489 / 489 |
+| **NPU coverage** | **100 %** | **100 %** |
+
+**The 100 % is the headline, not the FPS.** A partially-mapped network falls back
+to CPU for the unsupported layers, and those fallbacks dominate the latency. Every
+one of 489 layers executing on the Hexagon NPU means an attention-centric YOLOv12
+maps *completely* onto Qualcomm's accelerator — which is a claim about their
+silicon that most submissions will not have measured.
+
+Peak memory under 10 MB is the other quietly strong number. It is what makes
+"this runs on the aircraft, not in a datacentre" a measurement rather than a
+slogan.
+
+### The scaling anomaly — an open question, not a finding
+
+960 is **2.25×** the pixels of 640. Three platforms disagree sharply about what
+that costs:
+
+| Platform | 960 ÷ 640 time |
+|---|---|
+| Pixel count (the naive expectation) | 2.25× |
+| Tesla T4 GPU | 2.62× |
+| **IQ-9075 Hexagon NPU** | **5.86×** |
+| **RB3 Gen 2 Hexagon NPU** | **7.82×** |
+
+Near-linear on a GPU. Wildly superlinear on the NPU. That is a real result and
+it is worth being disciplined about, because the last confident hardware
+explanation offered in this project — *"attention doesn't map to Hexagon"* —
+was wrong, and nearly went into a submission to Qualcomm.
+
+**Hypothesis, clearly labelled:** YOLOv12 is attention-centric, and attention
+cost scales with the *square* of spatial token count. 2.25× the tokens implies
+5.06× the attention cost, while convolutions scale at 2.25×. A blend of the two
+should land between 2.25× and 5.06×. The observed 5.86× and 7.82× sit **above**
+that ceiling, so attention alone does not account for it. A memory-tiling effect
+is the likely remainder — 960 activations exceeding on-chip SRAM and spilling to
+DRAM. The inverted peak memory on the RB3 (10.4 MB at 640 against 9.5 MB at 960)
+suggests the compiler chose different tiling strategies, which is consistent with
+that story and is not proof of it.
+
+**The experiment that would settle it.** `yolov8n.pt` is pure convolution with no
+attention. Export it at both sizes and benchmark both on the RB3:
+
+- v8n scales ~2.25× while v12s scales ~7.8× → **attention is the cause,
+  measured.**
+- v8n also scales ~7× → the cause is memory and tiling, independent of
+  architecture.
+
+Two exports and four AI Hub jobs converts a hypothesis into a controlled result.
+Until someone runs it, this section says *"we measured this and do not yet know
+why,"* which is a perfectly respectable thing to say and a much better one than a
+confident wrong answer.
+
+### Why calibration data matters
+
+Quantization needs **calibration frames** — real images, run through the network,
+so the quantizer can observe the actual range of every activation and choose
+integer scales that cover it.
+
+The script feeds 64 frames evenly spread across the clip, letterboxed exactly as
+deployment letterboxes them:
+
+```python
+def letterbox(img, size):
+    r = min(size / h, size / w)
+    canvas = np.full((size, size, 3), 114, dtype=np.uint8)
+    # calibration must see the same input distribution as deployment
+```
+
+Calibrate on differently-preprocessed images and you tune the quantizer for a
+distribution you never actually feed it. The output still runs. It is just
+quietly worse, in a way no error message tells you about.
 
 ---
 
-## 6. Why `DEVICE_FPS` is `None`
+## 7. Two failures worth more than the success
+
+The benchmark did not work first time. Both failures taught something.
+
+### Failure 1: a malformed file that four hypotheses missed
+
+```
+Tensors {'output0'} occur in value_info but also in model IO.
+```
+
+Four explanations were proposed for this: NPU operator limits, a quantization
+requirement, an activation-size ceiling, and YOLOv12's attention blocks not
+mapping to Hexagon.
+
+**All four were wrong.** The ONNX spec says `graph.value_info` carries types for
+tensors that are *neither* graph inputs nor outputs. Ultralytics' export left
+`output0` in both places. ONNX Runtime tolerates the violation, which is why
+local benchmarking never noticed; AI Hub's compiler validates strictly.
+
+`tools/fix_onnx_io.py` removes the duplicate entries. It changes **zero
+operators and zero weights.**
+
+The near-miss is the lesson. The most plausible-sounding hypothesis —
+*"attention doesn't map well to the Hexagon NPU"* — was on its way into the
+submission as a finding. It would have been a **false claim about Qualcomm's own
+hardware, in a document submitted to Qualcomm**, and the eventual 100 % NPU
+coverage is its direct refutation.
+
+> **A confident explanation that fits the symptom is not a diagnosis. Read the
+> spec.**
+
+### Failure 2: float32 I/O on an integer-only NPU
+
+```
+Tensor 'images' has a floating-point type which is not supported
+by the targeted device
+```
+
+The Hexagon HTP is **integer-only**. Not "faster with integers" — it has no
+floating-point path at all. Feeding it FP32 inputs is not a performance question,
+it is unsupported. Hence `--quantize_io` whenever the model is quantized.
+
+### And a bug in the harness itself
+
+The first version of `qualcomm_benchmark.py` queued a profile job against a model
+that had failed to compile — and reported the resulting nonsense. Every stage now
+blocks and checks:
+
+```python
+def check(job, label):
+    status = job.wait()
+    ok = getattr(status, "success", None)
+    if ok is None:
+        ok = str(getattr(status, "state", status)).upper() in {"SUCCESS", "COMPLETED"}
+```
+
+**A benchmark that cannot fail loudly is a benchmark you cannot trust.**
+
+---
+
+## 8. Accuracy: what is measured and what is not
+
+Speed without accuracy is meaningless — an infinitely fast model that detects
+nothing has excellent latency.
+
+### FP32, measured
+
+Combined C2A + VisDrone validation split, 2 591 images, 86 092 person instances.
+The **same checkpoint** evaluated at both resolutions, so the only variable is
+`imgsz`:
+
+| Metric | 640 | **960 (shipped)** | Δ |
+|---|---|---|---|
+| Precision | 0.854 | **0.864** | +0.011 |
+| Recall | 0.727 | **0.774** | **+0.047** |
+| mAP50 | 0.783 | **0.833** | +0.049 |
+| mAP50-95 | 0.511 | **0.577** | **+0.066** |
+| Inference (T4) | 10.0 ms | 26.2 ms | 2.62× |
+
+Recall gains most — the expected signature of giving a small-object detector
+more pixels. Note also that **2.25× the pixels costs 2.62× the time**: attention
+scales slightly worse than linearly in pixel count.
+
+### Decomposing the improvement
+
+An earlier figure existed from epoch 44 at 640 (mAP50-95 **0.494**). Three
+measurements let you separate two variables that would otherwise be confounded:
+
+```
+mAP50-95   0.494   →   0.511   →   0.577
+           ep44         final       final
+           @640         @640        @960
+                     └───────┘  └──────────┘
+                     training     resolution
+                      +0.017        +0.066
+```
+
+**Resolution accounts for ~80 % of the gain; finishing training ~20 %.** One
+extra validation run bought that decomposition. Without the middle measurement
+you could only say "it got better" and not say why.
+
+### Why not run at 640 and take the speed?
+
+The obvious challenge: 640 is far faster, and Section 5 already shows ~22 looks
+per patch at 960. Why not bank the speed?
+
+| | 960 | 640 |
+|---|---|---|
+| RB3 Gen 2 | 4.8 FPS → ~22 looks | 37.7 FPS → **~174 looks** |
+| IQ-9075 | 16.3 FPS → ~75 looks | 95.4 FPS → **~441 looks** |
+| Recall per look | **0.774** | 0.727 |
+
+174 looks at one patch of ground is absurd, and the correlated-failure argument
+bites hardest exactly there. Consecutive frames of the same person, at the same
+altitude, seconds apart, fail in *correlated* ways: a target too small to
+resolve at 640 is still too small in the next frame. Small changes in viewing
+angle and occlusion recover some, but nowhere near what 174 independent trials
+would. You would be spending compute to re-fail the same detection 152 more
+times.
+
+> **Extra looks have sharply diminishing returns because failures correlate.
+> Extra resolution raises the ceiling on every look. Past the point where
+> coverage saturates, resolution is the better purchase — and 22 looks is well
+> past it.**
+
+### But name the cost honestly
+
+To deliver ~22 looks per patch on the RB3:
+
+| | NPU duty cycle |
+|---|---|
+| 960 | 4.8 × 207.56 ms ≈ **996 ms/s → ~100 %** |
+| 640 | 4.8 × 26.54 ms ≈ **127 ms/s → ~13 %** |
+
+**960 costs roughly 7.8× the compute duty cycle for +4.7 points of recall.** On a
+battery-limited aircraft, energy is flight time and flight time is search area.
+
+The verdict stands — for search-and-rescue, take the recall, because a missed
+survivor is unrecoverable while shorter endurance is a mission-planning problem.
+But state it as an argued trade with a number attached, not as a free win. The
+version with the cost named is the more credible one.
+
+Say **"compute duty cycle,"** not watts: AI Hub reports latency, not power.
+Duty cycle is a reasonable first-order proxy only if the NPU draws similar power
+while active at both sizes — plausible, and unverified here.
+
+### INT8, not measured
+
+The benchmarked model is INT8. **Its accuracy is not the table above.**
+Quantization costs something; how much is an empirical question nobody has
+answered for this model.
+
+So the rule is the same one that governs `DEVICE_FPS`:
+
+> Quote 0.833 mAP50 as the **FP32** figure and tag the INT8 accuracy **"not yet
+> measured."**
+
+Pairing an FP32 accuracy with an INT8 latency and presenting them as one system
+is the kind of quiet misstatement that a careful judge catches and that costs far
+more than the missing number would have.
+
+### The validation trap that nearly landed
+
+A validation run was performed against `yolo12s.pt` — the **stock COCO
+checkpoint**, auto-downloaded by Ultralytics because the path pointed at a file
+that did not exist. It reported mAP50 **0.276**.
+
+Three signals caught it:
+
+| Signal | Stock | Trained |
+|---|---|---|
+| `names` | 80 COCO classes | `{0: 'human'}` |
+| Parameters | 9 261 840 | 9 231 267 |
+| `nt_per_class` | length 80 | length 1 |
+
+The parameter gap is exactly **30 573**, which is precisely
+`3 × 129 × (80 − 1)` — the three `Conv2d(128, nc, 1)` layers in the detection
+head. Arithmetic, not intuition.
+
+> **Before trusting any validation number, print `model.names`.** One line. It
+> distinguishes "our model scores 0.833" from "our model scores 0.276," and only
+> one of those is true.
+
+---
+
+## 9. `DEVICE_FPS`, and the Pi checklist
 
 ```python
 DEVICE_FPS: Optional[float] = None
 DEVICE_NAME: str = "Raspberry Pi 4 Model B"
 ```
 
-Nobody has run the benchmark yet — your SD card is on order.
+`None` renders as a dash and the words **"not yet measured"**. That is still the
+honest state for the *Pi* — the SD card is on order and nobody has run it.
 
-`None` means exactly that. The dashboard renders a dash and the words **"not yet
-measured"**, and the mission-parameters panel tags the row accordingly instead of
-calling it measured.
+The Qualcomm numbers do not fill this in, because they are a different device.
+Two measured platforms and one unmeasured one is a perfectly respectable state to
+present; silently reusing an IQ-9075 figure under a "Raspberry Pi 4" label is
+not.
 
-The config comment says it best:
+When a real Pi figure arrives, you set the one constant and **nothing else
+changes** — the panel picks it up through `/api/config` and re-tags the row
+"measured". One constant, one edit, the whole dashboard follows. Worth pointing
+out if a judge asks about the architecture.
 
-> An invented FPS figure is the same failure as a hand-authored detection, and
-> this is the one number a judge is most likely to press on — a Raspberry Pi 4
-> running a YOLO model is exactly where a prototype is expected to be slow.
+### The interim CPU number
 
-When the real figure arrives, you set it in `backend/config.py` and **nothing
-else changes.** The panel picks it up through `/api/config` and re-tags the row
-"measured". No frontend edit.
+Recorded in `experiments/MODEL_SELECTION.md` from a Mac CPU run. **Not** a Pi
+number and it must never be presented as one — but it holds a prediction that was
+measured and overturned.
 
-That design — one constant, one edit, the whole dashboard follows — is worth
-pointing out if a judge asks about the architecture.
+The expectation was that YOLOv12's attention would be *disproportionately* worse
+on CPU than GPU, attention being memory-bandwidth hungry. The measurement said
+otherwise: CPU ratio 2.18× against GPU 3.14×. Attention was **relatively better**
+on CPU than predicted — and, as Section 6 later showed, mapped 100 % onto the
+Hexagon NPU as well.
 
-### The interim number you do have
+Two independent measurements, both contradicting the same intuition. Keep
+predictions that get overturned; they are what separates a project that measured
+things from one that assumed them.
 
-You benchmarked on Mac CPU, recorded in `experiments/MODEL_SELECTION.md`. That is
-**not** a Pi number and must not be presented as one, but it is useful for a
-comparison you got wrong and then measured:
-
-The prediction was that YOLOv12's attention would be disproportionately worse on
-CPU than on GPU, because attention is memory-bandwidth heavy and CPUs have less of
-it. **The measurement said otherwise** — CPU ratio 2.18× against GPU 3.14×.
-Attention was *relatively better* on CPU than expected.
-
-Predictions that get measured and overturned are worth keeping. They are what
-separates a project that measured things from a project that assumed them.
-
----
-
-## 7. Your benchmark checklist for when the SD card arrives
+### The checklist
 
 1. **Flash 64-bit Raspberry Pi OS.** Verify with `uname -m` → `aarch64`.
 2. **Attach active cooling.** A fan, or at minimum a heatsink case.
@@ -340,45 +621,66 @@ python tools/benchmark.py models/yolov8n.pt  960 models/test_frame_dense.jpg
 
 ---
 
-## 8. What you would improve
+## 10. What you would improve
 
-**1. Quantisation.** INT8 quantisation converts weights from 32-bit floats to
-8-bit integers — roughly 4× smaller and substantially faster on CPU, for a small
-accuracy cost. The standard next step for edge deployment, and the single largest
-speed win available to you.
+**1. Measure the INT8 accuracy.** The single largest gap in the story. You have
+an INT8 latency and an FP32 accuracy and no honest way to state them as one
+system until this exists.
 
-**2. A Coral TPU or Hailo accelerator.** A USB or HAT accelerator would transform
-the throughput. It also changes "on-device inference on commodity hardware" into
-"on-device inference with an accelerator", which is a different and slightly
-weaker claim. Worth knowing, worth mentioning as roadmap.
+**2. Frame skipping as an explicit power policy.** At ~22 looks per patch on the
+RB3, processing every frame is *waste*, not thoroughness. Deliberately running one
+frame in four to buy flight endurance is a designed choice justified by the
+footprint arithmetic — and on a battery-limited aircraft, endurance is search
+area. This became interesting only *because* the device turned out to be fast.
 
-**3. Jetson Nano / Orin Nano.** A GPU-equipped edge board with TensorRT support.
-Faster, more expensive, more power.
+**3. Resolution scheduling.** Run low-resolution continuously; re-run the same
+frame at 960 when something is detected. Cheap most of the time, accurate when it
+matters.
 
-**4. Frame skipping as an explicit policy.** Rather than running as fast as
-possible, deliberately process one frame every *N* to hit a target power budget.
-Given the footprint argument, this costs nothing in coverage and is a *designed*
-choice rather than a limitation.
+**4. The 640-vs-960 comparison, on device.** You have accuracy at both. Latency at
+both would let you state the trade in full: *"960 costs us X ms and buys us
++0.057 recall."* That is a defensible engineering decision rather than a
+preference.
 
-**5. Resolution scheduling.** Run at low resolution continuously, and re-run the
-same frame at high resolution when something is detected. Cheap most of the time,
-accurate when it matters.
+**5. Benchmark the Pi anyway.** Not because it is the best platform, but because
+"commodity hardware and Qualcomm silicon, here are both" is a stronger position
+than either alone.
+
+**6. Accelerators as roadmap, not claim.** Coral TPU, Hailo, Jetson Orin. Each
+would transform throughput, and each changes "on-device inference on commodity
+hardware" into "…with an accelerator" — a different and slightly weaker claim.
+Worth knowing, worth mentioning, worth not overstating.
 
 ---
 
 ## What to take from this part
 
 - Export converts a research checkpoint into something a lightweight runtime can
-  execute. YOLOv12's attention blocks **do** export to ONNX — verified, not
-  assumed.
+  execute. YOLOv12's attention blocks **do** export to ONNX, and **do** map 100 %
+  onto the Hexagon NPU — both verified, neither assumed.
 - Benchmark with warm-up runs discarded, take the median, report the spread, and
   use the **densest** frame.
 - Benchmark at **960**, because that is what your detections were produced at.
-- **~1 FPS is defensible**: the aircraft takes several seconds to cross its own
-  footprint, so every patch of ground is seen in several consecutive frames.
-- Quote **4.6 s and ~5 looks**, derived from `DRONE_SPEED_MS = 5.0`. Never a remembered number.
-- `DEVICE_FPS = None` renders "not yet measured". That is the honest state and it
-  becomes a real number with a one-line edit.
+- **Measured at 960: 4.8 FPS on RB3 Gen 2, 16.3 FPS on IQ-9075.** At 640: 37.7
+  and 95.4 FPS. All four runs **489/489 layers on the NPU**, all ≤10.4 MB peak.
+- **The NPU scales far worse with resolution than a GPU does** — 5.86–7.82× for
+  2.25× the pixels, against 2.62× on a T4. Cause not yet established; the v8n
+  control experiment would settle it.
+- **960 costs ~7.8× the compute duty cycle for +4.7 points of recall.** Still the
+  right call for SAR, but state it as a priced trade, not a free win.
+- **Compute is no longer the binding constraint.** At 4.8 FPS every patch of
+  ground is already seen ~22 times. The remaining hard problem is recall, not
+  throughput — and saying so shows you know which constraint binds.
+- Derive **4.6 s per crossing** from `DRONE_SPEED_MS = 5.0` every time. Three
+  documents each carrying a remembered number means one is wrong.
+- **FP32 accuracy at 960: mAP50 0.833, mAP50-95 0.577.** INT8 accuracy is **not
+  measured** — never pair an FP32 accuracy with an INT8 latency as one system.
+- `DEVICE_FPS = None` still renders "not yet measured" for the *Pi*. Qualcomm
+  numbers do not fill in a Raspberry Pi row.
+- **Print `model.names` before trusting any validation number.** One line
+  separates 0.833 from 0.276.
+- A confident explanation that fits the symptom is not a diagnosis. Four
+  plausible hypotheses were all wrong; the answer was in the ONNX spec.
 
 **Next:** Part 5 — the backend, from "what is an API" through every function in
 every file.

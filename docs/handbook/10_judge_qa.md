@@ -47,20 +47,38 @@ credibility hit. Volunteered, each is evidence of judgment.
 
 ### "What accuracy do you get?"
 
-> Precision 0.845, recall 0.717, mAP50 0.775, mAP50-95 0.494.
+> Precision 0.864, recall 0.774, mAP50 0.833, mAP50-95 0.577 — at 960 pixels,
+> on the combined C2A + VisDrone validation split, 2,591 images and 86,092
+> instances.
 >
 > For context, YOLO12s scores 48.0 mAP50-95 on COCO — and COCO is mostly large,
-> centred, well-lit objects. We get 49.4 on small aerial humans, which is a
-> harder problem.
+> centred, well-lit objects. We get **57.7 on small aerial humans**, which is a
+> harder problem, from a 9.2-million-parameter model.
+>
+> At the threshold we actually ship, 0.18, recall is **0.824**.
 
-### "That's epoch 44 of 100. Why did you stop?"
+### "Why 960 pixels and not 640?"
+
+> We measured both, same checkpoint. 640 gives us mAP50-95 0.511 and recall
+> 0.727; 960 gives 0.577 and 0.774. Resolution buys us **4.7 points of recall**
+> on aerial targets that are only a few pixels tall.
+>
+> It costs about 7.8× the compute duty cycle on our target board. We think
+> that's the right trade for search and rescue, and we can show you the number
+> rather than assert it.
+
+### "How many epochs did you train?"
 
 **Answer honestly. This is a test of whether you'll spin.**
 
-> The Colab session died. We validated the interim weights, they were good
-> enough, and with twelve days left an integration-tested end-to-end system was
-> worth more than the one to three points of mAP the remaining epochs would
-> likely add. Model accuracy was never our bottleneck.
+> The shipped checkpoint records epoch 58 of a planned 100 — 59 epochs. The
+> Colab session died before it finished. We validated what we had, it was good
+> enough, and with the time remaining an integration-tested end-to-end system was
+> worth more than the point or two of mAP the last epochs would have added.
+> Model accuracy was never our bottleneck.
+>
+> Worth adding: our own notes said epoch 44 for a while. We caught it by reading
+> the checkpoint instead of the notes, and corrected it.
 
 ### "Your confidence threshold is 0.18. Isn't the default 0.5?"
 
@@ -71,7 +89,8 @@ credibility hit. Volunteered, each is evidence of judgment.
 > and a missed survivor cannot be recovered.
 >
 > We read the threshold off the precision-recall curve from our validation run.
-> At 0.5, recall is 0.740. At 0.18, it's 0.831. That's ninety-one more people
+> At the F1-optimal 0.37, recall is 0.775. At our 0.18 it's 0.824 — about three
+> extra false alarms for every additional person found. That's forty-nine more people
 > found per thousand present.
 >
 > The price is more false positives, and we handle those downstream with a
@@ -312,21 +331,39 @@ credibility hit. Volunteered, each is evidence of judgment.
 
 *(If it is done, give the real number and go straight to the next answer.)*
 
-### "It'll only manage about 1 FPS. Isn't that useless?"
+### "What frame rate do you actually get on device?"
 
-**This is the answer that wins the hardware round.**
+**This is the answer that wins the hardware round. It is a measurement.**
 
-> It sounds low next to video frame rates, and it's exactly what you'd expect
-> from a 9-million-parameter attention model on a Cortex-A72 with no accelerator.
+> We benchmarked on Qualcomm AI Hub, on real hosted silicon. At 960 pixels,
+> INT8: **4.8 FPS on a Dragonwing RB3 Gen 2, 16.3 FPS on an IQ-9075.** Peak
+> memory under 10 MB. And **489 of 489 layers — 100 % — execute on the Hexagon
+> NPU**, with nothing falling back to CPU.
 >
-> It's also enough. At 20 metres altitude the camera sees 23 metres of ground, so
-> at search speed the aircraft takes about five seconds to cross its own
-> footprint. Every patch of ground is visible in five or more consecutive frames
-> even at 1 FPS. A missed detection in one frame is recovered in the next.
+> The 100 % is the part we'd point at. An attention-centric YOLOv12 maps
+> completely onto your accelerator.
+
+### "Is 4.8 FPS enough?"
+
+> More than enough, and we can show why. At 20 metres altitude the camera sees
+> 23 metres of ground, so at 5 m/s the aircraft takes 4.6 seconds to cross its
+> own footprint. At 4.8 FPS that's **about 22 looks at every patch of ground.**
 >
-> Thirty FPS would give us thirty looks at the same ground, twenty-nine of them
-> redundant, at thirty times the power budget on a battery-limited aircraft. **A
-> search UAV doesn't need 30 FPS. It needs to not miss the ground.**
+> Compute stopped being our binding constraint. The remaining hard problem isn't
+> throughput, it's whether the detector finds a half-buried person at all — a
+> recall problem, and that's where we spent the effort.
+>
+> **A search UAV doesn't need 30 FPS. It needs to not miss the ground.**
+
+### "Then why not run at 640 and go even faster?"
+
+> We measured that too — 37.7 FPS on the RB3, which is about 174 looks per
+> patch. But detection failures across consecutive frames are **correlated**, not
+> independent: a person too small to resolve at 640 is still too small in the
+> next frame. You'd be spending compute to re-fail the same detection 152 more
+> times, and giving up 4.7 points of recall on every one of them.
+>
+> Past the point where coverage saturates, resolution is the better purchase.
 
 ### "How would you make it faster?"
 
@@ -503,7 +540,7 @@ credibility hit. Volunteered, each is evidence of judgment.
 - [ ] `backend/config.py` open in the editor
 - [ ] Wifi off, and the dashboard checked — tiles cached, static bundle working
 - [ ] The three numbers memorised: **7,081 / 333 / 23**
-- [ ] The recall numbers memorised: **0.831 at 0.18 vs 0.740 at 0.5**
+- [ ] The recall numbers memorised: **0.824 at 0.18 vs 0.775 at the F1-optimal 0.37 — ~3 false alarms per extra survivor**
 - [ ] The footprint argument ready: **23 m of ground, ~5 s to cross, 5+ looks**
 - [ ] One sentence ready for each of: borrowed footage, pre-computed replay, SLAM
       not built

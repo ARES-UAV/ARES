@@ -371,8 +371,8 @@ conventionally **0.5**.
 Precision = TP / (TP + FP)
 ```
 
-High precision = few false alarms. **Your model: 0.845.** About 85% of its
-detections are real people.
+High precision = few false alarms. **Your model: 0.864** at 960 px. About 86 % of
+its detections are real people.
 
 ### Recall
 
@@ -382,8 +382,9 @@ detections are real people.
 Recall = TP / (TP + FN)
 ```
 
-High recall = few misses. **Your model: 0.717.** It finds about 72% of the people
-present.
+High recall = few misses. **Your model: 0.774** at 960 px. It finds about 77 % of
+the people present — and **0.824** at the operating threshold of 0.18, which is
+the number that actually matters, because 0.18 is what ships.
 
 ### The trade-off — and the core argument of this project
 
@@ -408,14 +409,33 @@ The costs are wildly asymmetric, so the threshold should be too. This is why
 
 The measured effect on your model:
 
-| Threshold | Recall |
-|---|---|
-| 0.50 (default) | 0.740 |
-| **0.18 (yours)** | **0.831** |
+Measured at 960 px on the combined C2A + VisDrone val split (2,591 images,
+86,092 instances), read off the PR curve:
 
-**Ninety-one more people found per thousand present.** That sentence is the
+| Threshold | Precision | Recall | F1 |
+|---|---|---|---|
+| 0.37 — F1-optimal | 0.864 | 0.775 | **0.817** |
+| **0.18 — shipped** | 0.752 | **0.824** | 0.786 |
+
+You give up **11 points of precision** and buy **4.9 points of recall**. Over
+86,092 instances:
+
+```
+conf 0.37    TP 66,721    FP 10,502
+conf 0.18    TP 70,940    FP 23,395
+             ─────────    ─────────
+             +4,219       +12,893
+```
+
+**About 3 extra false alarms per additional survivor found.** That ratio is the
 single best thing you can say about this project's engineering judgment, because
-it shows you optimised for the actual cost function rather than the default one.
+a judge can evaluate it immediately: an operator dismisses a false box in a
+second, and a missed survivor is not recoverable.
+
+Note the comparison is against the **F1-optimal 0.37**, not the library's 0.5
+default. Comparing to the optimum is the harder and more honest test — it shows
+you left the best-balanced point on purpose, not that you beat an arbitrary
+default.
 
 ### The PR curve
 
@@ -439,8 +459,8 @@ Two variants get reported, and the difference matters:
 
 | Metric | How it is computed | Yours |
 |---|---|---|
-| **mAP50** | AP at IoU threshold 0.5 only | **0.775** |
-| **mAP50-95** | AP averaged over IoU 0.50, 0.55, … 0.95 | **0.494** |
+| **mAP50** | AP at IoU threshold 0.5 only | **0.833** |
+| **mAP50-95** | AP averaged over IoU 0.50, 0.55, … 0.95 | **0.577** |
 
 **mAP50** asks "did you find the person, roughly?" — a loose box still counts.
 
@@ -452,28 +472,53 @@ mAP50-95 is always much lower. That is normal and expected, not a problem.
 
 ### Reading your numbers honestly
 
-```
-Epoch 44/100 — P 0.845   R 0.717   mAP50 0.775   mAP50-95 0.494
-```
+Measured on the combined C2A + VisDrone val split — 2,591 images, 86,092
+instances. The **same checkpoint** at both sizes, so the only variable is `imgsz`:
+
+| | 640 | **960 (shipped)** |
+|---|---|---|
+| Precision | 0.854 | **0.864** |
+| Recall | 0.727 | **0.774** |
+| mAP50 | 0.783 | **0.833** |
+| mAP50-95 | 0.511 | **0.577** |
 
 **What this says:**
 
-- *Precision 0.845* — when it says "person" it's usually right.
-- *Recall 0.717* — it misses about 28% of people at the default threshold, and
-  fewer at 0.18.
-- *mAP50 0.775* — solid detection performance for small aerial targets on a
-  9.3 M-parameter model.
-- *mAP50-95 0.494* — box localization is decent but not tight.
+- *Precision 0.864* — when it says "person" it is usually right.
+- *Recall 0.774* — at the validation default. At the shipped threshold of 0.18 it
+  is **0.824**.
+- *mAP50 0.833* — strong detection performance for small aerial targets from a
+  9.2 M-parameter model.
+- *mAP50-95 0.577* — box localization is good, not just detection.
 
-**Is this good?** For context: YOLO12s scores 48.0 mAP50-95 on COCO, and COCO is
-mostly large, well-lit, centred objects. You are scoring 49.4 on **small aerial
-humans**, which is a harder problem. That is a genuinely respectable number.
+**Is this good?** YOLO12s scores 48.0 mAP50-95 on COCO, and COCO is mostly large,
+well-lit, centred objects. You score **57.7 on small aerial humans**, a harder
+problem, from a model a third the size of what most teams reach for.
 
-**The honest caveat to have ready:** this is epoch 44 of a planned 100. The last
-stretch of training, where the learning rate has decayed, usually adds a point or
-two. You stopped early. Whether that mattered is settled in Part 9 — the short
-version is that it did not, because you validated the interim weights and they
-were good enough, and twelve days is better spent elsewhere.
+### Resolution vs training — decomposed
+
+A third measurement lets you separate two variables that would otherwise be
+confounded. An earlier checkpoint scored mAP50-95 **0.494** at 640:
+
+```
+mAP50-95   0.494   →   0.511   →   0.577
+           earlier      final       final
+           @640         @640        @960
+                     └───────┘  └──────────┘
+                     training     resolution
+                      +0.017        +0.066
+```
+
+**Resolution accounts for ~80 % of the gain, further training ~20 %.** One extra
+validation run bought that. Without the middle point you could say only "it got
+better," not why.
+
+**A correction worth keeping.** Earlier drafts of this handbook reported "epoch 44
+of 100" with the weaker figures. Reading the shipped checkpoint directly shows
+`epoch: 58` of a planned 100 (zero-indexed — 59 epochs completed) and
+`best_fitness 0.50397`. Training went further than the notes recorded. The lesson
+is the same one Part 4 teaches about `model.names`: **read the artefact, do not
+trust the note about the artefact.**
 
 ---
 
@@ -586,9 +631,12 @@ shadows, bags, rubble patterns — and add them as explicit negative examples.
 
 - Detection = boxes + confidence. Tracking is a separate stage.
 - Precision is "was I right when I spoke"; recall is "did I find everyone".
-- **Your headline argument:** conf 0.18 instead of 0.5, recall 0.831 vs 0.740,
-  because a missed survivor cannot be recovered.
-- mAP50 0.775 is solid for small aerial targets; mAP50-95 0.494 is normal.
+- **Your headline argument:** conf 0.18 instead of the F1-optimal 0.37 — recall
+  0.824 against 0.775, at a cost of 11 points of precision. About **3 extra false
+  alarms per additional survivor found**, because a missed survivor cannot be
+  recovered.
+- mAP50 **0.833** and mAP50-95 **0.577** at 960 px — strong for small aerial
+  targets, and both measured on the split the model was trained for.
 - `max_det=1000` prevents a silent truncation that would drop exactly the
   detections you most need.
 - `imgsz=960` was chosen from a measured sweep and it is why tracking works.

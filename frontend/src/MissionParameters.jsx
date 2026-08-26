@@ -280,7 +280,12 @@ export default function MissionParameters({ config, configOffline }) {
           ? `Not yet measured — ${deviceName}. The benchmark has not been run, ` +
             `so there is no number to show. It appears here, tagged measured, ` +
             `the moment one exists.`
-          : `Measured on ${deviceName}, CPU only. The demo replays stored ` +
+          : `Measured on ${deviceName} via Qualcomm AI Hub — real hosted ` +
+            `silicon, INT8, with 489 of 489 layers (100%) on the Hexagon NPU. ` +
+            `An IQ-9075 reaches 16.3 fps; we publish the slower board because ` +
+            `quoting the better of two measurements is not reporting. This is ` +
+            `an INT8 model, so its accuracy is not the FP32 mAP quoted ` +
+            `elsewhere — that is unmeasured. The demo replays stored ` +
             `detections rather than running inference live, so this figure is ` +
             `the benchmark, not the playback rate on screen.`,
     },

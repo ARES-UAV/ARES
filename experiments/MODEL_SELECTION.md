@@ -16,9 +16,22 @@ All YOLOv8 rows were evaluated on the **C2A test split**: 2,043 images, 72,523 i
 | YOLOv8n | C2A fine-tuned | 3.01 M | 8.1 | 0.843 | 0.728 | 0.774 | 0.488 | **4.4** |
 | YOLOv8s | COCO only (baseline) | 11.16 M | 28.6 | 0.335 | 0.242 | 0.173 | 0.085 | 8.2 |
 | YOLOv8s | C2A fine-tuned | 11.13 M | 28.4 | **0.861** | **0.764** | **0.812** | **0.544** | 8.1 |
-| YOLOv12s | C2A + VisDrone combined | 9.25 M | 23.5 | 0.845 | 0.717 | 0.775 | 0.494 | not measured |
+| YOLOv12s @ 640 | C2A + VisDrone combined | 9.23 M | 23.2 | 0.854 | 0.727 | 0.783 | 0.511 | 10.0 |
+| **YOLOv12s @ 960 (shipped)** | C2A + VisDrone combined | 9.23 M | 23.2 | **0.864** | **0.774** | **0.833** | **0.577** | **26.2** |
 
-⚠️ **The YOLOv12s row is not comparable to the rows above it.** It was validated on the *combined* C2A + VisDrone validation set (2,591 images, 86,092 instances), which includes dense VisDrone city crowds that the C2A test set does not contain. A lower number on a harder set is not a worse model — but it is also not a better one until measured the same way.
+> **Checkpoint provenance.** The YOLOv12s rows are `models/yolov12s.pt`, which records
+> `epoch: 58` of a planned 100 (zero-indexed — 59 epochs completed) and
+> `best_fitness 0.50397`. An earlier version of this file reported epoch 44 with
+> P 0.845 / R 0.717 / mAP50 0.775 / mAP50-95 0.494. That was a superseded
+> checkpoint. Verify with:
+>
+> ```python
+> from ultralytics import YOLO
+> m = YOLO('models/yolov12s.pt')
+> print(m.model.names)   # must be a single class
+> ```
+
+⚠️ **The YOLOv12s rows are not comparable to the rows above them.** It was validated on the *combined* C2A + VisDrone validation set (2,591 images, 86,092 instances), which includes dense VisDrone city crowds that the C2A test set does not contain. A lower number on a harder set is not a worse model — but it is also not a better one until measured the same way.
 
 ---
 
@@ -52,7 +65,7 @@ Validate YOLOv12s on the **C2A test split** — the identical split the YOLOv8 r
 
 ```python
 from ultralytics import YOLO
-m = YOLO('ares_detect_v0.9.pt')
+m = YOLO('models/yolov12s.pt')
 r = m.val(data='c2a_test.yaml', split='test', max_det=1000)
 print(r.box.mp, r.box.mr, r.box.map50, r.box.map)
 ```

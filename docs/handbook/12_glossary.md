@@ -265,10 +265,10 @@ components: box, class, DFL.
 mAP = AP.
 
 **mAP50** — AP at IoU threshold 0.5. "Did you find the person, roughly?" **Yours:
-0.775.**
+0.833.**
 
 **mAP50-95** — AP averaged over IoU 0.50 to 0.95. "Did you find them *and* draw the
-box precisely?" Always much lower. **Yours: 0.494.**
+box precisely?" Always much lower. **Yours: 0.577.**
 
 **`max_det`** — Maximum detections per frame. **Yours is 1000, not the default
 300**, because 300 silently truncates dense scenes and drops the lowest-confidence
@@ -341,7 +341,7 @@ video tracking.
 sweeps. `PR_curve.png`. **This is what you chose 0.18 from.**
 
 **Precision** — `TP / (TP + FP)`. "Of everything I said was a person, what fraction
-was?" **Yours: 0.845.**
+was?" **Yours: 0.864.**
 
 **Props** — Data passed from a React parent to a child. Read-only.
 
@@ -358,7 +358,7 @@ chosen, derived, measured.
 aggregation block.
 
 **Recall** — `TP / (TP + FN)`. "Of all the people there, what fraction did I find?"
-**Yours: 0.717 at conf 0.5, 0.831 at 0.18.**
+**Yours: 0.774 at the validation default, 0.824 at the shipped conf 0.18.**
 
 **Re-identification (re-ID)** — Matching a person by appearance rather than
 position. Would help with occlusions; costs compute.
@@ -482,12 +482,16 @@ allows Leaflet to upscale to 22 and caps auto-fit at 20.
 | **333** | Unique track IDs the tracker issued |
 | **23** | Confirmed survivors |
 | **0.18** | Confidence threshold |
-| **0.831 / 0.740** | Recall at 0.18 vs at 0.5 |
-| **0.845 / 0.717** | Precision / recall at epoch 44 |
-| **0.775 / 0.494** | mAP50 / mAP50-95 |
+| **0.824 / 0.775** | Recall at conf 0.18 vs at the F1-optimal 0.37 |
+| **0.864 / 0.774** | Precision / recall at 960 px |
+| **0.833 / 0.577** | mAP50 / mAP50-95 at 960 px |
 | **960** | Detection input size |
 | **1000** | `max_det` |
-| **2.5 s** | Persistence threshold (= 60 frames here, 3 on a Pi) |
+| **~3 : 1** | False alarms accepted per additional survivor found |
+| **4.8 / 16.3 FPS** | Measured at 960 px INT8 — RB3 Gen 2 / IQ-9075 |
+| **489 / 489** | Layers on the Hexagon NPU — 100 % |
+| **~22** | Looks at each patch of ground at 4.8 FPS |
+| **2.5 s** | Persistence threshold (= 60 frames in the clip, 12 at 4.8 FPS) |
 | **23.09 m** | Ground footprint at 20 m altitude |
 | **0.018 m/px** | Ground sample distance |
 | **11.38 m** | Max pairwise separation of all 23 survivors |

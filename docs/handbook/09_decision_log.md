@@ -57,7 +57,9 @@ count; one class cannot.
 **Why:** the cost function is asymmetric. A false alarm costs a rescuer thirty
 seconds; a missed survivor cannot be recovered.
 
-**Measured:** recall **0.831 at 0.18** against **0.740 at 0.5**. Ninety-one more
+**Measured** at 960 px on the combined val split: recall **0.824 at 0.18**
+against **0.775 at the F1-optimal 0.37** — about 3 extra false alarms per
+additional survivor found. Forty-nine more
 people found per thousand present.
 
 **Chosen from the PR curve**, not guessed — `PR_curve.png` from the validation
@@ -337,21 +339,42 @@ Pi 4 running YOLO is exactly where a prototype is expected to be slow.*
 
 ---
 
-## A21. Stopping training at epoch 44
+## A21. Stopping training early
 
-**Alternative:** finish all 100.
+**Alternative:** finish all 100 epochs.
 
-**Why:** the Colab session died, and validating the interim weights showed they
-were good enough — P 0.845, R 0.717, mAP50 0.775. The remaining epochs would
-likely add one to three points of mAP.
+**Why:** the Colab session died. Validating what was saved showed it was good
+enough — at 960 px, **P 0.864, R 0.774, mAP50 0.833, mAP50-95 0.577**. The
+remaining epochs would likely have added a point or two of mAP.
 
-**Why that was the right call:** with twelve days left, an integration-tested
+**Why that was the right call:** with under two weeks left, an integration-tested
 end-to-end demo is worth more than two points of mAP. **The bottleneck was never
-model accuracy.**
+model accuracy** — the on-device benchmark later confirmed it was not throughput
+either.
 
-**Be honest about it if asked.** "We stopped at 44 of 100 because the numbers were
-good enough and our remaining time was better spent on integration" is a strong
+**Be honest about it if asked.** "We stopped early because the numbers were good
+enough and our remaining time was better spent on integration" is a strong
 answer. Pretending you finished is not.
+
+### The correction inside this decision
+
+This entry said **epoch 44** for a fortnight, and so did five other files.
+Reading the shipped checkpoint directly:
+
+```
+epoch          58        (zero-indexed → 59 completed, of a planned 100)
+best_fitness   0.50397
+```
+
+Training had gone 15 epochs further than the notes recorded, and the reported
+accuracy figures were from a superseded checkpoint. Nothing was fabricated — a
+note was written once and never re-checked against the artefact.
+
+**The rule this produces:** every number in the docs must be traceable to a file
+you can re-read, not to a memory of having measured it. `experiments/ARES_MEASURED_NUMBERS.md`
+exists to be that single source, and this is the third time in the project that
+an unchecked belief was overturned by looking (see also the cluster-spread
+estimate in A14 and the ONNX compile diagnosis in Part 4).
 
 ---
 

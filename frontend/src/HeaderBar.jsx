@@ -133,6 +133,22 @@ function trackedFrames(config) {
   return config.min_track_frames ?? FALLBACK_CONFIG.min_track_frames
 }
 
+/**
+ * The measured on-device throughput, or null when nobody has run a benchmark.
+ *
+ * Kept as a helper rather than read inline so the null case is expressed once.
+ * `null` is a real state, not a missing value: it means the honest answer is
+ * "not yet measured", and the header renders nothing at all rather than a dash
+ * that reads like a broken number.
+ */
+function deviceThroughput(config) {
+  return config.device_fps ?? FALLBACK_CONFIG.device_fps ?? null
+}
+
+function deviceLabel(config) {
+  return config.device_name ?? FALLBACK_CONFIG.device_name
+}
+
 function seconds(value) {
   // `??` for a backend running from before this field existed — the same
   // tolerance MissionParameters applies to `ground_footprint_m`. The bundled
@@ -194,6 +210,9 @@ export default function HeaderBar({
   selectedTrackId,
   onClearSelection,
 }) {
+  const deviceFps = deviceThroughput(config)
+  const deviceName = deviceLabel(config)
+
   return (
     <header ref={ref} className="sticky top-0 z-50 border-b border-edge bg-surface-1">
       {/* ── Identity row ──────────────────────────────────────────── */}
@@ -231,11 +250,31 @@ export default function HeaderBar({
             </span>
           </div>
 
-          {/* On-device FPS is NOT here. It lives in the mission-parameters
-              panel with a provenance tag beside it, because the honest form of
-              that figure is "not yet measured" and a bare dash in the header
-              cannot carry that. Duplicating it would also mean two "not
-              measured" pills on one screen saying the same thing. */}
+          {/* On-device FPS lives here now. It did not used to: while the
+              figure was `None`, the honest form of it was "not yet measured",
+              and a bare dash in a header cannot carry that qualification — so
+              it stayed in the mission-parameters panel where a provenance tag
+              could sit beside it.
+
+              It is measured now (Qualcomm AI Hub, real silicon), and CLAUDE.md
+              requires the measured figure on screen. The full provenance —
+              which board, INT8, the 100% NPU placement, and the fact that INT8
+              accuracy is a separate unmeasured thing — still lives in the
+              parameters panel. This is the number; that is the footnote.
+
+              Rendered only when it exists, so the `None` path still degrades
+              to the old behaviour rather than printing a dash. */}
+          {deviceFps !== null && (
+            <div className="flex items-baseline gap-2">
+              <span className="eyebrow">On-device</span>
+              <span className="figure text-fine font-semibold text-ink">
+                {deviceFps.toFixed(1)} fps
+              </span>
+              <span className="figure text-eyebrow text-ink-muted">
+                {deviceName} · int8 · measured
+              </span>
+            </div>
+          )}
 
           {/* The dashboard renders whether or not the backend is up
               (CLAUDE.md, demo-day constraint 2). When it is down the clip and

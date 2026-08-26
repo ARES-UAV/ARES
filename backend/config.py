@@ -261,18 +261,31 @@ EVENT_SAMPLE_INTERVAL_S: float = 1.0
 # ── On-device benchmark ────────────────────────────────────────────
 # Inference throughput measured on the target device, not on a laptop.
 #
-# `None` means exactly that: nobody has run the benchmark yet. The dashboard
-# renders a dash and the words "not yet measured" rather than a number, and
-# the mission-parameters panel tags the row accordingly instead of calling it
-# measured. An invented FPS figure is the same failure as a hand-authored
-# detection, and this is the one number a judge is most likely to press on —
-# a Raspberry Pi 4 running a YOLO model is exactly where a prototype is
-# expected to be slow.
+# MEASURED 26 Aug 2026 on Qualcomm AI Hub — real hosted silicon, not an
+# emulator. YOLOv12s at DETECTION_IMGSZ, INT8 weights and activations,
+# qnn_context_binary runtime:
 #
-# Set this to the real figure once `ai/` produces one. The panel picks it up
-# with no frontend edit and re-tags the row "measured".
-DEVICE_FPS: Optional[float] = None
-DEVICE_NAME: str = "Raspberry Pi 4 Model B"
+#     Dragonwing RB3 Gen 2 (QCS6490)   207.56 ms   4.8 FPS   9.5 MB peak
+#     Dragonwing IQ-9075   (QCS9075)    61.45 ms  16.3 FPS   8.9 MB peak
+#
+# Both runs placed 489 of 489 layers — 100% — on the Hexagon NPU, with
+# nothing falling back to CPU. Full run in experiments/QUALCOMM_BENCHMARK.md.
+#
+# We publish the RB3 figure, not the IQ-9075 one. It is the slower of the two
+# and the drone-class board, and quoting your best number when you measured
+# two is the kind of thing that gets found.
+#
+# TWO CAVEATS THAT MUST TRAVEL WITH THIS NUMBER:
+#   1. It is an INT8 model. Every accuracy figure in this repo is FP32. They
+#      are two different models and must never be presented as one system.
+#   2. The Raspberry Pi 4 is still unmeasured. This figure does not fill that
+#      row — it is different silicon with a neural accelerator the Pi lacks.
+#
+# `None` still means "nobody ran it", and the panel still renders a dash and
+# "not yet measured" in that case. That path is kept deliberately: it is the
+# honest state for any device we have not put a model on.
+DEVICE_FPS: Optional[float] = 4.8
+DEVICE_NAME: str = "Dragonwing RB3 Gen 2 (QCS6490)"
 
 # ── Dev server ─────────────────────────────────────────────────────
 # Vite's default dev origins, for CORS.

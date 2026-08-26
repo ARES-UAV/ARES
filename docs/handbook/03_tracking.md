@@ -376,5 +376,5 @@ before the 5th if you have a spare hour.
 - Confirmation has a *time*, so the count never runs ahead of the footage.
 - ID switches remain, and the dashboard says so.
 
-**Next:** Part 4 — getting the model onto a Raspberry Pi, and why ~1 FPS is a
-defensible number rather than an embarrassing one.
+**Next:** Part 4 — export, quantization, and what the model actually measures on
+real Qualcomm silicon.

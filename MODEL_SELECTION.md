@@ -36,17 +36,18 @@ All three evaluated on the **same** C2A test split — 2,043 images, 72,523 inst
 
 The table above reports P/R at the best-F1 point, which is what makes models comparable. **It is not where the system runs.** ARES runs at confidence 0.18, deliberately below the balanced point.
 
-YOLOv12s, C2A test split, recall read off the confidence–recall curve:
+YOLOv12s at **960 px** on the **combined C2A + VisDrone val split** (2,591 images, 86,092 instances), read off the PR curve:
 
-| Threshold | Recall | Missed per 1,000 |
-|---|---:|---:|
-| 0.50 — Ultralytics default | 0.740 | 260 |
-| 0.25 | 0.818 | 182 |
-| **0.18 — ARES operating point** | **0.831** | **169** |
-| 0.15 | 0.836 | 164 |
-| 0.10 | 0.846 | 154 |
+| Threshold | Precision | Recall | F1 | Missed per 1,000 |
+|---|---:|---:|---:|---:|
+| 0.37 — F1-optimal | 0.864 | 0.775 | **0.817** | 225 |
+| **0.18 — ARES operating point** | 0.752 | **0.824** | 0.786 | **176** |
 
-**Running at 0.18 rather than the default finds 91 more survivors per thousand.** That is the measured justification for the High Recall decision — previously an argument, now a number.
+**Running at 0.18 rather than the F1 optimum finds 49 more survivors per thousand, at about 3 extra false alarms each.** Over the full split: +4,219 true positives for +12,893 false positives.
+
+The comparison is deliberately against the F1 optimum rather than the 0.5 library default — beating a default proves nothing; leaving the best-balanced point on purpose is the actual decision.
+
+> ⚠️ **Superseded measurement.** An earlier version of this table reported 0.831 at 0.18 against 0.740 at 0.5, measured on the **C2A test split** with a **superseded checkpoint**. It is not comparable to the table above: different split, different weights. The combined split includes dense VisDrone crowds that C2A does not, so a lower recall on it is a harder test, not a regression.
 
 Two properties worth knowing:
 
@@ -182,8 +183,22 @@ Same rule, same meaning, at any frame rate — including the Pi's. **The origina
 
 ## Outstanding
 
-- [ ] **Pi 4 benchmark** — YOLOv12s and YOLOv8n, ONNX at 640/416/320, on both a sparse and a dense frame, with active cooling. Fills the last unmeasured field on the dashboard. Rough expectation from the M5 baseline: YOLOv12s 0.5–1 FPS, YOLOv8n 1–2 FPS at 640 px. Verify, don't assume.
-- [x] ~~**Recall at the operating threshold**~~ — done 24 Aug. 0.831 at conf 0.18. See above.
+- [x] **Qualcomm AI Hub benchmark — DONE.** YOLOv12s INT8 at both 640 and 960 on two
+  Dragonwing boards. See `experiments/QUALCOMM_BENCHMARK.md` and
+  `experiments/ARES_MEASURED_NUMBERS.md`. Headline: **4.8 FPS at 960 on RB3 Gen 2,
+  16.3 FPS on IQ-9075, 489/489 layers (100 %) on the Hexagon NPU on every run.**
+- [ ] **Pi 4 benchmark** — YOLOv12s and YOLOv8n, ONNX at 960 and 640, on both a sparse
+  and a dense frame, with active cooling. Still the one unmeasured field on the
+  dashboard; Qualcomm numbers do not fill a Pi row. **Do not carry over the old
+  "0.5–1 FPS" guess** — that was an extrapolation, and this project has now had three
+  extrapolations overturned by measurement (cluster spread, the ONNX compile failure,
+  and the 640 device latency, which came in 3× faster than predicted). Measure it.
+- [ ] **INT8 accuracy** — every device latency above is INT8; every accuracy figure is
+  FP32. They are two different models until this is measured.
+- [ ] **YOLOv8n scaling control** — v8n is pure convolution. Benchmarking it at 640 and
+  960 on the RB3 would settle whether v12s's 7.82× resolution penalty is attention's
+  quadratic term or a memory-tiling effect. Two exports, four jobs.
+- [x] ~~**Recall at the operating threshold**~~ — re-measured 26 Aug at 960 px on the combined split: **0.824 at conf 0.18**, against 0.775 at the F1-optimal 0.37. See above.
 - [ ] **Real detections** — run YOLOv12s over demo footage, replace the synthetic fixture.
 
 ---

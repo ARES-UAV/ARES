@@ -172,7 +172,10 @@ export default function SurvivorTable({
              fit the panel at 1280px, and below that the table scrolls sideways
              inside its own box rather than clipping the coordinate columns off
              the right edge or forcing the whole page wide. */
-          <div ref={scrollRef} className="min-h-0 flex-1 overflow-x-auto overflow-y-auto">
+          <div
+            ref={scrollRef}
+            className="ares-table-scroll min-h-0 flex-1 overflow-x-auto overflow-y-auto"
+          >
             <table className="w-full border-collapse text-fine">
               <thead>
                 <tr>
