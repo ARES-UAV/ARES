@@ -1,1 +1,7 @@
 .env -
+.venv-qai/
+.venv-ml/
+.venv/
+__pycache__/
+*.pyc
+*.pt
