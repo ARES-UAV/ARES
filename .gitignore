@@ -1,9 +1,134 @@
-.env -
-.venv-qai/
-.venv-ml/
-.venv/
+# ═══════════════════════════════════════════════════════════════════
+# ARES — .gitignore
+#
+# TWO THINGS THIS FILE CANNOT DO, BOTH OF WHICH HAVE BITTEN US:
+#
+# 1. It does not untrack anything already tracked. Adding a pattern
+#    here has no effect on a file git already knows about — that needs
+#    `git rm --cached`. This is why models/*.pt sat in the repo for
+#    weeks despite `*.pt` being listed.
+#
+# 2. Patterns are LITERAL. `.venv/` does not match `.venv-ml/`, which
+#    is how a 182 MB push got rejected. Hence `.venv*/` below.
+#
+# Rule of thumb: run `git status --short && du -sh .git` before a
+# commit. If .git grew by more than the diff, something binary slipped
+# in.
+# ═══════════════════════════════════════════════════════════════════
+
+# ── macOS ──────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.AppleDouble
+.LSOverride
+Icon?
+
+# ── Secrets ────────────────────────────────────────────────────────
+# The previous version of this file had `.env -` with a stray trailing
+# " -", which is a literal pattern matching a file called ".env -".
+# Real .env files were never ignored. CLAUDE.md says this repo is
+# public and must never carry a credential; that typo was the gap.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.json
+credentials.json
+
+# Qualcomm AI Hub keeps its token in ~/.qai_hub/client.ini. It lives
+# outside the repo, but a copy pasted in here would be a live key in a
+# public repository, so it is blocked defensively.
+.qai_hub/
+client.ini
+
+# ── Python ─────────────────────────────────────────────────────────
+.venv*/
+venv*/
+env/
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+.ipynb_checkpoints/
+
+# ── Node / frontend ────────────────────────────────────────────────
+node_modules/
+dist/
+build/
+.vite/
+*.local
+npm-debug.log*
+yarn-error.log*
+
+# ── Model weights and exports ──────────────────────────────────────
+# Never in git. These go to GitHub Releases — a 54 MB checkpoint in
+# history is carried by every clone forever, and the demo does not
+# need them: inference is pre-computed into detections.json.
 *.pt
-.venv-qai/
-.venv-ml/
+*.pth
+*.onnx
+*.onnx.orig
+*.tflite
+*.engine
+*.mlmodel
+*.bin
+*.safetensors
+models/
+
+# ...but the two benchmark frames are not models. They are 365 KB of
+# JPEG extracted from the demo clip by tools/build_demo_clip.py, and
+# the documented benchmark command names one of them directly:
+#     python tools/benchmark.py models/yolov12s.pt 960 models/test_frame_dense.jpg
+# Keeping them tracked is what makes that command work from a fresh
+# clone instead of requiring the clip and a rebuild first.
+!models/test_frame.jpg
+!models/test_frame_dense.jpg
+
+# ── Training output ────────────────────────────────────────────────
+runs/
+wandb/
+lightning_logs/
+*_saved_model/
+
+# ── Datasets ───────────────────────────────────────────────────────
+datasets/
+data/raw/
+*.zip
+*.tar
+*.tar.gz
+*.7z
+
+# ── Media ──────────────────────────────────────────────────────────
+# Video is excluded by default, then the one clip the dashboard
+# actually plays is added back. Vite serves it at /demo_clip.mp4 and a
+# fresh clone cannot run the demo without it, so it is a deliberate
+# exception rather than an oversight.
+*.mp4
+*.mov
+*.avi
+*.mkv
+!frontend/public/demo_clip.mp4
+
+# ── Demo assets that MUST stay tracked ─────────────────────────────
+# A clean clone has to run. detections.json is the demo, and the tile
+# cache is what makes the map work with the venue wifi down.
+!backend/data/detections.json
+!backend/data/fixture_detections.json
+!backend/data/tiles/
+!backend/data/tiles/**
+
+# ── Editors / OS ───────────────────────────────────────────────────
+.vscode/
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+Thumbs.db
