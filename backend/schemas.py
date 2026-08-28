@@ -5,7 +5,7 @@ format is agreed across detection, tracking, localization and the dashboard —
 it must not be changed unilaterally.
 """
 
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -182,6 +182,10 @@ class Survivor(BaseModel):
     """
 
     track_id: int = Field(..., ge=0)
+    # The MEDIAN of every confirmed position for this track, not one detection's
+    # box — a single bad box can drag a mean and barely move a median, so the
+    # median is the more honest pin. Absolute projection
+    # (`localize.bbox_to_latlon`, moving origin).
     latitude: float
     longitude: float
     confidence: float = Field(..., ge=0.0, le=1.0, description="Of the latest detection")
@@ -198,9 +202,43 @@ class Survivor(BaseModel):
         ..., ge=0, description="Frame this track reached the persistence threshold"
     )
 
-    last_frame: int = Field(..., ge=0, description="Frame the position is taken from")
+    last_frame: int = Field(
+        ..., ge=0, description="Frame of the track's latest detection"
+    )
     detection_count: int = Field(
         ..., gt=0, description="Frames this track appears in; >= MIN_TRACK_FRAMES"
+    )
+
+    # How far the median pin above sits from the single estimate furthest from
+    # it, in metres — the error bar on the map pin. Centimetres means the
+    # projection agrees with itself; tens of metres means assumed altitude or
+    # frame width is wrong. It is the dashboard's one honest check that the
+    # pixel-to-GPS maths is self-consistent, and it is a diagnostic, not a
+    # survey-grade accuracy claim.
+    position_spread_m: float = Field(
+        ...,
+        ge=0.0,
+        description=(
+            "Max distance from the median position to any single estimate, "
+            "metres. Small = the projection agrees with itself"
+        ),
+    )
+
+    # Which connected component this survivor belongs to, in reference-frame
+    # geometry (single linkage within CLUSTER_RADIUS_M). Group letter "A",
+    # "B", ... labelled in stable order. This is a DISTINCT quantity from
+    # `cluster_size` above: `group_size` is the whole component INCLUDING this
+    # survivor, `cluster_size` is their DIRECT neighbours EXCLUDING self. A
+    # chain of people 14 m apart is one group of several and two neighbours
+    # each — both true, and the dashboard labels them so 22 and 23 do not read
+    # as a contradiction.
+    group_id: str = Field(
+        ..., description="Connected component label, e.g. \"A\". Every survivor belongs to one"
+    )
+    group_size: int = Field(
+        ...,
+        ge=1,
+        description="Members of this survivor's component, INCLUDING self",
     )
 
     # Derived server-side by `backend.priority`, like latitude and longitude and
@@ -234,6 +272,20 @@ class Survivor(BaseModel):
         ge=0.0,
         le=1.0,
         description="Cluster term as scored, or null if it did not differentiate",
+    )
+
+    # Each scored term's weighted contribution to `priority`, keyed by term
+    # name ("confidence", "cluster", "hazard"). Values round to four decimals
+    # and sum to `priority`. A dropped term is ABSENT rather than present at
+    # zero: a term the model never scored must not read as "checked, nothing
+    # nearby". The dashboard renders this as the stacked score bar and uses it
+    # to answer "why is this person above that one?" row by row.
+    score_breakdown: Dict[str, float] = Field(
+        default_factory=dict,
+        description=(
+            "Per-term weighted contributions; sums to priority. Dropped terms "
+            "are absent, not zero"
+        ),
     )
 
 

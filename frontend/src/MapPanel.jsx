@@ -370,6 +370,34 @@ export default function MapPanel({
         clip has not reached yet — exactly the ones with no row in the priority
         queue. Click a marker or a row to highlight that track in all three panels.
       </p>
+
+      {/* Group annotation. Groups are connected components within the same
+          CLUSTER_RADIUS_M, so they are a map-side summary of the table's
+          `group_id`/`group_size` and the event log's cluster lines — one
+          geometry, three readings. On the demo clip every confirmed survivor
+          lands inside one 11 m patch, so this reads "one group of 23", which
+          is exactly why the cluster scoring term was dropped rather than
+          scored: a term identical in every row cannot rank them. */}
+      <p className="mt-1.5 shrink-0 text-eyebrow leading-relaxed text-ink-muted">
+        {survivors !== null && survivors.length > 0 ? (
+          <>
+            <span className="figure text-ink-soft">
+              {new Set((survivors ?? []).map((s) => s.group_id)).size}
+            </span>{' '}
+            connected group
+            {new Set((survivors ?? []).map((s) => s.group_id)).size === 1 ? ' ' : 's '}
+            within{' '}
+            <span className="figure text-ink-soft">{config.cluster_radius_m} m</span>{' '}
+            of one another (largest holds{' '}
+            <span className="figure text-ink-soft">
+              {Math.max(0, ...(survivors ?? []).map((s) => s.group_size))}
+            </span>{' '}
+            survivors).
+          </>
+        ) : (
+          'Grouping awaits the first confirmed survivor.'
+        )}
+      </p>
     </section>
   )
 }

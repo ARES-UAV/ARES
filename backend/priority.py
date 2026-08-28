@@ -44,7 +44,7 @@ earned a place in the arithmetic.
 
 import math
 from dataclasses import dataclass
-from typing import List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 from backend import config
 from backend.localize import METRES_PER_DEGREE_LAT
@@ -70,6 +70,14 @@ class PriorityBreakdown:
     cluster_score: Optional[float]
     cluster_size: int
     hazard_score: Optional[float]  # None = no hazard layer, not "no hazards"
+    # Each term's WEIGHTED contribution to `score`, insertion-ordered
+    # (confidence, then cluster, then hazard). A dropped term is ABSENT, not
+    # present at zero — see Rule 2 in the guide: a term the model never scored
+    # must not read as "checked, nothing nearby". The values are the
+    # renormalised weight times the term value, rounded to four decimals, so
+    # they sum to `score` and the dashboard can answer "why is this person
+    # above that one?" from the record alone.
+    score_breakdown: Dict[str, float]
 
 
 def metres_between(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -317,15 +325,15 @@ def score_all(
         # the cluster term asks.
         hazard = hazard_score(latitude, longitude)
 
-        terms = [(config.WEIGHT_CONFIDENCE, confidence)]
+        terms = [("confidence", config.WEIGHT_CONFIDENCE, confidence)]
         if cluster is not None:
-            terms.append((config.WEIGHT_CLUSTER_SIZE, cluster))
+            terms.append(("cluster", config.WEIGHT_CLUSTER_SIZE, cluster))
         if hazard is not None:
-            terms.append((config.WEIGHT_HAZARD_PROXIMITY, hazard))
+            terms.append(("hazard", config.WEIGHT_HAZARD_PROXIMITY, hazard))
 
-        total_weight = sum(weight for weight, _ in terms)
+        total_weight = sum(weight for _, weight, _ in terms)
         score = (
-            sum(weight * value for weight, value in terms) / total_weight
+            sum(weight * value for _, weight, value in terms) / total_weight
             if total_weight > 0
             else 0.0
         )
@@ -333,6 +341,18 @@ def score_all(
         # config would otherwise put an out-of-range score into a Pydantic
         # model and surface as a 500 from an unrelated endpoint.
         score = min(max(score, 0.0), 1.0)
+
+        # Each term's part of `score`, as the weighted contribution: the
+        # renormalised weight (`weight / total_weight`) times the term value.
+        # Rounded to four decimals so the record is readable; the sum stays
+        # within rounding tolerance of `score` by construction, which the
+        # dashboard asserts. Only the terms actually scored are listed — a
+        # dropped term has no row here, matching `cluster_score`/`hazard_score`
+        # being null rather than 0.0.
+        score_breakdown: Dict[str, float] = {}
+        for label, weight, value in terms:
+            contribution = weight / total_weight * value if total_weight > 0 else 0.0
+            score_breakdown[label] = round(contribution, 4)
 
         previous = previous_bands[index] if previous_bands is not None else None
 
@@ -344,6 +364,7 @@ def score_all(
                 cluster_score=cluster,
                 cluster_size=neighbour_counts[index],
                 hazard_score=hazard,
+                score_breakdown=score_breakdown,
             )
         )
 

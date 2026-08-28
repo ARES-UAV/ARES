@@ -124,23 +124,29 @@ def _cluster_positions(
     ]
 
 
-def _clusters(
+def components(
     track_ids: Sequence[int],
     positions: Sequence[Tuple[float, float]],
 ) -> List[List[int]]:
-    """Groups of two or more survivors linked by the cluster radius.
+    """Connected components of survivors, linked by the cluster radius.
 
     Single-linkage connected components under the *same* relation
     `priority.score_all` counts neighbours with — "within CLUSTER_RADIUS_M" —
-    so a cluster on the event log and a `cluster_size` in the survivor table
-    are two readings of one geometry rather than two definitions of the word.
-    `positions` must therefore be `_cluster_positions`, in the same reference
-    frame the scoring pass counts neighbours in, and not `_positions`.
+    in the *same* reference-frame geometry (`_cluster_positions`), so the
+    membership, the `cluster_size` in the survivor table and the `group_size`
+    added per survivor are three readings of one geometry rather than three
+    definitions of the word.
 
-    They are not the same number and are not meant to be: `cluster_size` is one
-    survivor's direct neighbour count, while a component is the whole group
-    that count belongs to. A chain of people 14 m apart is one cluster here and
-    two neighbours each in the table, and both statements are true.
+    Every survivor belongs to exactly one component, so this returns ALL of
+    them, including singletons (a component of one — `group_size` 1). That is
+    what distinguishes it from `_clusters`, which returns only components of
+    two or more because the event log has nothing to say about a person alone.
+    The two are different views of the same parts: filtering the output here
+    on `len(members) >= 2` is exactly `_clusters`.
+
+    The returned list is sorted by smallest member, and each component's
+    members ascending, so the same clip yields the same grouping every call —
+    a reload must not reshuffle which people share a group.
 
     O(n²), like the scoring pass and for the same reason: `n` is the number of
     distinct tracks in one clip, which is tens.
@@ -168,12 +174,32 @@ def _clusters(
     for i in range(count):
         groups.setdefault(find(i), []).append(track_ids[i])
 
-    # Sorted membership, sorted groups: the same clip must produce the same
-    # log line in the same order on every request, or a judge who reloads the
-    # dashboard sees the timeline reshuffle itself.
-    return sorted(
-        (sorted(members) for members in groups.values() if len(members) >= 2)
-    )
+    # `sorted` on the group lists sorts by first (smallest) member, then by
+    # length — a stable total order the same geometry always lands in.
+    return sorted(sorted(members) for members in groups.values())
+
+
+def _clusters(
+    track_ids: Sequence[int],
+    positions: Sequence[Tuple[float, float]],
+) -> List[List[int]]:
+    """Groups of two or more survivors linked by the cluster radius.
+
+    Components of exactly one survivor have nothing to say in the event log —
+    "a person is alone" is not a cluster-forming event — so they are dropped
+    here. Every component of any size is in `components`; this is that set
+    with the singletons filtered out, and nothing else differs.
+
+    They are not the same number and are not meant to be: `cluster_size` is one
+    survivor's direct neighbour count, while a component is the whole group
+    that count belongs to. A chain of people 14 m apart is one cluster here and
+    two neighbours each in the table, and both statements are true.
+    """
+    return [
+        members
+        for members in components(track_ids, positions)
+        if len(members) >= 2
+    ]
 
 
 def _walk(detections: Sequence[Detection]) -> Tuple[List[MissionEvent], Dict[int, str]]:
