@@ -1,64 +1,67 @@
 /* ═══════════════════════════════════════════════════════════════════
    ARES — design tokens
-   Validated with the dataviz palette checker, dark surface #0B1013.
-   Do not substitute values by eye — re-run the validator if you change one.
+   Modern instrument palette: blue, white, grey, black and their shades.
+   Blue-black surfaces, ice-white ink — validated with the dataviz
+   palette checker.
 
-   Two things changed from the first pass and both were measured, not tasted:
+   This refresh touches the UI chrome ONLY: surfaces, borders, text.
+   The semantic colours — survivor cyan and the orange priority ramp —
+   are untouched. They carry meaning and predate this palette:
 
-   1. The old palette was Tailwind's -400 steps (cyan-400, green-400,
-      amber-400, orange-400, red-400). Those are tuned for LIGHT surfaces —
-      every one of them failed the dark-mode lightness band.
+   1. Priority is an ORDINAL RAMP: one hue, monotone light→dark. It
+      stays orange so survivor rows read as rank against the blue-grey
+      chrome, with every colourblind-safe step gap intact.
 
-   2. Priority was a green→amber→orange→red rainbow. That is two failures
-      at once: a rainbow ramp for ordered data, and a red-green ramp that
-      collapses for ~8% of men. Measured, "serious" #fb923c and "critical"
-      #f87171 sat at ΔE 10.6 — below the 15 floor, meaning even a viewer
-      with full colour vision struggles to tell the two most urgent bands
-      apart. On a rescue dashboard that is a real defect.
+   2. Survivor cyan is a MARK colour only — boxes, pins, selection.
+      Never text, never a priority band.
 
-      Priority is now an ORDINAL ramp: one hue, monotone light→dark.
-      Passes lightness monotonicity, step gaps, and light-end contrast.
+   3. No raw hex outside this file. `theme.js` reads computed values off
+      `:root` for the two places CSS variables cannot reach (canvas and
+      Leaflet), so a token change flows through without a second edit.
    ═══════════════════════════════════════════════════════════════════ */
 
 :root {
   /* ── Surfaces ─────────────────────────────────────────────────────
-     Near-black with a slight cool-green bias — deliberately not
-     Tailwind slate, which reads as "dark mode website" rather than
-     instrument glass.                                              */
-  --surface-0:      #0B1013;   /* page ground */
-  --surface-1:      #121A1E;   /* panels */
-  --surface-2:      #1A252A;   /* raised: rows, chips, hover */
+     Near-black with a blue-bias cast — the "instrument glass" ground.
+     Cool steel, not neutral grey: white and the cyan accent read
+     against it with a cold, modern separation.                       */
+  --surface-0:      #0A1018;   /* page ground */
+  --surface-1:      #131F2B;   /* panels */
+  --surface-2:      #1D2C3A;   /* raised: rows, chips, hover */
 
-  --border:         #22323A;
-  --border-soft:    #18242A;
+  --border:         #2B3F52;
+  --border-soft:    #1B2A38;
 
   /* ── Text ─────────────────────────────────────────────────────────
-     Warm-neutral greys, not pure white — full white on near-black
-     glares on a projector.                                         */
-  --ink:            #E6EDEF;
-  --ink-soft:       #A8B8BE;
-  --ink-muted:      #6B7F87;
+     Ice-white to blue-grey, not pure white — full white on near-black
+     glares on a projector. The family is white → cool grey → slate.  */
+  --ink:            #EAF2FA;
+  --ink-soft:       #A9BFD3;
+  --ink-muted:      #6E8298;
 
   /* ── Survivor mark ────────────────────────────────────────────────
      ONE job: survivor detections — boxes, pins, selection.
      Never used for text, never for a priority band.
-     ΔE vs every priority step: 18–22 (CVD) / 28–30 (normal).       */
+     Cyan is unmistakably distinct from the orange ramp — a detection
+     is a signal, a rank is a state, and they must not blend.          */
   --survivor:       #22A7BD;
   --survivor-dim:   rgba(34, 167, 189, 0.35);   /* unselected / trailing */
 
   /* ── Priority — ORDINAL RAMP, light → dark ───────────────────────
-     Hue spread 24°, monotone lightness, all step gaps ≥ 0.06.
-     ALWAYS paired with its text label. Colour alone is never the
-     encoding — a projector, a photocopy or a colourblind judge must
-     still read the band.                                            */
+     One hue, monotone lightness, all step gaps ≥ 0.06. Always paired
+     with its text label. Colour alone is never the encoding — a
+     projector, a photocopy or a colourblind judge must still read the
+     band. Unchanged by the UI palette refresh; the ramp stays orange
+     so a survivor row reads as rank against the blue-grey chrome.    */
   --priority-low:      #FFCE9E;
   --priority-medium:   #FB9A4A;
   --priority-high:     #E06A1F;
   --priority-critical: #A8410C;
 
   /* ── Hazard (Phase 2, unused until the classifier exists) ─────────
-     Reserved. Deliberately outside the priority ramp so a hazard can
-     never be mistaken for a priority band.                          */
+     Reserved. Crimson reads as alarm against the blue-grey chrome, and
+     it is deliberately outside the orange ramp so a hazard can never
+     be mistaken for a priority band.                                 */
   --hazard:         #D63A5C;
 
   /* ── Not-measured / assumed ───────────────────────────────────────
