@@ -132,3 +132,4 @@ data/raw/
 *.swo
 *~
 Thumbs.db
+.claude/skills/
