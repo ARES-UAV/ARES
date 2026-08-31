@@ -100,7 +100,7 @@ def metres_between(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return math.hypot(north_m, east_m)
 
 
-def _squared_metres(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+def squared_metres(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Squared ground distance in m², without the sqrt.
 
     Every consumer of `metres_between` that compares the result against a
@@ -324,7 +324,7 @@ def score_all(
             if other_index == index:
                 continue
             if (
-                _squared_metres(lat0, longitude, other_lat, other_lon)
+                squared_metres(lat0, longitude, other_lat, other_lon)
                 <= radius_sq
             ):
                 neighbours += 1

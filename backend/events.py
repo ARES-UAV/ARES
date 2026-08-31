@@ -64,7 +64,7 @@ are independent and both are disclosed on the dashboard.
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from backend import config, localize, priority, tracks
-from backend.priority import _squared_metres
+from backend.priority import squared_metres
 from backend.schemas import Detection, MissionEvent
 
 # One entry of the running table: the most recent detection seen for a track.
@@ -120,7 +120,7 @@ def components(
     for i in range(count):
         for j in range(i + 1, count):
             if (
-                _squared_metres(
+                squared_metres(
                     positions[i][0], positions[i][1], positions[j][0], positions[j][1]
                 )
                 <= radius_sq

@@ -237,7 +237,7 @@ def check_groups(survivors):
 #  The geometry, and what position_spread_m actually measures
 # ══════════════════════════════════════════════════════════════════════
 
-def check_projection():
+def check_projection(survivors=None):
     """Prove the projection is sane, and show what spread is really measuring.
 
     §6② predicts `position_spread_m` reads in centimetres if the maths agrees
@@ -309,15 +309,33 @@ def check_projection():
     else:
         bad(f"fixed-frame jitter is {fixed/gsd:.1f} px — geometry may be wrong")
 
-    if abs(moving - per_frame) < 0.25 * per_frame:
-        warn(f"moving-origin displacement ({moving*100:.1f} cm) tracks the ASSUMED "
-             f"drone speed ({per_frame*100:.1f} cm), not the people.\n"
-             f"        position_spread_m computed this way measures the flight-track "
-             f"assumption, not\n"
-             f"        the projection. Rule 1 says relative measurements use the "
-             f"fixed frame, and the\n"
-             f"        distance between two estimates of one person is a relative "
-             f"measurement.")
+    # Which projection is position_spread_m actually using? Compare the API's
+    # values against what each projection produces for the same tracks.
+    if survivors:
+        api_max = max(s_["position_spread_m"] for s_ in survivors
+                      if s_.get("position_spread_m") is not None)
+        ref_spread, mov_spread = [], []
+        for ds in by.values():
+            for proj, acc in (
+                (lambda d: localize.bbox_to_reference_latlon(d.bbox), ref_spread),
+                (lambda d: localize.bbox_to_latlon(d.bbox, d.frame_id), mov_spread),
+            ):
+                pts = [proj(d) for d in ds]
+                mlat = st.median(p_[0] for p_ in pts)
+                mlon = st.median(p_[1] for p_ in pts)
+                acc.append(max(metres_between(mlat, mlon, *p_) for p_ in pts))
+
+        if abs(api_max - max(ref_spread)) < abs(api_max - max(mov_spread)):
+            ok(f"position_spread_m uses the fixed frame (max {api_max:.2f} m) — "
+               f"it measures the projection")
+        else:
+            bad(f"position_spread_m uses the MOVING origin (max {api_max:.2f} m vs "
+                f"{max(ref_spread):.2f} m fixed).\n"
+                f"        It is measuring the assumed {C.DRONE_SPEED_MS} m/s flight "
+                f"track, not the geometry — the\n"
+                f"        distance between two estimates of ONE person is a relative "
+                f"measurement, and Rule 1\n"
+                f"        says those use the fixed frame. Run fix_position_spread.py.")
 
 
 def main() -> None:
@@ -334,7 +352,7 @@ def main() -> None:
     check_breakdown(survivors)
     check_spread(survivors)
     check_groups(survivors)
-    check_projection()
+    check_projection(survivors)
 
     print("\n" + "=" * 62)
     print(f"  {len(PASS)} passed · {len(FAIL)} failed · {len(WARN)} warnings")
