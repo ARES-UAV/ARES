@@ -61,9 +61,10 @@ the score to clear the cut by BAND_HYSTERESIS before it moves. The two levers
 are independent and both are disclosed on the dashboard.
 """
 
-from typing import Dict, List, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 from backend import config, localize, priority, tracks
+from backend.priority import _squared_metres
 from backend.schemas import Detection, MissionEvent
 
 # One entry of the running table: the most recent detection seen for a track.
@@ -79,74 +80,36 @@ def _sample_interval_frames() -> int:
     return max(1, round(config.EVENT_SAMPLE_INTERVAL_S * config.CLIP_FPS))
 
 
-def _positions(latest: LatestByTrack, track_ids: Sequence[int]) -> List[Tuple[float, float, float]]:
-    """Ground positions and confidences for the roster, in `track_ids` order.
-
-    Each track is localized against the origin for the frame ITS OWN latest
-    detection came from, not the frame currently being walked. The drone is
-    assumed to be moving, so a track last seen forty frames ago was last seen
-    somewhere the drone has since flown past — using the current frame's origin
-    would drag every stale track along with the aircraft.
-
-    This is the same call `/api/survivors` makes, which is what makes the two
-    converge at the end of the clip.
-    """
-    positions = []
-    for track_id in track_ids:
-        detection = latest[track_id]
-        latitude, longitude = localize.bbox_to_latlon(
-            detection.bbox, detection.frame_id
-        )
-        positions.append((latitude, longitude, detection.confidence))
-    return positions
-
-
-def _cluster_positions(
-    latest: LatestByTrack, track_ids: Sequence[int]
-) -> List[Tuple[float, float]]:
-    """The same roster in the geometry RELATIVE distance is measured in.
-
-    Every track localized against one reference frame instead of its own, so
-    the assumed flight track cancels out of the distance between two of them —
-    see `localize.bbox_to_reference_latlon` for why that assumption has to be
-    kept out of any relative measurement.
-
-    Both things in this module that ask how far apart two survivors are use
-    this rather than `_positions`: the cluster term inside `priority.score_all`
-    and the `cluster_formed` events below. They are two readings of one
-    geometry and would stop being that if they were taken in different frames.
-    `_positions` remains what a position IS, which is what the map plots and
-    what a hazard distance is measured against.
-    """
-    return [
-        localize.bbox_to_reference_latlon(latest[track_id].bbox)
-        for track_id in track_ids
-    ]
-
-
-def _clusters(
+def components(
     track_ids: Sequence[int],
     positions: Sequence[Tuple[float, float]],
 ) -> List[List[int]]:
-    """Groups of two or more survivors linked by the cluster radius.
+    """Connected components of survivors, linked by the cluster radius.
 
     Single-linkage connected components under the *same* relation
     `priority.score_all` counts neighbours with — "within CLUSTER_RADIUS_M" —
-    so a cluster on the event log and a `cluster_size` in the survivor table
-    are two readings of one geometry rather than two definitions of the word.
-    `positions` must therefore be `_cluster_positions`, in the same reference
-    frame the scoring pass counts neighbours in, and not `_positions`.
+    in the *same* reference-frame geometry, so the
+    membership, the `cluster_size` in the survivor table and the `group_size`
+    added per survivor are three readings of one geometry rather than three
+    definitions of the word.
 
-    They are not the same number and are not meant to be: `cluster_size` is one
-    survivor's direct neighbour count, while a component is the whole group
-    that count belongs to. A chain of people 14 m apart is one cluster here and
-    two neighbours each in the table, and both statements are true.
+    Every survivor belongs to exactly one component, so this returns ALL of
+    them, including singletons (a component of one — `group_size` 1). That is
+    what distinguishes it from `_clusters`, which returns only components of
+    two or more because the event log has nothing to say about a person alone.
+    The two are different views of the same parts: filtering the output here
+    on `len(members) >= 2` is exactly `_clusters`.
+
+    The returned list is sorted by smallest member, and each component's
+    members ascending, so the same clip yields the same grouping every call —
+    a reload must not reshuffle which people share a group.
 
     O(n²), like the scoring pass and for the same reason: `n` is the number of
     distinct tracks in one clip, which is tens.
     """
     count = len(track_ids)
     parent = list(range(count))
+    radius_sq = config.CLUSTER_RADIUS_M * config.CLUSTER_RADIUS_M
 
     def find(node: int) -> int:
         while parent[node] != node:
@@ -156,10 +119,12 @@ def _clusters(
 
     for i in range(count):
         for j in range(i + 1, count):
-            distance = priority.metres_between(
-                positions[i][0], positions[i][1], positions[j][0], positions[j][1]
-            )
-            if distance <= config.CLUSTER_RADIUS_M:
+            if (
+                _squared_metres(
+                    positions[i][0], positions[i][1], positions[j][0], positions[j][1]
+                )
+                <= radius_sq
+            ):
                 root_i, root_j = find(i), find(j)
                 if root_i != root_j:
                     parent[root_i] = root_j
@@ -168,15 +133,38 @@ def _clusters(
     for i in range(count):
         groups.setdefault(find(i), []).append(track_ids[i])
 
-    # Sorted membership, sorted groups: the same clip must produce the same
-    # log line in the same order on every request, or a judge who reloads the
-    # dashboard sees the timeline reshuffle itself.
-    return sorted(
-        (sorted(members) for members in groups.values() if len(members) >= 2)
-    )
+    # `sorted` on the group lists sorts by first (smallest) member, then by
+    # length — a stable total order the same geometry always lands in.
+    return sorted(sorted(members) for members in groups.values())
 
 
-def _walk(detections: Sequence[Detection]) -> Tuple[List[MissionEvent], Dict[int, str]]:
+def _clusters(
+    track_ids: Sequence[int],
+    positions: Sequence[Tuple[float, float]],
+) -> List[List[int]]:
+    """Groups of two or more survivors linked by the cluster radius.
+
+    Components of exactly one survivor have nothing to say in the event log —
+    "a person is alone" is not a cluster-forming event — so they are dropped
+    here. Every component of any size is in `components`; this is that set
+    with the singletons filtered out, and nothing else differs.
+
+    They are not the same number and are not meant to be: `cluster_size` is one
+    survivor's direct neighbour count, while a component is the whole group
+    that count belongs to. A chain of people 14 m apart is one cluster here and
+    two neighbours each in the table, and both statements are true.
+    """
+    return [
+        members
+        for members in components(track_ids, positions)
+        if len(members) >= 2
+    ]
+
+
+def _walk(
+    detections: Sequence[Detection],
+    confirmed_at: Optional[Dict[int, int]] = None,
+) -> Tuple[List[MissionEvent], Dict[int, str]]:
     """Walk the clip once, returning its timeline and its closing band state.
 
     The single implementation behind `derive_events` and `final_bands`. Both
@@ -199,11 +187,17 @@ def _walk(detections: Sequence[Detection]) -> Tuple[List[MissionEvent], Dict[int
     is what keeps the log's closing assessment equal to the table's.
 
     :param detections: every record for the clip, in any order
+    :param confirmed_at: `track_id` -> confirmation frame, pre-computed by
+        `tracks.confirmation_frames`. Passed in because `/api/survivors` runs
+        that same O(n) pass for its own roster, and `_walk` runs it again
+        otherwise — the two callers share one result instead of deriving it
+        twice. Omitted, it is computed here.
     :returns: `(events, final_bands)` — events sorted by frame, then by kind,
         then by track; and the band each confirmed track is left in at the end
         of the walk, keyed by `track_id`.
     """
-    confirmed_at = tracks.confirmation_frames(detections)
+    if confirmed_at is None:
+        confirmed_at = tracks.confirmation_frames(detections)
 
     by_frame: Dict[int, List[Detection]] = {}
     for detection in detections:
@@ -228,6 +222,15 @@ def _walk(detections: Sequence[Detection]) -> Tuple[List[MissionEvent], Dict[int
     next_sample_frame = frames[0]
     events: List[MissionEvent] = []
 
+    # Cached localizations. A track's absolute position depends on its OWN
+    # latest detection, so recomputing it on a frame where that box has not
+    # changed throws the same `bbox_to_latlon`/`bbox_to_reference_latlon` away
+    # and re-derives it. Both caches are populated only when a track's latest
+    # detection is replaced, so the value stays equal to the same computation
+    # `/api/survivors` performs on the data that actually feeds either one.
+    pos_cache: Dict[int, Tuple[float, float, float]] = {}
+    cluster_cache: Dict[int, Tuple[float, float]] = {}
+
     for frame_id in frames:
         # A track appearing in `latest` for the first time is a track being
         # CONFIRMED, not first detected — `by_frame` above dropped everything
@@ -237,10 +240,23 @@ def _walk(detections: Sequence[Detection]) -> Tuple[List[MissionEvent], Dict[int
             if detection.track_id not in latest:
                 confirmed_here = True
             latest[detection.track_id] = detection
+            # Only a REPLACED latest detection changes that track's position,
+            # so localize exactly once per new box.
+            latitude, longitude = localize.bbox_to_latlon(
+                detection.bbox, detection.frame_id
+            )
+            pos_cache[detection.track_id] = (
+                latitude,
+                longitude,
+                detection.confidence,
+            )
+            cluster_cache[detection.track_id] = localize.bbox_to_reference_latlon(
+                detection.bbox
+            )
 
         track_ids = sorted(latest)
-        positions = _positions(latest, track_ids)
-        cluster_geometry = _cluster_positions(latest, track_ids)
+        positions = [pos_cache[t] for t in track_ids]
+        cluster_geometry = [cluster_cache[t] for t in track_ids]
 
         # ── Clusters: every frame, each membership set once ──────────
         #
@@ -336,7 +352,10 @@ def derive_events(detections: Sequence[Detection]) -> List[MissionEvent]:
     return _walk(detections)[0]
 
 
-def final_bands(detections: Sequence[Detection]) -> Dict[int, str]:
+def final_bands(
+    detections: Sequence[Detection],
+    confirmed_at: Optional[Dict[int, int]] = None,
+) -> Dict[int, str]:
     """The band each confirmed track is left in at the end of the clip.
 
     `/api/survivors` needs this because hysteresis gave the band a memory. A
@@ -352,9 +371,13 @@ def final_bands(detections: Sequence[Detection]) -> Dict[int, str]:
     Tracks absent from the returned mapping have no assessment yet and should
     be scored with no previous band — the raw thresholds, no deadband.
 
+    `confirmed_at` is passed through to `_walk` so a caller that already ran
+    `tracks.confirmation_frames` (as `/api/survivors` does for its own roster)
+    does not pay for it twice.
+
     Cheap enough to call per request: the walk is O(frames x tracks²) on a
     roster of tens and measures in hundredths of a second on the demo clip,
     against a detections file that is re-read from disk on every request
     anyway.
     """
-    return _walk(detections)[1]
+    return _walk(detections, confirmed_at)[1]

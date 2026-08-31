@@ -50,7 +50,8 @@ function Th({ children, numeric = false, tight = false }) {
 }
 
 /**
- * The priority cell: a swatch, the score, and the band's name in words.
+ * The priority cell: a swatch, the score, the band's name in words, and a
+ * compact breakdown of what the score is made of.
  *
  * The word is not optional. The four steps are an ORDINAL RAMP — one hue,
  * monotone light to dark — which is what makes the ordering survivable for a
@@ -62,24 +63,92 @@ function Th({ children, numeric = false, tight = false }) {
  * Survivor cyan never appears in this column. Cyan means "this is a
  * detection", and every row here is one — colouring priority in it would say
  * nothing, and using it for one band would break its meaning everywhere else.
+ *
+ * ── The score breakdown bar ───────────────────────────────────────
+ * The small bar under the figure splits the score into the weighted
+ * contributions `score_breakdown` records: confidence, cluster, hazard. Its
+ * fill is the band hue, which is the score's magnitude — darker is more
+ * urgent — and each segment's width is that term's share of the total. On the
+ * demo clip only confidence is scored (cluster and hazard both drop), so the
+ * bar is a single confident segment and the other two terms read "not scored"
+ * in the muted, deliberately-colourless unmeasured step. That converts the
+ * otherwise suspicious "priority equals exactly the confidence" into a visible
+ * statement of correct behaviour: the two missing terms report their absence,
+ * they are never drawn at zero.
+ *
+ * Colour choice is bounded by tokens.css. Segments use the band's own ramp
+ * token (already validated); "not scored" uses the ink-muted step of the
+ * unmeasured tokens. No new colour is invented here.
  */
+const TERMS = [
+  { key: 'confidence', label: 'conf' },
+  { key: 'cluster', label: 'cluster' },
+  { key: 'hazard', label: 'hazard' },
+]
+
 function PriorityCell({ survivor }) {
   const band = priorityBand(survivor.priority_band)
+  const breakdown = survivor.score_breakdown ?? {}
 
   return (
-    <div className="flex items-center gap-2.5">
-      <span
+    <div className="flex flex-col items-start gap-1 py-0.5">
+      <div className="flex items-center gap-2.5">
+        <span
+          aria-hidden="true"
+          className="h-3 w-3 shrink-0 rounded-sm"
+          style={{ backgroundColor: band.color }}
+        />
+        <span className="score w-9 text-right font-semibold text-ink">
+          {survivor.priority.toFixed(2)}
+        </span>
+        {/* w-14, not w-16: "Critical" is the longest band name and fits, and
+            this table has six nowrap columns to fit inside half of a 1280px
+            screen. Fixed rather than auto so the words start on one edge. */}
+        <span className="w-14 text-fine font-semibold text-ink-soft">{band.label}</span>
+      </div>
+
+      {/* The stacked contribution bar. Segments are the scored terms' shares
+          of the 0-1 total; the fill is the band hue, so width and colour tell
+          the same story about magnitude. Absent terms get no segment. On the
+          demo clip only confidence is scored, so this is a single full-width
+          segment; the term values below carry the split numerically whenever
+          more than one term is in play. */}
+      <div
         aria-hidden="true"
-        className="h-3 w-3 shrink-0 rounded-sm"
-        style={{ backgroundColor: band.color }}
-      />
-      <span className="score w-9 text-right font-semibold text-ink">
-        {survivor.priority.toFixed(2)}
-      </span>
-      {/* w-14, not w-16: "Critical" is the longest band name and fits, and
-          this table has six nowrap columns to fit inside half of a 1280px
-          screen. Fixed rather than auto so the words start on one edge. */}
-      <span className="w-14 text-fine font-semibold text-ink-soft">{band.label}</span>
+        className="flex h-1 w-[9.5rem] overflow-hidden rounded-full bg-surface-2"
+      >
+        {TERMS.map(
+          ({ key }) =>
+            breakdown[key] != null && (
+              <div
+                key={key}
+                style={{
+                  width: `${(breakdown[key] / 1) * 100}%`,
+                  backgroundColor: band.color,
+                }}
+              />
+            ),
+        )}
+      </div>
+
+      {/* The three terms, each reporting its own state. A scored term shows
+          its share in the ink-soft step; a dropped term shows "not scored" in
+          the muted unmeasured step — the same visual rule the empty hazard
+          layer already uses, so absence can never be misread as zero. The
+          reason each dropped term is absent lives in the row tooltip. */}
+      <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] leading-none tracking-wide">
+        {TERMS.map(({ key, label }) =>
+          breakdown[key] != null ? (
+            <span key={key} className="text-ink-soft">
+              {label} {breakdown[key].toFixed(2)}
+            </span>
+          ) : (
+            <span key={key} className="text-ink-muted">
+              {label} — not scored
+            </span>
+          ),
+        )}
+      </div>
     </div>
   )
 }
@@ -252,7 +321,28 @@ export default function SurvivorTable({
                           : '') +
                         (config.hazard_count > 0
                           ? ''
-                          : ', hazard term not scored (no hazard layer)')
+                          : ', hazard term not scored (no hazard layer)') +
+                        // The new per-row fields, folded into the same tooltip
+                        // because they are read once, on demand, and do not
+                        // deserve a seventh nowrap column. position_spread_m
+                        // is the honest error bar on the map pin: centimetres
+                        // means the projection agrees with itself, tens of
+                        // metres means altitude or frame width is wrong.
+                        //
+                        // Guarded: a backend running an older Survivor schema
+                        // without these fields still renders the rest of the
+                        // row. Same defensive posture as the LEGACY_BANDS
+                        // fallback in config.js.
+                        (survivor.position_spread_m != null
+                          ? ` · position spread ${survivor.position_spread_m.toFixed(2)} m across ${survivor.detection_count} frames`
+                          : '') +
+                        // group_size counts the whole connected component
+                        // INCLUDING this survivor; cluster_size above is their
+                        // direct neighbours EXCLUDING self — 23 vs 22 on this
+                        // fully-linked patch. Both true, both labelled.
+                        (survivor.group_id != null
+                          ? ` · group ${survivor.group_id} (${survivor.group_size} members in component)`
+                          : '')
                       }
                     >
                       <td className="px-3 py-2">

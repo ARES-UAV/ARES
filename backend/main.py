@@ -5,7 +5,8 @@ not run inference. See CLAUDE.md, "Demo-day constraints".
 """
 
 import json
-from typing import Dict, List
+import statistics
+from typing import Dict, List, Tuple
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -236,6 +237,12 @@ def survivors() -> List[Survivor]:
     latest: Dict[int, Detection] = {}
     first_frame: Dict[int, int] = {}
     counts: Dict[int, int] = {}
+    # Every confirmed position per track, in any order. The median of these,
+    # not a single detection, becomes the map pin — see below. One bad box can
+    # drag a mean and barely move a median, and `position_spread_m` is
+    # measured against this same set, so both the pin and its error bar follow
+    # from one list rather than two readings that could drift apart.
+    positions_by_track: Dict[int, List[Tuple[float, float]]] = {}
 
     for detection in records:
         track_id = detection.track_id
@@ -250,6 +257,14 @@ def survivors() -> List[Survivor]:
             continue
 
         counts[track_id] = counts.get(track_id, 0) + 1
+
+        # Absolute position (moving origin — where the survivor IS), the same
+        # projection the scoring positions and the reference-frame geometry
+        # come from. Collected for EVERY confirmed detection so the median pin
+        # is not one lucky box.
+        positions_by_track.setdefault(track_id, []).append(
+            localize.bbox_to_latlon(detection.bbox, detection.frame_id)
+        )
 
         previous_first = first_frame.get(track_id)
         if previous_first is None or detection.frame_id < previous_first:
@@ -285,6 +300,60 @@ def survivors() -> List[Survivor]:
         # distance use the moving origin.
         cluster_geometry.append(localize.bbox_to_reference_latlon(detection.bbox))
 
+    # The map pin and its error bar, from the MEDIAN of every confirmed
+    # position rather than the latest detection's box. The scoring above keeps
+    # using latest positions — that is what `events.final_bands` walked, so
+    # changing it here would let the table's priority drift from the log's. But
+    # position is a different question from score, and one bad box can drag a
+    # mean and barely move a median; a single box is also a point mover while
+    # the person stands still. The median of all of them is the more honest pin.
+    #
+    # `position_spread_m` is the furthest any single estimate sat from that
+    # median — the most useful diagnostic this module produces. Centimetres
+    # means the projection agrees with itself; tens of metres means altitude or
+    # frame width is wrong, and it is caught here before someone checks a pin
+    # against a map. It is absolute geometry (`bbox_to_latlon`), like the pin it
+    # describes, never the reference-frame projection.
+    median_position: Dict[int, Tuple[float, float]] = {}
+    position_spread: Dict[int, float] = {}
+    for track_id in track_ids:
+        points = positions_by_track[track_id]
+        lat = statistics.median(p[0] for p in points)
+        lon = statistics.median(p[1] for p in points)
+        median_position[track_id] = (lat, lon)
+        position_spread[track_id] = max(
+            priority.metres_between(lat, lon, pt[0], pt[1]) for pt in points
+        )
+
+    # ── Groups: connected components of the roster ───────────────────
+    # Who stands together is a RELATIVE question, so it is answered in the
+    # reference-frame geometry — the same geometry `cluster_size` and the
+    # cluster events come from (Rule 1). Not the moving-origin absolute
+    # positions, which would manufacture metres of separation out of the time
+    # gap between two last sightings.
+    #
+    # `group_size` is the whole connected component INCLUDING this survivor,
+    # while `cluster_size` above is this survivor's DIRECT neighbours
+    # EXCLUDING self. On a fully-linked patch of 23 people those are 23 and 22;
+    # on a chain of people 14 m apart they are one group of several with two
+    # neighbours each. Both are true; only the labels are new, and the
+    # dashboard says what each counts.
+    group_of: Dict[int, str] = {}
+    group_size: Dict[int, int] = {}
+    for component_index, members in enumerate(
+        events_module.components(track_ids, cluster_geometry)
+    ):
+        # members is sorted ascending and components are ordered by their
+        # smallest member, so the labeling is stable across requests.
+        label = (
+            chr(ord("A") + component_index)
+            if component_index < 26
+            else f"G{component_index}"
+        )
+        for track_id in members:
+            group_of[track_id] = label
+            group_size[track_id] = len(members)
+
     # Band history, from the same walk the event log is built from.
     #
     # Hysteresis (BAND_HYSTERESIS) means a band depends on where the track came
@@ -295,7 +364,7 @@ def survivors() -> List[Survivor]:
     # on screen at once. `events.final_bands` is where the log's assessment
     # ends up, and re-scoring against it is idempotent (see `priority.band_for`),
     # so the two cannot diverge.
-    previous_bands = events_module.final_bands(records)
+    previous_bands = events_module.final_bands(records, confirmed_at)
     scores = priority.score_all(
         positions,
         [previous_bands.get(track_id) for track_id in track_ids],
@@ -307,11 +376,12 @@ def survivors() -> List[Survivor]:
         track_ids, positions, scores
     ):
         detection = latest[track_id]
+        pin_lat, pin_lon = median_position[track_id]
         result.append(
             Survivor(
                 track_id=track_id,
-                latitude=latitude,
-                longitude=longitude,
+                latitude=pin_lat,
+                longitude=pin_lon,
                 confidence=detection.confidence,
                 first_frame=first_frame[track_id],
                 confirmed_frame=confirmed_at[track_id],
@@ -321,6 +391,10 @@ def survivors() -> List[Survivor]:
                 priority_band=score.band,
                 cluster_size=score.cluster_size,
                 cluster_score=score.cluster_score,
+                score_breakdown=score.score_breakdown,
+                position_spread_m=position_spread[track_id],
+                group_id=group_of[track_id],
+                group_size=group_size[track_id],
             )
         )
 
