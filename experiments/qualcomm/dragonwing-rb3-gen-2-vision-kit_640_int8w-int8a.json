@@ -1,0 +1,39 @@
+{
+  "slug": "dragonwing-rb3-gen-2-vision-kit_640_int8w-int8a",
+  "device": "Dragonwing RB3 Gen 2 Vision Kit (OS 1.6)",
+  "model": "yolov12s_640.onnx",
+  "imgsz": 640,
+  "size_note": "NOT the shipped size \u2014 config.py is 960",
+  "latency_ms": 28.4,
+  "fps": 35.2112676056338,
+  "peak_mem_mb": null,
+  "jobs": {
+    "quantize": "https://workbench.aihub.qualcomm.com/jobs/j567r137p/",
+    "compile": "https://workbench.aihub.qualcomm.com/jobs/jgorov1dg/",
+    "profile": "https://workbench.aihub.qualcomm.com/jobs/jgnnoermg/"
+  },
+  "note": "Read from the live profile page (jgnnoermg): median 28.4 ms, minimum 26.5 ms, peak memory 3\u20136 MB. Supersedes the 26.54 ms / 10.4 MB previously recorded.",
+  "runtime": "qnn_context_binary",
+  "precision": "INT8 w / INT8 a",
+  "units": {
+    "NPU": 489
+  },
+  "total_layers": 489,
+  "npu_layers": 489,
+  "npu_share": 100.0,
+  "measured_at": "2026-08-26 (reconstructed)",
+  "stat": "median (console)",
+  "latency_min_ms": 26.5,
+  "latency_max_ms": null,
+  "samples": null,
+  "peak_mem_range": "3 \u2013 6 MB",
+  "first_load_ms": 225.8,
+  "warm_load_ms": 201.6,
+  "versions": {
+    "QAIRT": "v2.45.0.260326154327",
+    "QNN Backend API": "5.45.0",
+    "QNN Core API": "2.34.0",
+    "Qualcomm Linux": "1.6-ver.1.2",
+    "AI Hub Workbench": "aihub-2026.08.14.0"
+  }
+}

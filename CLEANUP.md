@@ -28,7 +28,7 @@ git commit -m "Untrack last.pt — best.pt is the deployable checkpoint"
 
 **Honest caveat:** this shrinks the working tree, not `.git`. Git keeps every version of every file forever, so the 53 MB of history stays 53 MB. Actually reclaiming it means rewriting history with `git-filter-repo`, which invalidates every existing clone.
 
-**Do not rewrite history before 5 September.** 53 MB is survivable; a broken clone two days before the hackathon is not. Revisit it in Phase 2 if you want a clean repo for the paper.
+**Do not rewrite history before 10 September.** 53 MB is survivable; a broken clone two days before the hackathon is not. Revisit it in Phase 2 if you want a clean repo for the paper.
 
 ---
 
@@ -104,7 +104,7 @@ git commit -m "Add project context, build order, model selection analysis"
 
 ---
 
-## Not worth doing before 5 September
+## Not worth doing before 10 September
 
 - Rewriting git history to reclaim the 53 MB
 - Squashing or renaming past commits

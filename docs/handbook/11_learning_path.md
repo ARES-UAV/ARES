@@ -233,7 +233,7 @@ something end to end.
 
 ---
 
-## 6. A concrete 12-week plan, starting after 20 September
+## 6. A concrete 12-week plan, starting after 30 September
 
 | Weeks | Focus | Deliverable |
 |---|---|---|

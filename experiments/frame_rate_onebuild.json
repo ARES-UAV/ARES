@@ -1,0 +1,62 @@
+{
+  "reference_confirmed": 21,
+  "tolerance_px": 60.0,
+  "full_rate": [
+    {
+      "reports": 53,
+      "real_people": 20,
+      "missed": 1,
+      "duplicates": 14,
+      "worst_split": 5,
+      "orphans": 19,
+      "tracker": "botsort-b60-n0.5",
+      "rate": "full"
+    }
+  ],
+  "device_rate": [
+    {
+      "reports": 43,
+      "real_people": 20,
+      "missed": 1,
+      "duplicates": 14,
+      "worst_split": 5,
+      "orphans": 9,
+      "tracker": "botsort-b60-n0.3",
+      "new_track_thresh": 0.3,
+      "rate": "device"
+    },
+    {
+      "reports": 43,
+      "real_people": 20,
+      "missed": 1,
+      "duplicates": 14,
+      "worst_split": 5,
+      "orphans": 9,
+      "tracker": "botsort-b60-n0.35",
+      "new_track_thresh": 0.35,
+      "rate": "device"
+    },
+    {
+      "reports": 38,
+      "real_people": 20,
+      "missed": 1,
+      "duplicates": 9,
+      "worst_split": 4,
+      "orphans": 9,
+      "tracker": "botsort-b60-n0.4",
+      "new_track_thresh": 0.4,
+      "rate": "device"
+    },
+    {
+      "reports": 34,
+      "real_people": 19,
+      "missed": 2,
+      "duplicates": 7,
+      "worst_split": 3,
+      "orphans": 8,
+      "tracker": "botsort-b60-n0.45",
+      "new_track_thresh": 0.45,
+      "rate": "device"
+    }
+  ]
+}

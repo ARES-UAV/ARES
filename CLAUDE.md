@@ -8,7 +8,9 @@ This repo is a monorepo covering perception, planning, experiments and the dashb
 
 ## Hard deadline
 
-**5 September 2026** — internal hackathon, the selection cutoff for Smart India Hackathon 2026 (Hardware Edition). **20 September** follows for the national submission.
+**10 September 2026** — internal hackathon, the selection cutoff for Smart India Hackathon 2026 (Hardware Edition). Moved from 5 September; confirmed 31 August.
+
+**~30 September** — national submission. **Estimated from last year's schedule, not confirmed by SIH.** It is a planning assumption; anything scheduled against it inherits that uncertainty. Confirm with the SPOC and correct this line.
 
 Every decision trades in favour of **working on demo day** over impressive-but-fragile. If a feature could fail live on stage, it does not go in.
 
@@ -94,12 +96,36 @@ The checkpoint records `epoch: 58` of a planned 100 (zero-indexed — 59 epochs 
 
   | | RB3 Gen 2 (QCS6490) | IQ-9075 EVK (QCS9075) |
   |---|---|---|
-  | **960** | 207.56 ms · **4.8 FPS** | 61.45 ms · **16.3 FPS** |
-  | 640 | 26.54 ms · 37.7 FPS | 10.48 ms · 95.4 FPS |
-  | Peak memory | 9.5 / 10.4 MB | 8.9 / 6.5 MB |
+  | **960** | 209.50 ms · **4.8 FPS** | 62.30 ms · **16.1 FPS** |
+  | 640 | 28.40 ms · 35.2 FPS | 14.04 ms · 71.2 FPS |
+  | Peak memory | 3–7 / 3–6 MB | 2–6 / 6.5 MB |
   | **NPU coverage** | **489/489 — 100 %** | **489/489 — 100 %** |
 
+  **All latencies are MEDIANS of ~100 samples.** AI Hub's
+  `estimated_inference_time`, and the "Minimum Inference Time" headline on its
+  console, is the fastest run of the hundred — and this repo published exactly
+  that for a fortnight, overstating the IQ-9075 at 640 by 34 %. The shipped RB3
+  figure survived because at 200 ms per inference the min/median gap is under
+  1 %. Read the label on the field before you print it.
+
   The 100 % is the headline, not the FPS: every layer of an attention-centric YOLOv12 runs on the Hexagon NPU with nothing falling back to CPU.
+
+- **The count does not survive device rate — measured 31 August.** Latency says 4.8 FPS
+  on the RB3. Feeding the tracker every 5th frame to match that rate, confirmed survivors fall
+  from **21 to 10**, and detections per frame fall 22.6 → 8.8 *on the same frames*. The detector is
+  stateless, so that second number can only mean the tracker is discarding them: `model.track()`
+  returns what ByteTrack accepted, and its low-score association stage keeps weak boxes only when
+  they match an existing track. At 5× the frame gap they don't. Our conf-0.18 operating point
+  depends on exactly those boxes.
+
+  **BoT-SORT with GMC is the only config that finds the people** — 20 of 21 at 4.8 FPS — but it
+  splits identities (one person into five) and reports 47. Tuned ByteTrack reports 20 against a
+  true 21 *by missing 8 and double-counting 5*; the errors cancel into a plausible number. **Do
+  not adopt that config on the strength of its count.** Finding is solved at device rate;
+  counting is not. Full method and the per-tracker breakdown: `experiments/FRAME_RATE_STUDY.md`.
+
+  The demo is unaffected — it replays a 24 FPS `detections.json`, as § Demo-day constraints
+  requires. What this bounds is the *claim*, not the demonstration.
 
 - **Raspberry Pi 4 is still unmeasured.** `DEVICE_FPS = None` renders "not yet measured". Qualcomm figures do not fill a Pi row.
 - **INT8 accuracy is unmeasured.** All device latencies are INT8; all accuracy figures above are FP32. Never present them as one system.
@@ -124,7 +150,7 @@ Drone GPS origin, altitude and FOV are assumed constants per clip. That assumpti
 
 1. **The demo replays a pre-computed detections file. It does not run inference live.** The backend streams stored events against a playback clock. Identical to a judge, and it removes every live-inference failure mode.
 2. **The dashboard must work with the backend switched off.** Keep a path where the frontend loads a static JSON file directly.
-3. **Map tiles need internet, and venue wifi fails.** Cache tiles for the demo area or fall back to a static georeferenced image. Do not discover this on 5 September.
+3. **Map tiles need internet, and venue wifi fails.** Cache tiles for the demo area or fall back to a static georeferenced image. Do not discover this on 10 September.
 4. **No API keys.** OpenStreetMap tiles via Leaflet need none.
 
 ---
@@ -227,6 +253,11 @@ The pitch is deliberately honest about this split. **Do not build, mock, or impl
 | Adaptive search planning | Research direction — simulation only, not flown |
 | Autonomous navigation, GPS-denied SLAM | **Described only** — architecture write-up, not built |
 
+**"On-device inference: Built" is about latency, not counting.** 4.8 FPS on the RB3 is measured
+and holds. The de-duplicated survivor count at that rate does **not** — see the frame-rate entry
+under Detection model status, and `experiments/FRAME_RATE_STUDY.md`. Say *"runs on device at
+4.8 FPS"*; do not say *"produces the same survivor count on device"*.
+
 ---
 
 ## Team
@@ -255,7 +286,7 @@ If a change touches the JSON contract, it affects all three. Flag it rather than
 - **Every video asset gets `-movflags +faststart`.** Without it the browser downloads the whole file before it can report duration — 15 seconds of "Loading clip…" before controls enable.
 - **Never commit model weights, datasets, or video.** Weights go to GitHub Releases. See `.gitignore`.
 - Every experiment records: config, dataset version, model version, parameters, results, conclusion — and **the test split it was measured on**, which is how the current YOLOv8-vs-YOLOv12 ambiguity arose.
-- Prefer boring, working solutions. This codebase is judged on 5 September.
+- Prefer boring, working solutions. This codebase is judged on 10 September.
 - **Never commit secrets** — API keys, tokens, credentials, private endpoints. This file is public; treat everything in it as readable by anyone.
 
 ---
@@ -267,4 +298,4 @@ Two expansions of "ARES" are currently in use across the project's materials:
 - **Adaptive Rescue and Exploration System** — `README.md`, `docs/project_overview.md`
 - **Autonomous Rescue & Environmental Intelligence System** — pitch deck and planning material
 
-The first reflects the research contribution (adaptive search planning); the second reflects the SIH framing. **One should be adopted everywhere before 5 September.** Until that decision is made, use the `README.md` form in anything written here rather than introducing a third variant.
+The first reflects the research contribution (adaptive search planning); the second reflects the SIH framing. **One should be adopted everywhere before 10 September.** Until that decision is made, use the `README.md` form in anything written here rather than introducing a third variant.

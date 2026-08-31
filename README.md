@@ -28,10 +28,13 @@ For scale: stock YOLOv12s scores 48.0 mAP50-95 on COCO. **57.7 on small aerial h
 
 | | Dragonwing RB3 Gen 2 | Dragonwing IQ-9075 EVK |
 |---|---:|---:|
-| **960 px** | 207.56 ms · **4.8 FPS** | 61.45 ms · **16.3 FPS** |
-| 640 px | 26.54 ms · 37.7 FPS | 10.48 ms · 95.4 FPS |
-| Peak memory | 9.5 / 10.4 MB | 8.9 / 6.5 MB |
+| **960 px** | 209.50 ms · **4.8 FPS** | 62.30 ms · **16.1 FPS** |
+| 640 px | 28.40 ms · 35.2 FPS | 14.04 ms · 71.2 FPS |
+| Peak memory | 3–7 / 3–6 MB | 2–6 / 6.5 MB |
 | **Layers on Hexagon NPU** | **489 / 489 — 100 %** | **489 / 489 — 100 %** |
+
+Latencies are **medians of ~100 samples**, not minimums — see
+[`experiments/QUALCOMM_BENCHMARK.md`](./experiments/QUALCOMM_BENCHMARK.md).
 
 **The 100 % is the headline, not the frame rate.** Every layer of an attention-centric YOLOv12 executes on the NPU with nothing falling back to CPU.
 
@@ -311,7 +314,7 @@ Two things that will silently give you wrong answers, both of which bit this pro
 
 1. **INT8 accuracy** — closes the only gap between the accuracy and latency tables
 2. **Raspberry Pi 4** — commodity-hardware datapoint alongside the Qualcomm one
-3. **YOLOv8n resolution scaling** — v8n is pure convolution, so benchmarking it at 640 and 960 would settle whether YOLOv12s's 7.82× resolution penalty on the NPU is attention's quadratic term or a memory-tiling effect. Currently an open question, not a finding.
+3. **YOLOv8n resolution scaling** — v8n is pure convolution, so benchmarking it at 640 and 960 would settle whether the RB3's 7.38× resolution penalty on the NPU is attention's quadratic term or a memory-tiling effect. The IQ-9075's 4.44× already sits inside attention's predicted band; the RB3's does not. Currently an open question, not a finding.
 
 Detailed timeline in [`docs/roadmap.md`](./docs/roadmap.md).
 

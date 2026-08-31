@@ -1,23 +1,47 @@
 # Qualcomm on-device benchmark
 
-Measured on Qualcomm AI Hub — a hosted physical device, not an emulator.
+Measured on **Qualcomm AI Hub** — hosted physical devices, not emulators.
 
-| | |
-|---|---|
-| Device | `Dragonwing IQ-9075 EVK` (OS 1.9) |
-| Model | `yolov12s_640.onnx` |
-| Precision | INT8 weights / INT8 activations |
-| Runtime | `qnn_context_binary` |
-| Input size | 640 (NOT the shipped size — config.py is 960) |
-| Latency | 10.48 ms (95.4 FPS) |
-| Peak memory | 6.5 MB |
-| Layers on NPU | 100% |
+**This file is generated.** Every run writes a record to
+`experiments/qualcomm/<slug>.json` and this document is rebuilt from all of
+them. Do not edit it by hand; the next run overwrites your edit. To add a
+result, run the benchmark.
 
-## Layer placement
+## All runs
 
-| Compute unit | Layers | Share |
-|---|---|---|
-| NPU | 489 | 100.0% |
+| Device | Size | Precision | Latency | FPS | Peak memory | On NPU |
+|---|---:|---|---:|---:|---:|---|
+| `Dragonwing IQ-9075 EVK (OS 1.9)` | 640 | INT8 w / INT8 a | 14.04 ms | **71.2** | 6.5 MB | 489/489 · 100% |
+| `Dragonwing RB3 Gen 2 Vision Kit (OS 1.6)` | 640 | INT8 w / INT8 a | 28.40 ms | **35.2** | 3 – 6 MB | 489/489 · 100% |
+| `Dragonwing IQ-9075 EVK (OS 1.9)` | 960 | INT8 w / INT8 a | 62.30 ms | **16.1** | 2 – 6 MB | 489/489 · 100% |
+| `Dragonwing RB3 Gen 2 Vision Kit (OS 1.6)` | 960 | INT8 w / INT8 a | 209.50 ms | **4.8** | 3 – 7 MB | 489/489 · 100% |
+
+**Latency is the MEDIAN of ~100 samples**, not the minimum. AI Hub's
+`estimated_inference_time` — and the "Minimum Inference Time" figure on its
+console — is the fastest of the hundred, and reporting it is reporting the best
+run. Rows marked **⚠** still carry a minimum because their raw profile was
+overwritten before per-run recording existed; treat those FPS figures as upper
+bounds until the median is read off the profile page or the run is repeated.
+
+The gap is not cosmetic. On the IQ-9075 at 640 the median is **34% slower**
+than the minimum — 10.48 → 14.04 ms, 95.4 → 71.2 FPS — because at ~10 ms
+scheduling noise is a large fraction of the measurement. On the RB3 at 960,
+where a single inference takes 200 ms, it is under 1%.
+
+Every run placed **100% of the network on the Hexagon NPU**, with nothing
+falling back to CPU. That is the headline, not the frame rate: an
+attention-centric YOLOv12 maps completely onto Qualcomm's accelerator.
+
+## What the resolution ratio says
+
+960 px is 2.25x the pixels of 640. On a Tesla T4 GPU it costs 2.62x the time —
+near-linear. On the Hexagon NPU it costs far more. Attention's quadratic term
+in token count predicts at most 5.06x, so it is not the whole story; memory
+tiling is the likely remainder. **Not established.**
+
+Settle it by benchmarking `yolov8n` — pure convolution, no attention — at both
+sizes on the same device. If v8n scales ~2.25x and v12s ~7x, attention is
+confirmed. If both scale ~7x, it is memory and tiling.
 
 ## Getting here
 
@@ -26,15 +50,144 @@ The first two compiles failed, and neither was a hardware limitation:
 1. **Malformed ONNX.** `output0` appeared in both `graph.output` and
    `value_info` — a spec violation ONNX Runtime tolerates and Qualcomm's
    validator rejects. Fixed by `tools/fix_onnx_io.py`; zero operators changed.
-2. **Float32 I/O.** The QCS6490 Hexagon HTP is integer-only. Conversion had
-   already succeeded — 23.8 GMAC, 9.14 M params, all 516 operators mapped,
-   including every attention-derived MatMul and Softmax. The model was never
-   the problem; the precision was.
+   Four hypotheses were proposed before this one, all about the hardware, all
+   wrong.
+2. **Float32 I/O.** The Hexagon HTP is integer-only. Conversion had already
+   succeeded — 23.8 GMAC, 9.14 M params, all 516 operators mapped, including
+   every attention-derived MatMul and Softmax. The model was never the
+   problem; the precision was.
 
 **There is no unsupported-operator finding here.** YOLOv12s converts to QNN
 cleanly.
 
-⚠ **Accuracy caveat.** These numbers are for an INT8 model. The mAP figures elsewhere in this repo are FP32. Re-validate the quantized model before presenting both.
+## Toolchain, and a deprecation
 
-Quantize/compile/profile jobs: https://workbench.aihub.qualcomm.com/jobs/jgj7ol1xg/
-Raw profile: `experiments/qualcomm_profile.json`
+The RB3 @ 960 run — the configuration in `backend/config.py` — was produced by:
+
+| | |
+|---|---|
+| QAIRT | 2.45.0.260326154327 |
+| AI Hub Workbench | aihub-2026.08.14.0 |
+| Options | `--target_runtime qnn_context_binary --quantize_io` |
+
+AI Hub warns that compiling directly to a QNN Context Binary with
+`--target_runtime qnn_context_binary` is **deprecated and will be removed**,
+and points at `submit_compile_and_link_jobs` instead.
+
+Everything here was measured with the deprecated path, and it worked. The risk
+is reproducibility rather than correctness: if the option is withdrawn before
+anyone re-runs these, the numbers cannot be regenerated by this script as
+written. Migrating is a compile job followed by a link job — which is why the
+console now shows a LINK tab.
+
+## Accuracy caveat — read before quoting any of this
+
+Every latency above is an **INT8** model. Every mAP figure in this repo is
+**FP32**. They are two different models and must never be presented as one
+system. INT8 accuracy is **not yet measured**.
+
+## Per-run detail
+
+### Dragonwing IQ-9075 EVK (OS 1.9) · 640 px · INT8 w / INT8 a
+
+| | |
+|---|---|
+| Model | `yolov12s_640.onnx` |
+| Runtime | `qnn_context_binary` |
+| Input size | 640 (NOT the shipped size — config.py is 960) |
+| Latency | 14.04 ms (71.2 FPS) — median |
+| Spread | 10.48 – 15.17 ms over 100 samples |
+| Peak memory | 6.5 MB |
+| Measured | 2026-08-26 (reconstructed) |
+
+> Raw profile survived. Latency recomputed as the MEDIAN of its 100 samples (14.04 ms). The 10.48 ms previously reported was the minimum — AI Hub's estimated_inference_time — and the two are 34% apart.
+
+| Compute unit | Layers | Share |
+|---|---|---|
+| NPU | 489 | 100.0% |
+
+- quantize: https://workbench.aihub.qualcomm.com/jobs/j5mmoz4w5/
+- compile: https://workbench.aihub.qualcomm.com/jobs/jgj7ol1xg/
+- profile: https://workbench.aihub.qualcomm.com/jobs/jp41mwmvp/
+
+Raw profile: `experiments/qualcomm/dragonwing-iq-9075-evk_640_int8w-int8a_profile.json`
+
+---
+
+### Dragonwing RB3 Gen 2 Vision Kit (OS 1.6) · 640 px · INT8 w / INT8 a
+
+| | |
+|---|---|
+| Model | `yolov12s_640.onnx` |
+| Runtime | `qnn_context_binary` |
+| Input size | 640 (NOT the shipped size — config.py is 960) |
+| Latency | 28.40 ms (35.2 FPS) — median (console) |
+| Spread | minimum 26.50 ms; full distribution not retained |
+| Peak memory | 3 – 6 MB |
+| Measured | 2026-08-26 (reconstructed) |
+
+> Read from the live profile page (jgnnoermg): median 28.4 ms, minimum 26.5 ms, peak memory 3–6 MB. Supersedes the 26.54 ms / 10.4 MB previously recorded.
+
+| Compute unit | Layers | Share |
+|---|---|---|
+| NPU | 489 | 100.0% |
+
+- quantize: https://workbench.aihub.qualcomm.com/jobs/j567r137p/
+- compile: https://workbench.aihub.qualcomm.com/jobs/jgorov1dg/
+- profile: https://workbench.aihub.qualcomm.com/jobs/jgnnoermg/
+
+Raw profile: not retained — this run predates per-run recording.
+
+---
+
+### Dragonwing IQ-9075 EVK (OS 1.9) · 960 px · INT8 w / INT8 a
+
+| | |
+|---|---|
+| Model | `yolov12s_960.onnx` |
+| Runtime | `qnn_context_binary` |
+| Input size | 960 (matches backend/config.py) |
+| Latency | 62.30 ms (16.1 FPS) — median (console) |
+| Spread | minimum 61.40 ms; full distribution not retained |
+| Peak memory | 2 – 6 MB |
+| Measured | 2026-08-26 (reconstructed) |
+
+> Read from the live profile page (jp8x6znog): median 62.3 ms, minimum 61.4 ms, peak memory 2–6 MB. Supersedes the 61.45 ms / 8.9 MB previously recorded, which was the minimum and an unverified memory figure.
+
+| Compute unit | Layers | Share |
+|---|---|---|
+| NPU | 489 | 100.0% |
+
+- quantize: https://workbench.aihub.qualcomm.com/jobs/j5w78qkmg/
+- compile: https://workbench.aihub.qualcomm.com/jobs/jgnno34qg/
+- profile: https://workbench.aihub.qualcomm.com/jobs/jp8x6znog/
+
+Raw profile: not retained — this run predates per-run recording.
+
+---
+
+### Dragonwing RB3 Gen 2 Vision Kit (OS 1.6) · 960 px · INT8 w / INT8 a
+
+| | |
+|---|---|
+| Model | `yolov12s_960.onnx` |
+| Runtime | `qnn_context_binary` |
+| Input size | 960 (matches backend/config.py) |
+| Latency | 209.50 ms (4.8 FPS) — median (console) |
+| Spread | minimum 207.60 ms; full distribution not retained |
+| Peak memory | 3 – 7 MB |
+| Measured | 2026-08-26 (reconstructed) |
+
+> Read from the live profile page (jgj7oe8eg): median 209.5 ms, minimum 207.6 ms, peak memory 3–7 MB. The 9.5 MB previously recorded came from an unverified transcription and is superseded. This is the shipped configuration — DEVICE_FPS in backend/config.py.
+
+| Compute unit | Layers | Share |
+|---|---|---|
+| NPU | 489 | 100.0% |
+
+- quantize: https://workbench.aihub.qualcomm.com/jobs/j574kxn95/
+- compile: https://workbench.aihub.qualcomm.com/jobs/jp0jdl9ng/
+- profile: https://workbench.aihub.qualcomm.com/jobs/jgj7oe8eg/
+
+Raw profile: not retained — this run predates per-run recording.
+
+---

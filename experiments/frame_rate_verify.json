@@ -1,0 +1,43 @@
+{
+  "tolerance_px": 60.0,
+  "reference": {
+    "tracker": "bytetrack-default",
+    "fps": 24.0,
+    "confirmed": 21
+  },
+  "candidates": [
+    {
+      "candidate_tracks": 10,
+      "reference_tracks": 21,
+      "reference_people_found": 9,
+      "reference_people_missed": 12,
+      "candidates_matching_nothing": 0,
+      "duplicate_claims": 1,
+      "worst_fragmentation": 2,
+      "tracker": "bytetrack-default",
+      "fps": 4.8
+    },
+    {
+      "candidate_tracks": 20,
+      "reference_tracks": 21,
+      "reference_people_found": 13,
+      "reference_people_missed": 8,
+      "candidates_matching_nothing": 2,
+      "duplicate_claims": 5,
+      "worst_fragmentation": 2,
+      "tracker": "bytetrack-wide",
+      "fps": 4.8
+    },
+    {
+      "candidate_tracks": 47,
+      "reference_tracks": 21,
+      "reference_people_found": 20,
+      "reference_people_missed": 1,
+      "candidates_matching_nothing": 10,
+      "duplicate_claims": 17,
+      "worst_fragmentation": 5,
+      "tracker": "botsort-gmc",
+      "fps": 4.8
+    }
+  ]
+}

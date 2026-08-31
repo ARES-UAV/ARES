@@ -1,0 +1,56 @@
+{
+  "rows": [
+    {
+      "tracker": "bytetrack-default",
+      "stride": 1,
+      "fps": 24.0,
+      "frames_processed": 312,
+      "raw_detections": 7059,
+      "det_per_frame": 22.6,
+      "track_ids": 328,
+      "min_track_frames": 60,
+      "confirmed_survivors": 21,
+      "wall_s": 140.9,
+      "rate": "full rate"
+    },
+    {
+      "tracker": "bytetrack-default",
+      "stride": 5,
+      "fps": 4.8,
+      "frames_processed": 63,
+      "raw_detections": 557,
+      "det_per_frame": 8.8,
+      "track_ids": 94,
+      "min_track_frames": 12,
+      "confirmed_survivors": 10,
+      "wall_s": 30.8,
+      "rate": "device rate"
+    },
+    {
+      "tracker": "bytetrack-wide",
+      "stride": 5,
+      "fps": 4.8,
+      "frames_processed": 63,
+      "raw_detections": 689,
+      "det_per_frame": 10.9,
+      "track_ids": 76,
+      "min_track_frames": 12,
+      "confirmed_survivors": 20,
+      "wall_s": 30.9,
+      "rate": "device rate"
+    },
+    {
+      "tracker": "botsort-gmc",
+      "stride": 5,
+      "fps": 4.8,
+      "frames_processed": 63,
+      "raw_detections": 1089,
+      "det_per_frame": 17.3,
+      "track_ids": 78,
+      "min_track_frames": 12,
+      "confirmed_survivors": 47,
+      "wall_s": 31.6,
+      "rate": "device rate"
+    }
+  ]
+}

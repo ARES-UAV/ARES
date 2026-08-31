@@ -11,7 +11,7 @@ You built a working UAV search-and-rescue system. Some of it you wrote, some
 of it Claude Code wrote while you directed it, and some of it came out of
 arguments in a chat window that you won't remember in two weeks.
 
-On 5 September a judge is going to point at a number on your screen and ask
+On 10 September a judge is going to point at a number on your screen and ask
 where it came from. There is no version of "my AI assistant chose it" that
 survives that moment. This handbook exists so that every number, every file and
 every decision in ARES is something you can explain in your own words.

@@ -671,7 +671,7 @@ come from App.
 
 Leaflet, driven **imperatively** rather than through a React wrapper. It owns its
 own DOM subtree and event loop, and *one more dependency between here and the map
-is one more thing that can break on 5 September.*
+is one more thing that can break on 10 September.*
 
 **Markers are circles, not Leaflet's default pin.** Partly practical — a circle
 takes an arbitrary fill; the default pin is a fixed blue PNG whose asset path is a

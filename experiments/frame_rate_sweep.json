@@ -1,0 +1,72 @@
+{
+  "reference_confirmed": 21,
+  "tolerance_px": 60.0,
+  "rows": [
+    {
+      "reports": 47,
+      "real_people": 20,
+      "missed": 1,
+      "duplicates": 17,
+      "worst_split": 5,
+      "orphans": 10,
+      "tracker": "botsort-b60-n0.25",
+      "track_buffer": 60,
+      "new_track_thresh": 0.25
+    },
+    {
+      "reports": 47,
+      "real_people": 20,
+      "missed": 1,
+      "duplicates": 17,
+      "worst_split": 5,
+      "orphans": 10,
+      "tracker": "botsort-b150-n0.25",
+      "track_buffer": 150,
+      "new_track_thresh": 0.25
+    },
+    {
+      "reports": 47,
+      "real_people": 20,
+      "missed": 1,
+      "duplicates": 17,
+      "worst_split": 5,
+      "orphans": 10,
+      "tracker": "botsort-b300-n0.25",
+      "track_buffer": 300,
+      "new_track_thresh": 0.25
+    },
+    {
+      "reports": 30,
+      "real_people": 19,
+      "missed": 2,
+      "duplicates": 5,
+      "worst_split": 3,
+      "orphans": 6,
+      "tracker": "botsort-b60-n0.5",
+      "track_buffer": 60,
+      "new_track_thresh": 0.5
+    },
+    {
+      "reports": 30,
+      "real_people": 19,
+      "missed": 2,
+      "duplicates": 5,
+      "worst_split": 3,
+      "orphans": 6,
+      "tracker": "botsort-b150-n0.5",
+      "track_buffer": 150,
+      "new_track_thresh": 0.5
+    },
+    {
+      "reports": 5,
+      "real_people": 4,
+      "missed": 17,
+      "duplicates": 0,
+      "worst_split": 1,
+      "orphans": 1,
+      "tracker": "botsort-b150-n0.7",
+      "track_buffer": 150,
+      "new_track_thresh": 0.7
+    }
+  ]
+}

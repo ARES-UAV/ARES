@@ -57,7 +57,7 @@ Right now that cannot be answered. The two were measured on different data. Thre
 
 - **YOLOv12s wins on C2A-only** → it is the demo model, and the combined-dataset training is vindicated.
 - **YOLOv12s roughly ties** → the combined training still wins the argument, because it should generalise better to real drone footage that looks like neither dataset exactly. Worth stating explicitly rather than hiding.
-- **YOLOv12s loses** → YOLOv8s is already trained, already faster, and becomes the demo model. Weeks of GPU time were spent learning something useful about architecture choice rather than producing the shipped artefact. That is an acceptable research outcome, but only if it is discovered before 5 September.
+- **YOLOv12s loses** → YOLOv8s is already trained, already faster, and becomes the demo model. Weeks of GPU time were spent learning something useful about architecture choice rather than producing the shipped artefact. That is an acceptable research outcome, but only if it is discovered before 10 September.
 
 ### Action
 

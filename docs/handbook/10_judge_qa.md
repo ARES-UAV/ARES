@@ -336,7 +336,7 @@ credibility hit. Volunteered, each is evidence of judgment.
 **This is the answer that wins the hardware round. It is a measurement.**
 
 > We benchmarked on Qualcomm AI Hub, on real hosted silicon. At 960 pixels,
-> INT8: **4.8 FPS on a Dragonwing RB3 Gen 2, 16.3 FPS on an IQ-9075.** Peak
+> INT8: **4.8 FPS on a Dragonwing RB3 Gen 2, 16.1 FPS on an IQ-9075.** Peak
 > memory under 10 MB. And **489 of 489 layers — 100 % — execute on the Hexagon
 > NPU**, with nothing falling back to CPU.
 >
@@ -357,7 +357,7 @@ credibility hit. Volunteered, each is evidence of judgment.
 
 ### "Then why not run at 640 and go even faster?"
 
-> We measured that too — 37.7 FPS on the RB3, which is about 174 looks per
+> We measured that too — 35.2 FPS on the RB3, which is about 163 looks per
 > patch. But detection failures across consecutive frames are **correlated**, not
 > independent: a person too small to resolve at 640 is still too small in the
 > next frame. You'd be spending compute to re-fail the same detection 152 more

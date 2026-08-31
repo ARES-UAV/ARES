@@ -1,0 +1,29 @@
+{
+  "slug": "dragonwing-iq-9075-evk_640_int8w-int8a",
+  "device": "Dragonwing IQ-9075 EVK (OS 1.9)",
+  "model": "yolov12s_640.onnx",
+  "imgsz": 640,
+  "size_note": "NOT the shipped size \u2014 config.py is 960",
+  "latency_ms": 14.0425,
+  "fps": 71.21239095602635,
+  "peak_mem_mb": 6.54,
+  "jobs": {
+    "quantize": "https://workbench.aihub.qualcomm.com/jobs/j5mmoz4w5/",
+    "compile": "https://workbench.aihub.qualcomm.com/jobs/jgj7ol1xg/",
+    "profile": "https://workbench.aihub.qualcomm.com/jobs/jp41mwmvp/"
+  },
+  "note": "Raw profile survived. Latency recomputed as the MEDIAN of its 100 samples (14.04 ms). The 10.48 ms previously reported was the minimum \u2014 AI Hub's estimated_inference_time \u2014 and the two are 34% apart.",
+  "runtime": "qnn_context_binary",
+  "precision": "INT8 w / INT8 a",
+  "units": {
+    "NPU": 489
+  },
+  "total_layers": 489,
+  "npu_layers": 489,
+  "npu_share": 100.0,
+  "measured_at": "2026-08-26 (reconstructed)",
+  "stat": "median",
+  "latency_min_ms": 10.481,
+  "latency_max_ms": 15.173,
+  "samples": 100
+}

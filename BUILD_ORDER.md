@@ -92,7 +92,7 @@ Label the two counts distinctly enough that nobody could confuse them.
 
 ## Stage 3 — Map
 
-Third because it carries the most risk. Map tiles need internet, and venue wifi fails. Finding that out on 5 September is how demos die — finding out now leaves you two weeks to cache tiles or swap in a static image background.
+Third because it carries the most risk. Map tiles need internet, and venue wifi fails. Finding that out on 10 September is how demos die — finding out now leaves you two weeks to cache tiles or swap in a static image background.
 
 Localization is Robin's `localize.py`. If it is not ready, stub it — the formula is five lines and it is in CLAUDE.md.
 

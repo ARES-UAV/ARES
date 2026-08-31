@@ -60,10 +60,66 @@ MAX_DETECTIONS_PER_FRAME: int = 1000
 # answers the on-device question, and it is separate.
 DETECTION_IMGSZ: int = 960
 
-# ── Clip geometry (fixed constants per demo clip) ──────────────────
-FRAME_WIDTH: int = 1280
-FRAME_HEIGHT: int = 720
-CLIP_FPS: float = 24.0
+# ── Tracker ────────────────────────────────────────────────────────
+# Which tracker tools/ingest_video.py runs. NOT a free choice — measured, in
+# experiments/FRAME_RATE_STUDY.md, against a full-rate reference by position:
+#
+#   full rate (24 fps)   bytetrack   21 people, 21 reported, 0 duplicates
+#                        botsort     20 people, 53 reported, 14 duplicates
+#   device rate (4.8)    bytetrack    9 people, 10 reported
+#                        botsort-n0.4 20 people, 38 reported, 9 duplicates
+#
+# BoT-SORT fragments identities at EVERY frame rate — that is a property of the
+# tracker on this footage, not of a low frame rate. It only wins when the frame
+# gap is large enough to break ByteTrack's IoU association, which happens below
+# about 12 fps.
+#
+# A video ingested on a laptop runs at full rate, so ByteTrack is correct here.
+# Switch to experiments/trackers/botsort-b60-n0.4.yaml only for device-rate
+# work, and expect to need a merge pass for the duplicates.
+TRACKER: str = "bytetrack.yaml"
+
+# ── Clip geometry (per clip, written by tools/ingest_video.py) ─────
+# These three describe the FILE the dashboard plays, and every one of them is
+# load-bearing:
+#
+#   FRAME_WIDTH   the overlay scales boxes against it, and `localize` turns
+#                 pixel offsets into metres with it. Wrong by 3x and every box
+#                 and every map pin is wrong by 3x, silently.
+#   CLIP_FPS      the playback clock is frame_id / CLIP_FPS, and
+#                 MIN_TRACK_FRAMES below is derived from it.
+#
+# `tools/ingest_video.py` measures them off the re-encoded file and writes
+# data/clip_meta.json. If that file exists it wins, because it describes the
+# clip that is actually in data/ — the literals below are the demo clip's
+# values and the fallback when nothing has been ingested.
+_CLIP_DEFAULTS = {"width": 1280, "height": 720, "fps": 24.0}
+
+
+def _clip_meta() -> dict:
+    """Geometry of the clip currently in data/, or the demo clip's."""
+    meta_path = DATA_DIR / "clip_meta.json"
+    if not meta_path.is_file():
+        return dict(_CLIP_DEFAULTS)
+    try:
+        import json
+        m = json.loads(meta_path.read_text())
+    except (OSError, ValueError):
+        # A corrupt meta file must not take the dashboard down. Fall back to
+        # the demo clip's geometry, which is at least self-consistent.
+        return dict(_CLIP_DEFAULTS)
+    out = dict(_CLIP_DEFAULTS)
+    for key, cast in (("width", int), ("height", int), ("fps", float)):
+        value = m.get(key)
+        if isinstance(value, (int, float)) and value > 0:
+            out[key] = cast(value)
+    return out
+
+
+_CLIP = _clip_meta()
+FRAME_WIDTH: int = _CLIP["width"]
+FRAME_HEIGHT: int = _CLIP["height"]
+CLIP_FPS: float = _CLIP["fps"]
 
 ALTITUDE_M: float = 20.0          # stated maximum operating altitude
 CAMERA_FOV_DEG: float = 60.0      # nadir-pointing
@@ -265,8 +321,13 @@ EVENT_SAMPLE_INTERVAL_S: float = 1.0
 # emulator. YOLOv12s at DETECTION_IMGSZ, INT8 weights and activations,
 # qnn_context_binary runtime:
 #
-#     Dragonwing RB3 Gen 2 (QCS6490)   207.56 ms   4.8 FPS   9.5 MB peak
-#     Dragonwing IQ-9075   (QCS9075)    61.45 ms  16.3 FPS   8.9 MB peak
+#     Dragonwing RB3 Gen 2 (QCS6490)   209.50 ms   4.8 FPS   3-7 MB peak
+#     Dragonwing IQ-9075   (QCS9075)    62.30 ms  16.1 FPS   2-6 MB peak
+#
+# Those are MEDIANS of ~100 samples. AI Hub's estimated_inference_time is the
+# MINIMUM, and this constant was briefly derived from it. At 200 ms the two
+# differ by under 1% so the value did not move — but on the IQ-9075 at 640 the
+# same mistake overstated throughput by 34%.
 #
 # Both runs placed 489 of 489 layers — 100% — on the Hexagon NPU, with
 # nothing falling back to CPU. Full run in experiments/QUALCOMM_BENCHMARK.md.
@@ -284,7 +345,7 @@ EVENT_SAMPLE_INTERVAL_S: float = 1.0
 # `None` still means "nobody ran it", and the panel still renders a dash and
 # "not yet measured" in that case. That path is kept deliberately: it is the
 # honest state for any device we have not put a model on.
-DEVICE_FPS: Optional[float] = 4.8
+DEVICE_FPS: Optional[float] = 4.8      # 1e6 / 209_500 us = 4.77, median
 DEVICE_NAME: str = "Dragonwing RB3 Gen 2 (QCS6490)"
 
 # ── Dev server ─────────────────────────────────────────────────────

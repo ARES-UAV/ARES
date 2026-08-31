@@ -43,7 +43,9 @@ THE HONESTY REQUIREMENT
 
 import argparse
 import json
+import statistics
 import sys
+from datetime import datetime, timezone
 from collections import Counter
 from pathlib import Path
 
@@ -51,6 +53,10 @@ REPO = Path(__file__).resolve().parent.parent
 ONNX = REPO / "models" / "yolov12s_960.onnx"
 CLIP = REPO / "backend" / "data" / "demo_clip.mp4"
 OUT = REPO / "experiments" / "QUALCOMM_BENCHMARK.md"
+# One record per run. The summary in OUT is regenerated from these, so a new
+# configuration can never overwrite an older one's result — which the old
+# single-file version did, losing three of four runs and their job URLs.
+RUNS = REPO / "experiments" / "qualcomm"
 
 # Must match backend/config.py. Benchmarking a size we do not ship produces a
 # number that describes nothing.
@@ -172,6 +178,194 @@ def onnx_input_size(path: Path):
     return None
 
 
+# ── result recording ─────────────────────────────────────────────────
+def run_slug(device: str, imgsz: int, quantized: bool, act_dtype: str) -> str:
+    """A stable filename for one (device, size, precision) combination.
+
+    Re-running the same configuration overwrites its own record, which is what
+    you want — a repeat measurement supersedes the old one. A DIFFERENT
+    configuration gets a different name and cannot clobber it, which is what
+    the old single-file version got wrong: four runs were made and three were
+    lost, including the job URLs that made them auditable.
+    """
+    d = "".join(c if c.isalnum() else "-" for c in device.lower())
+    while "--" in d:
+        d = d.replace("--", "-")
+    prec = f"int8w-{act_dtype}a" if quantized else "fp32"
+    return f"{d.strip('-')}_{imgsz}_{prec}"
+
+
+def write_index(runs_dir: Path, out: Path) -> int:
+    """Rebuild the summary document from every run record on disk.
+
+    The table is DERIVED, never hand-maintained. This project has twice had a
+    number drift because a summary was written once and never re-checked
+    against its source; here the source is the JSON files and the summary is
+    regenerated on every run, so the two cannot disagree.
+    """
+    records = []
+    for f in sorted(runs_dir.glob("*.json")):
+        if f.name.endswith("_profile.json"):
+            continue
+        try:
+            records.append(json.loads(f.read_text()))
+        except Exception:
+            continue
+    if not records:
+        return 0
+
+    records.sort(key=lambda r: r.get("latency_ms", 1e9))
+
+    def mem(r):
+        if r.get("peak_mem_range"):
+            return r["peak_mem_range"]
+        v = r.get("peak_mem_mb")
+        return f"{v:.1f} MB" if v is not None else "—"
+
+    def stat_mark(r):
+        # A minimum masquerading as a headline is the failure this column exists
+        # to prevent. Runs whose median was never captured say so, here, in the
+        # table, not in a footnote nobody reads.
+        return "" if str(r.get("stat", "")).startswith("median") else " ⚠"
+
+    rows = "".join(
+        f"| `{r['device']}` | {r['imgsz']} | {r['precision']} | "
+        f"{r['latency_ms']:.2f} ms | **{r['fps']:.1f}**{stat_mark(r)} | {mem(r)} | "
+        f"{r['npu_layers']}/{r['total_layers']} · {r['npu_share']:.0f}% |\n"
+        for r in records
+    )
+
+    details = ""
+    for r in records:
+        if r.get("samples"):
+            spread = (f"{r['latency_min_ms']:.2f} – {r['latency_max_ms']:.2f} ms "
+                      f"over {r['samples']} samples")
+        elif r.get("latency_min_ms") is not None:
+            spread = f"minimum {r['latency_min_ms']:.2f} ms; full distribution not retained"
+        else:
+            spread = "not retained"
+        placement = "".join(
+            f"| {u} | {n} | {100 * n / max(r['total_layers'], 1):.1f}% |\n"
+            for u, n in r["units"].items()
+        )
+        jobs = "\n".join(f"- {k}: {v}" for k, v in r.get("jobs", {}).items() if v)
+        # A record transcribed from a terminal scrollback is not the same
+        # evidence as one the tool captured. Say which this is.
+        note = f"\n> {r['note']}\n" if r.get("note") else ""
+        prof = (runs_dir / f"{r['slug']}_profile.json")
+        raw = (f"\nRaw profile: `experiments/qualcomm/{r['slug']}_profile.json`"
+               if prof.exists() else
+               "\nRaw profile: not retained — this run predates per-run recording.")
+        details += f"""
+### {r['device']} · {r['imgsz']} px · {r['precision']}
+
+| | |
+|---|---|
+| Model | `{r['model']}` |
+| Runtime | `{r['runtime']}` |
+| Input size | {r['imgsz']} ({r['size_note']}) |
+| Latency | {r['latency_ms']:.2f} ms ({r['fps']:.1f} FPS) — {r.get('stat', 'unknown statistic')} |
+| Spread | {spread} |
+| Peak memory | {mem(r)} |
+| Measured | {r['measured_at']} |
+{note}
+| Compute unit | Layers | Share |
+|---|---|---|
+{placement}
+{jobs}
+{raw}
+
+---
+"""
+
+    out.write_text(f"""# Qualcomm on-device benchmark
+
+Measured on **Qualcomm AI Hub** — hosted physical devices, not emulators.
+
+**This file is generated.** Every run writes a record to
+`experiments/qualcomm/<slug>.json` and this document is rebuilt from all of
+them. Do not edit it by hand; the next run overwrites your edit. To add a
+result, run the benchmark.
+
+## All runs
+
+| Device | Size | Precision | Latency | FPS | Peak memory | On NPU |
+|---|---:|---|---:|---:|---:|---|
+{rows}
+**Latency is the MEDIAN of ~100 samples**, not the minimum. AI Hub's
+`estimated_inference_time` — and the "Minimum Inference Time" figure on its
+console — is the fastest of the hundred, and reporting it is reporting the best
+run. Rows marked **⚠** still carry a minimum because their raw profile was
+overwritten before per-run recording existed; treat those FPS figures as upper
+bounds until the median is read off the profile page or the run is repeated.
+
+The gap is not cosmetic. On the IQ-9075 at 640 the median is **34% slower**
+than the minimum — 10.48 → 14.04 ms, 95.4 → 71.2 FPS — because at ~10 ms
+scheduling noise is a large fraction of the measurement. On the RB3 at 960,
+where a single inference takes 200 ms, it is under 1%.
+
+Every run placed **100% of the network on the Hexagon NPU**, with nothing
+falling back to CPU. That is the headline, not the frame rate: an
+attention-centric YOLOv12 maps completely onto Qualcomm's accelerator.
+
+## What the resolution ratio says
+
+960 px is 2.25x the pixels of 640. On a Tesla T4 GPU it costs 2.62x the time —
+near-linear. On the Hexagon NPU it costs far more. Attention's quadratic term
+in token count predicts at most 5.06x, so it is not the whole story; memory
+tiling is the likely remainder. **Not established.**
+
+Settle it by benchmarking `yolov8n` — pure convolution, no attention — at both
+sizes on the same device. If v8n scales ~2.25x and v12s ~7x, attention is
+confirmed. If both scale ~7x, it is memory and tiling.
+
+## Getting here
+
+The first two compiles failed, and neither was a hardware limitation:
+
+1. **Malformed ONNX.** `output0` appeared in both `graph.output` and
+   `value_info` — a spec violation ONNX Runtime tolerates and Qualcomm's
+   validator rejects. Fixed by `tools/fix_onnx_io.py`; zero operators changed.
+   Four hypotheses were proposed before this one, all about the hardware, all
+   wrong.
+2. **Float32 I/O.** The Hexagon HTP is integer-only. Conversion had already
+   succeeded — 23.8 GMAC, 9.14 M params, all 516 operators mapped, including
+   every attention-derived MatMul and Softmax. The model was never the
+   problem; the precision was.
+
+**There is no unsupported-operator finding here.** YOLOv12s converts to QNN
+cleanly.
+
+## Toolchain, and a deprecation
+
+The RB3 @ 960 run — the configuration in `backend/config.py` — was produced by:
+
+| | |
+|---|---|
+| QAIRT | 2.45.0.260326154327 |
+| AI Hub Workbench | aihub-2026.08.14.0 |
+| Options | `--target_runtime qnn_context_binary --quantize_io` |
+
+AI Hub warns that compiling directly to a QNN Context Binary with
+`--target_runtime qnn_context_binary` is **deprecated and will be removed**,
+and points at `submit_compile_and_link_jobs` instead.
+
+Everything here was measured with the deprecated path, and it worked. The risk
+is reproducibility rather than correctness: if the option is withdrawn before
+anyone re-runs these, the numbers cannot be regenerated by this script as
+written. Migrating is a compile job followed by a link job — which is why the
+console now shows a LINK tab.
+
+## Accuracy caveat — read before quoting any of this
+
+Every latency above is an **INT8** model. Every mAP figure in this repo is
+**FP32**. They are two different models and must never be presented as one
+system. INT8 accuracy is **not yet measured**.
+
+## Per-run detail
+{details}""")
+    return len(records)
+
 # ── profile reading ──────────────────────────────────────────────────
 def compute_unit_breakdown(profile: dict) -> Counter:
     """Layers per compute unit. Walks defensively — the JSON shape moves."""
@@ -220,8 +414,18 @@ def main() -> None:
     ap.add_argument("--model", default=str(ONNX))
     ap.add_argument("--imgsz", type=int, default=IMGSZ,
                     help="fallback only; the ONNX graph's own input size wins")
+    # DEPRECATED UPSTREAM — read the compile job page. AI Hub says:
+    #   "The ability to directly compile a model to a QNN Context Binary asset
+    #    with --target_runtime qnn_context_binary has been deprecated and will
+    #    be removed in a future release. Please migrate to the
+    #    submit_compile_and_link_jobs API."
+    # It still works today and produced every number in this repo. It is a
+    # reproducibility risk, not a correctness one: if AI Hub removes it before
+    # anyone re-runs these benchmarks, the numbers cannot be regenerated with
+    # this script. Migrating means a compile job followed by a link job, which
+    # is why the console now shows a LINK tab.
     ap.add_argument("--runtime", default="qnn_context_binary",
-                    help="qnn_context_binary | tflite")
+                    help="qnn_context_binary (deprecated upstream) | tflite")
     ap.add_argument("--quantize", action="store_true",
                     help="REQUIRED for Hexagon HTP — it is integer-only")
     ap.add_argument("--calib", type=int, default=64,
@@ -319,20 +523,46 @@ def main() -> None:
         sys.exit(1)
 
     profile = pjob.download_profile()
-    raw = REPO / "experiments" / "qualcomm_profile.json"
-    raw.parent.mkdir(parents=True, exist_ok=True)
-    raw.write_text(json.dumps(profile, indent=2))
+    slug = run_slug(args.device, imgsz, quantized, args.act_dtype)
+    RUNS.mkdir(parents=True, exist_ok=True)
+    (RUNS / f"{slug}_profile.json").write_text(json.dumps(profile, indent=2))
 
     summary = profile.get("execution_summary", {})
-    latency_us = (summary.get("estimated_inference_time")
-                  or summary.get("inference_time") or 0)
+
+    # AI Hub's `estimated_inference_time` is the MINIMUM of ~100 samples, and
+    # the console labels it "Minimum Inference Time". Reporting it is reporting
+    # the best run of a hundred.
+    #
+    # Handbook Part 4, on our own local benchmark: "Median, not mean. A single
+    # OS scheduling hiccup adds a large outlier." And: "Report the SUSTAINED
+    # figure. A burst number the device cannot hold for a ten-minute flight is
+    # not the number a rescue operator would experience."
+    #
+    # We were violating both here. The gap is not cosmetic — on the IQ-9075 at
+    # 640 the median is 34% slower than the minimum (10.48 -> 14.04 ms, 95.4 ->
+    # 71.2 FPS), because at ~10 ms scheduling noise is a large fraction of the
+    # measurement. On the slower RB3 at 960 it is under 1%.
+    #
+    # Median is the headline. Min and max are recorded as spread, because a
+    # benchmark with no variance information is not a benchmark.
+    samples = summary.get("all_inference_times") or []
+    if samples:
+        latency_us = statistics.median(samples)
+        lat_min, lat_max = min(samples), max(samples)
+    else:
+        latency_us = (summary.get("estimated_inference_time")
+                      or summary.get("inference_time") or 0)
+        lat_min = lat_max = latency_us
     peak_mem = summary.get("estimated_inference_peak_memory") or 0
     units = compute_unit_breakdown(profile)
     total = sum(units.values()) or 1
 
     print(f"\n{'=' * 68}")
     if latency_us:
-        print(f"  latency      {latency_us / 1000:.2f} ms   ({1_000_000 / latency_us:.1f} FPS)")
+        print(f"  latency      {latency_us / 1000:.2f} ms   ({1_000_000 / latency_us:.1f} FPS)   median")
+        if samples:
+            print(f"               {lat_min / 1000:.2f} – {lat_max / 1000:.2f} ms spread "
+                  f"over {len(samples)} samples  (min = {1_000_000 / lat_min:.1f} FPS)")
     if peak_mem:
         print(f"  peak memory  {peak_mem / (1024 * 1024):.1f} MB")
     print("\n  LAYER PLACEMENT")
@@ -348,47 +578,32 @@ def main() -> None:
         print("  ⚠  This is an INT8 model. Its accuracy is NOT the mAP you")
         print("     measured on FP32. Re-validate before quoting both.\n")
 
-    OUT.write_text(f"""# Qualcomm on-device benchmark
-
-Measured on Qualcomm AI Hub — a hosted physical device, not an emulator.
-
-| | |
-|---|---|
-| Device | `{args.device}`{f' (OS {args.device_os})' if args.device_os else ''} |
-| Model | `{model_path.name}` |
-| Precision | {'INT8 weights / ' + args.act_dtype.upper() + ' activations' if quantized else 'FP32'} |
-| Runtime | `{args.runtime}` |
-| Input size | {imgsz} ({tag}) |
-| Latency | {latency_us / 1000:.2f} ms ({1_000_000 / max(latency_us, 1):.1f} FPS) |
-| Peak memory | {peak_mem / (1024 * 1024):.1f} MB |
-| Layers on NPU | {share:.0f}% |
-
-## Layer placement
-
-| Compute unit | Layers | Share |
-|---|---|---|
-""" + "".join(f"| {u} | {n} | {100 * n / total:.1f}% |\n" for u, n in units.most_common()) + f"""
-## Getting here
-
-The first two compiles failed, and neither was a hardware limitation:
-
-1. **Malformed ONNX.** `output0` appeared in both `graph.output` and
-   `value_info` — a spec violation ONNX Runtime tolerates and Qualcomm's
-   validator rejects. Fixed by `tools/fix_onnx_io.py`; zero operators changed.
-2. **Float32 I/O.** The QCS6490 Hexagon HTP is integer-only. Conversion had
-   already succeeded — 23.8 GMAC, 9.14 M params, all 516 operators mapped,
-   including every attention-derived MatMul and Softmax. The model was never
-   the problem; the precision was.
-
-**There is no unsupported-operator finding here.** YOLOv12s converts to QNN
-cleanly.
-
-{'⚠ **Accuracy caveat.** These numbers are for an INT8 model. The mAP figures elsewhere in this repo are FP32. Re-validate the quantized model before presenting both.' if quantized else ''}
-
-Quantize/compile/profile jobs: {cjob.url}
-Raw profile: `experiments/qualcomm_profile.json`
-""")
-    print(f"wrote {OUT.relative_to(REPO)}")
+    record = {
+        "slug": slug,
+        "device": args.device + (f" (OS {args.device_os})" if args.device_os else ""),
+        "model": model_path.name,
+        "runtime": args.runtime,
+        "imgsz": imgsz,
+        "size_note": tag,
+        "precision": ("INT8 w / " + args.act_dtype.upper() + " a") if quantized else "FP32",
+        "latency_ms": latency_us / 1000,
+        "fps": 1_000_000 / max(latency_us, 1),
+        "stat": "median",
+        "latency_min_ms": lat_min / 1000,
+        "latency_max_ms": lat_max / 1000,
+        "samples": len(samples),
+        "peak_mem_mb": peak_mem / (1024 * 1024),
+        "units": dict(units),
+        "total_layers": total,
+        "npu_layers": npu,
+        "npu_share": share,
+        "measured_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+        "jobs": {"quantize": qjob.url if quantized else None,
+                 "compile": cjob.url, "profile": pjob.url},
+    }
+    (RUNS / f"{slug}.json").write_text(json.dumps(record, indent=2))
+    n = write_index(RUNS, OUT)
+    print(f"recorded {slug}  ({n} run(s) in {OUT.relative_to(REPO)})")
 
 
 if __name__ == "__main__":

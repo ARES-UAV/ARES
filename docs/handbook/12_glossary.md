@@ -488,9 +488,10 @@ allows Leaflet to upscale to 22 and caps auto-fit at 20.
 | **960** | Detection input size |
 | **1000** | `max_det` |
 | **~3 : 1** | False alarms accepted per additional survivor found |
-| **4.8 / 16.3 FPS** | Measured at 960 px INT8 — RB3 Gen 2 / IQ-9075 |
+| **4.8 / 16.1 FPS** | Median at 960 px INT8 — RB3 Gen 2 / IQ-9075 |
 | **489 / 489** | Layers on the Hexagon NPU — 100 % |
 | **~22** | Looks at each patch of ground at 4.8 FPS |
+| **median** | Every device latency here — never the minimum AI Hub reports |
 | **2.5 s** | Persistence threshold (= 60 frames in the clip, 12 at 4.8 FPS) |
 | **23.09 m** | Ground footprint at 20 m altitude |
 | **0.018 m/px** | Ground sample distance |

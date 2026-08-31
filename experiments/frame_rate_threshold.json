@@ -1,0 +1,67 @@
+{
+  "reference_confirmed": 21,
+  "tolerance_px": 60.0,
+  "tracker": "bytetrack-default",
+  "rows": [
+    {
+      "reports": 21,
+      "real_people": 21,
+      "missed": 0,
+      "duplicates": 0,
+      "orphans": 0,
+      "stride": 1,
+      "fps": 24.0,
+      "gap_frames": 1,
+      "budget_ms": 41.7,
+      "min_track_frames": 60
+    },
+    {
+      "reports": 18,
+      "real_people": 15,
+      "missed": 6,
+      "duplicates": 3,
+      "orphans": 0,
+      "stride": 2,
+      "fps": 12.0,
+      "gap_frames": 2,
+      "budget_ms": 83.3,
+      "min_track_frames": 30
+    },
+    {
+      "reports": 17,
+      "real_people": 13,
+      "missed": 8,
+      "duplicates": 3,
+      "orphans": 1,
+      "stride": 3,
+      "fps": 8.0,
+      "gap_frames": 3,
+      "budget_ms": 125.0,
+      "min_track_frames": 20
+    },
+    {
+      "reports": 11,
+      "real_people": 11,
+      "missed": 10,
+      "duplicates": 0,
+      "orphans": 0,
+      "stride": 4,
+      "fps": 6.0,
+      "gap_frames": 4,
+      "budget_ms": 166.7,
+      "min_track_frames": 15
+    },
+    {
+      "reports": 10,
+      "real_people": 9,
+      "missed": 12,
+      "duplicates": 1,
+      "orphans": 0,
+      "stride": 5,
+      "fps": 4.8,
+      "gap_frames": 5,
+      "budget_ms": 208.3,
+      "min_track_frames": 12
+    }
+  ]
+}

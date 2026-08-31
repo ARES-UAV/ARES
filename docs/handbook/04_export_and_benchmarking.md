@@ -207,7 +207,7 @@ when the only target was a Raspberry Pi 4 and the expected figure was around one
 frame per second, and its job was to defend that number.
 
 It no longer has to. Section 6 records **4.8 FPS on a Dragonwing RB3 Gen 2 and
-16.3 FPS on an IQ-9075**, both measured on real silicon, both with 100 % of the
+16.1 FPS on an IQ-9075**, both measured on real silicon, both with 100 % of the
 network on the Hexagon NPU. The defensive framing is obsolete.
 
 The underlying argument, though, is not — and it got *stronger*, because it is
@@ -233,9 +233,12 @@ captured in those 4.6 seconds is another look at the same patch of ground.
 |---|---|---|
 | *(hypothetical 1 FPS)* | 1.0 | ~5 |
 | RB3 Gen 2 @ 960 | 4.8 | **~22** |
-| IQ-9075 @ 960 | 16.3 | **~75** |
-| RB3 Gen 2 @ 640 | 37.7 | ~174 |
-| IQ-9075 @ 640 | 95.4 | ~441 |
+| IQ-9075 @ 960 | 16.1 | **~74** |
+| RB3 Gen 2 @ 640 | 35.2 | ~163 |
+| IQ-9075 @ 640 | 71.2 | ~329 |
+
+Every figure is a **median**, not a minimum. Section 6 explains why that
+distinction cost this project a round of corrections.
 
 Even the pessimistic 1 FPS case gives a survivor five independent chances to be
 detected. On the RB3 it is twenty-two. A missed detection in one frame is
@@ -263,7 +266,7 @@ every time rather than quoting a remembered one:
 ```
 23.09 m footprint ÷ 5 m/s   = 4.6 s per crossing
 4.6 s × 4.8 FPS  (RB3)      = ~22 consecutive frames of the same ground
-4.6 s × 16.3 FPS (IQ-9075)  = ~75 consecutive frames of the same ground
+4.6 s × 16.1 FPS (IQ-9075)  = ~74 consecutive frames of the same ground
 ```
 
 An earlier draft flagged a conflict with `CLAUDE.md`, which once stated 7.7
@@ -296,12 +299,46 @@ All runs: **YOLOv12s, INT8 weights + INT8 activations, QNN context binary.**
 
 | | RB3 Gen 2 (QCS6490) | IQ-9075 EVK (QCS9075) |
 |---|---|---|
-| **960 latency** | 207.56 ms · **4.8 FPS** | 61.45 ms · **16.3 FPS** |
-| **640 latency** | 26.54 ms · 37.7 FPS | 10.48 ms · 95.4 FPS |
-| **960 → 640 ratio** | **7.82×** | **5.86×** |
-| Peak memory (960 / 640) | 9.5 / 10.4 MB | 8.9 / 6.5 MB |
+| **960 latency** | 209.50 ms · **4.8 FPS** | 62.30 ms · **16.1 FPS** |
+| **640 latency** | 28.40 ms · 35.2 FPS | 14.04 ms · 71.2 FPS |
+| **960 → 640 ratio** | **7.38×** | **4.44×** |
+| Peak memory (960 / 640) | 3–7 / 3–6 MB | 2–6 / 6.5 MB |
 | Layers on NPU | 489 / 489 | 489 / 489 |
 | **NPU coverage** | **100 %** | **100 %** |
+
+All latencies are **medians of ~100 samples**. Toolchain: QAIRT
+v2.45.0.260326154327, QNN Backend API 5.45.0, QNN Core API 2.34.0, AI Hub
+Workbench aihub-2026.08.14.0.
+
+### The statistic nearly went out wrong
+
+AI Hub's `estimated_inference_time` — the field the benchmark script read, and
+the "Minimum Inference Time" headline on its console — is the **fastest of about
+a hundred runs**. Every latency this project published for a fortnight was a
+best-of-100.
+
+Section 4 of this very chapter says *"Median, not mean. A single OS scheduling
+hiccup adds a large outlier"* and *"Report the sustained figure."* The local
+benchmark obeyed that. The Qualcomm one did not, and nobody noticed until
+someone opened the console and saw two numbers where the script printed one.
+
+| Run | Minimum | Median | Gap |
+|---|---:|---:|---:|
+| RB3 @ 960 | 207.6 ms | 209.5 ms | +0.9 % |
+| IQ-9075 @ 960 | 61.4 ms | 62.3 ms | +1.5 % |
+| RB3 @ 640 | 26.5 ms | 28.4 ms | +7.2 % |
+| **IQ-9075 @ 640** | **10.48 ms** | **14.04 ms** | **+34.0 %** |
+
+The gap scales inversely with the measurement: at 200 ms per inference,
+scheduling noise is a rounding error; at 10 ms it is a third of the number. The
+IQ-9075's 640 distribution is the clearest case — **86 of its 100 samples sit
+near 14 ms**, and the minimum comes from a sparse fast tail that occurred 14 %
+of the time. Publishing 95.4 FPS meant publishing something the device managed
+in roughly one run out of seven.
+
+**The shipped figure survived.** `DEVICE_FPS = 4.8` came from the RB3 at 960,
+where min and median differ by under 1 %. That is luck, not diligence — the
+same bug on the IQ-9075 would have inflated the headline by a third.
 
 **The 100 % is the headline, not the FPS.** A partially-mapped network falls back
 to CPU for the unsupported layers, and those fallbacks dominate the latency. Every
@@ -322,23 +359,33 @@ that costs:
 |---|---|
 | Pixel count (the naive expectation) | 2.25× |
 | Tesla T4 GPU | 2.62× |
-| **IQ-9075 Hexagon NPU** | **5.86×** |
-| **RB3 Gen 2 Hexagon NPU** | **7.82×** |
+| Attention's quadratic ceiling | 5.06× |
+| **IQ-9075 Hexagon NPU** (QCS9075) | **4.44×** |
+| **RB3 Gen 2 Hexagon NPU** (QCS6490) | **7.38×** |
 
 Near-linear on a GPU. Wildly superlinear on the NPU. That is a real result and
 it is worth being disciplined about, because the last confident hardware
 explanation offered in this project — *"attention doesn't map to Hexagon"* —
 was wrong, and nearly went into a submission to Qualcomm.
 
-**Hypothesis, clearly labelled:** YOLOv12 is attention-centric, and attention
+**Hypothesis, clearly labelled.** YOLOv12 is attention-centric, and attention
 cost scales with the *square* of spatial token count. 2.25× the tokens implies
-5.06× the attention cost, while convolutions scale at 2.25×. A blend of the two
-should land between 2.25× and 5.06×. The observed 5.86× and 7.82× sit **above**
-that ceiling, so attention alone does not account for it. A memory-tiling effect
-is the likely remainder — 960 activations exceeding on-chip SRAM and spilling to
-DRAM. The inverted peak memory on the RB3 (10.4 MB at 640 against 9.5 MB at 960)
-suggests the compiler chose different tiling strategies, which is consistent with
-that story and is not proof of it.
+5.06× the attention cost, while convolutions scale at 2.25×. A blend should land
+between those two bounds.
+
+Recomputing on medians sharpened this considerably. The IQ-9075's **4.44× now
+sits inside the 2.25–5.06× band** — exactly where a mix of quadratic attention
+and linear convolution belongs. The RB3's **7.38× is still above the ceiling**,
+and it is the weaker part: QCS6490 against QCS9075.
+
+That split is a better-behaved story than the one the minimums told, where both
+devices exceeded the bound and neither had an explanation. It now reads as
+attention accounting for the bulk on the capable device, with the constrained
+device paying something extra on top — plausibly memory pressure, since the same
+activations have less on-chip SRAM to live in.
+
+**Plausible is not established.** Two devices is not a trend, and this is
+inference from a ratio, not a measurement of where the time goes.
 
 **The experiment that would settle it.** `yolov8n.pt` is pure convolution with no
 attention. Export it at both sizes and benchmark both on the RB3:
@@ -483,11 +530,11 @@ per patch at 960. Why not bank the speed?
 
 | | 960 | 640 |
 |---|---|---|
-| RB3 Gen 2 | 4.8 FPS → ~22 looks | 37.7 FPS → **~174 looks** |
-| IQ-9075 | 16.3 FPS → ~75 looks | 95.4 FPS → **~441 looks** |
+| RB3 Gen 2 | 4.8 FPS → ~22 looks | 35.2 FPS → **~163 looks** |
+| IQ-9075 | 16.1 FPS → ~74 looks | 71.2 FPS → **~329 looks** |
 | Recall per look | **0.774** | 0.727 |
 
-174 looks at one patch of ground is absurd, and the correlated-failure argument
+163 looks at one patch of ground is absurd, and the correlated-failure argument
 bites hardest exactly there. Consecutive frames of the same person, at the same
 altitude, seconds apart, fail in *correlated* ways: a target too small to
 resolve at 640 is still too small in the next frame. Small changes in viewing
@@ -506,10 +553,10 @@ To deliver ~22 looks per patch on the RB3:
 
 | | NPU duty cycle |
 |---|---|
-| 960 | 4.8 × 207.56 ms ≈ **996 ms/s → ~100 %** |
-| 640 | 4.8 × 26.54 ms ≈ **127 ms/s → ~13 %** |
+| 960 | 4.77 × 209.5 ms ≈ **999 ms/s → ~100 %** |
+| 640 | 4.77 × 28.4 ms ≈ **136 ms/s → ~13.6 %** |
 
-**960 costs roughly 7.8× the compute duty cycle for +4.7 points of recall.** On a
+**960 costs roughly 7.4× the compute duty cycle for +4.7 points of recall.** On a
 battery-limited aircraft, energy is flight time and flight time is search area.
 
 The verdict stands — for search-and-rescue, take the recall, because a missed
@@ -661,12 +708,16 @@ Worth knowing, worth mentioning, worth not overstating.
 - Benchmark with warm-up runs discarded, take the median, report the spread, and
   use the **densest** frame.
 - Benchmark at **960**, because that is what your detections were produced at.
-- **Measured at 960: 4.8 FPS on RB3 Gen 2, 16.3 FPS on IQ-9075.** At 640: 37.7
-  and 95.4 FPS. All four runs **489/489 layers on the NPU**, all ≤10.4 MB peak.
-- **The NPU scales far worse with resolution than a GPU does** — 5.86–7.82× for
-  2.25× the pixels, against 2.62× on a T4. Cause not yet established; the v8n
-  control experiment would settle it.
-- **960 costs ~7.8× the compute duty cycle for +4.7 points of recall.** Still the
+- **Measured at 960: 4.8 FPS on RB3 Gen 2, 16.1 FPS on IQ-9075.** At 640: 35.2
+  and 71.2 FPS. All four **489/489 layers on the NPU**, all ≤7 MB peak.
+- **Every latency is a median of ~100 samples.** AI Hub reports the minimum by
+  default, and for a fortnight so did we — by up to 34 %. Read the label on the
+  field you are printing.
+- **The NPU scales worse with resolution than a GPU does** — 4.44× and 7.38× for
+  2.25× the pixels, against 2.62× on a T4. The capable device lands inside
+  attention's quadratic bound; the constrained one does not. Not established;
+  the v8n control experiment would settle it.
+- **960 costs ~7.4× the compute duty cycle for +4.7 points of recall.** Still the
   right call for SAR, but state it as a priced trade, not a free win.
 - **Compute is no longer the binding constraint.** At 4.8 FPS every patch of
   ground is already seen ~22 times. The remaining hard problem is recall, not

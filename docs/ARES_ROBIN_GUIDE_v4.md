@@ -1,6 +1,6 @@
 # ARES — Robin's Complete Guide
 
-**v4 · 25 August 2026 · cutoff 5 September**
+**v4 · 25 August 2026 · cutoff 10 September**
 **Owner:** Robin · **Track:** localization, priority scoring, tracker evaluation
 
 ---

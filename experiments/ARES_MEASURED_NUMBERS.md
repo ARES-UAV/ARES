@@ -102,11 +102,32 @@ Real hosted silicon. **INT8** weights and activations, `qnn_context_binary`.
 
 | | RB3 Gen 2 (QCS6490) | IQ-9075 EVK (QCS9075) |
 |---|---|---|
-| **960** | 207.56 ms · **4.8 FPS** | 61.45 ms · **16.3 FPS** |
-| **640** | 26.54 ms · 37.7 FPS | 10.48 ms · 95.4 FPS |
-| 960 → 640 ratio | 7.82× | 5.86× |
-| Peak memory (960 / 640) | 9.5 / 10.4 MB | 8.9 / 6.5 MB |
+| **960** | 209.50 ms · **4.8 FPS** | 62.30 ms · **16.1 FPS** |
+| **640** | 28.40 ms · 35.2 FPS | 14.04 ms · 71.2 FPS |
+| 960 → 640 ratio | 7.38× | 4.44× |
+| Peak memory (960 / 640) | 3–7 / 3–6 MB | 2–6 / 6.5 MB |
 | **NPU coverage** | **489/489 — 100 %** | **489/489 — 100 %** |
+
+**Every latency is a MEDIAN of ~100 samples.** AI Hub's
+`estimated_inference_time` — and the "Minimum Inference Time" figure on its
+console — is the fastest of the hundred. This repo published minimums for a
+fortnight:
+
+| Run | Minimum | Median | Overstated by |
+|---|---:|---:|---:|
+| RB3 @ 960 | 207.6 ms | 209.5 ms | 0.9 % |
+| IQ-9075 @ 960 | 61.4 ms | 62.3 ms | 1.5 % |
+| RB3 @ 640 | 26.5 ms | 28.4 ms | 7.2 % |
+| **IQ-9075 @ 640** | 10.48 ms | 14.04 ms | **34.0 %** |
+
+The gap scales inversely with the measurement. On the IQ-9075 at 640, 86 of 100
+samples sit near 14 ms and the minimum came from a fast tail that occurred 14 %
+of the time. **`DEVICE_FPS = 4.8` survived unchanged** — at 200 ms per inference
+the gap is under 1 % — but that is luck, not diligence.
+
+Toolchain: QAIRT v2.45.0.260326154327 · QNN Backend API 5.45.0 · QNN Core API
+2.34.0 · AI Hub Workbench aihub-2026.08.14.0. Per-run job URLs in
+`experiments/QUALCOMM_BENCHMARK.md`.
 
 **The 100 % is the headline, not the FPS.** Every layer of an attention-centric
 YOLOv12 executes on the Hexagon NPU, with nothing falling back to CPU.
@@ -125,9 +146,9 @@ crossing   = 23.09 / 5         = 4.62 s
 | Config | Looks at each patch of ground |
 |---|---|
 | RB3 @ 960 | ~22 |
-| IQ-9075 @ 960 | ~75 |
-| RB3 @ 640 | ~174 |
-| IQ-9075 @ 640 | ~441 |
+| IQ-9075 @ 960 | ~74 |
+| RB3 @ 640 | ~163 |
+| IQ-9075 @ 640 | ~329 |
 
 **Compute is not the binding constraint.** At 22 looks, coverage is saturated;
 the remaining hard problem is per-look recall.
@@ -139,9 +160,9 @@ To deliver ~22 looks on the RB3:
 | | NPU duty cycle |
 |---|---|
 | 960 | ~100 % |
-| 640 | ~13 % |
+| 640 | ~13.6 % |
 
-**960 costs ~7.8× the compute duty cycle for +4.7 points of recall.** The right
+**960 costs ~7.4× the compute duty cycle for +4.7 points of recall.** The right
 call for search-and-rescue — a missed survivor is unrecoverable, shorter
 endurance is a mission-planning problem — but it is a priced trade, not a free
 win.
@@ -158,11 +179,16 @@ The NPU scales far worse with resolution than a GPU does:
 |---|---|
 | Pixel count | 2.25× |
 | Tesla T4 GPU | 2.62× |
-| IQ-9075 NPU | 5.86× |
-| RB3 Gen 2 NPU | 7.82× |
+| Attention's quadratic ceiling | 5.06× |
+| IQ-9075 NPU (QCS9075) | **4.44×** |
+| RB3 Gen 2 NPU (QCS6490) | **7.38×** |
 
-Attention's quadratic term in token count predicts at most 5.06×, so it cannot
-be the whole story; memory tiling is the likely remainder. **Not established.**
+Recomputed on medians, the IQ-9075 lands **inside** the 2.25–5.06× band where a
+mix of quadratic attention and linear convolution belongs. The RB3 — the weaker
+part — is still above it. That reads as attention accounting for the bulk on the
+capable device, with the constrained one paying something extra, plausibly
+memory pressure. **Two devices is not a trend, and this is inference from a
+ratio rather than a measurement of where the time goes. Not established.**
 
 Settle it by benchmarking `yolov8n` (pure convolution) at both sizes on the same
 device. If v8n scales ~2.25× and v12s ~7.8×, attention is confirmed. If both
@@ -200,7 +226,7 @@ through one constant, as designed:
 | `frontend/src/HeaderBar.jsx` | renders it on screen — required by CLAUDE.md once measured |
 | `frontend/src/MissionParameters.jsx` | carries the provenance: which board, INT8, 100 % NPU, and that INT8 accuracy is separate and unmeasured |
 
-**We publish the RB3 figure, not the IQ-9075's 16.3 FPS.** It is the slower of
+**We publish the RB3 figure, not the IQ-9075's 16.1 FPS.** It is the slower of
 the two boards and the drone-class one. Quoting the better of two measurements
 is not reporting.
 

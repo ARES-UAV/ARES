@@ -737,8 +737,8 @@
             <div class="answer">
               <p class="said">
                 We benchmarked on Qualcomm AI Hub, on real hosted silicon. At 960 pixels, INT8:
-                <b>4.8 FPS on a Dragonwing RB3 Gen 2, 16.3 FPS on an IQ-9075.</b> Peak memory under
-                10 MB. And <b>489 of 489 layers &mdash; 100 % &mdash; execute on the Hexagon NPU</b>,
+                <b>4.8 FPS on a Dragonwing RB3 Gen 2, 16.1 FPS on an IQ-9075</b> &mdash; medians of ~100
+                samples, not the minimum AI Hub reports by default. Peak memory under 7 MB. And <b>489 of 489 layers &mdash; 100 % &mdash; execute on the Hexagon NPU</b>,
                 with nothing falling back to CPU. The 100 % is the part we'd point at: an
                 attention-centric YOLOv12 maps completely onto your accelerator.
               </p>

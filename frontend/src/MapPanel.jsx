@@ -20,7 +20,7 @@ import { token, SURVIVOR, SELECTION_HALO } from './theme.js'
  *
  * Leaflet is driven imperatively rather than through a React wrapper. It owns
  * its own DOM subtree and its own event loop, and one more dependency between
- * here and the map is one more thing that can break on 5 September — the video
+ * here and the map is one more thing that can break on 10 September — the video
  * overlay next door is imperative for the same reason.
  *
  * Markers are circles, not Leaflet's default pin. That is partly the palette

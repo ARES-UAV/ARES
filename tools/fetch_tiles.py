@@ -5,7 +5,7 @@ Download the OpenStreetMap tiles the dashboard map needs, for offline use.
 
 WHY THIS EXISTS
     Demo-day constraint 3 in CLAUDE.md: map tiles need internet and venue wifi
-    fails. Discovering that on 5 September is not a plan. This pulls the tiles
+    fails. Discovering that on 10 September is not a plan. This pulls the tiles
     covering the demo area onto disk ahead of time; the backend then serves
     them from `GET /tiles/{z}/{x}/{y}.png` and Leaflet never talks to
     openstreetmap.org during the demo.
@@ -236,7 +236,7 @@ def main() -> int:
         print(f"  [{index}/{len(wanted)}] {z}/{x}/{y}")
 
     # Counted over the whole directory, not just this run's downloads: what
-    # matters on 5 September is what is on disk, and a re-run that skipped
+    # matters on 10 September is what is on disk, and a re-run that skipped
     # everything should still report the full bundle.
     on_disk = sorted(args.out.rglob("*.png")) if args.out.exists() else []
     total_bytes = sum(path.stat().st_size for path in on_disk)

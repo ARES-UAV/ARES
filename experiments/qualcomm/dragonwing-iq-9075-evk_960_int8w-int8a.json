@@ -1,0 +1,39 @@
+{
+  "slug": "dragonwing-iq-9075-evk_960_int8w-int8a",
+  "device": "Dragonwing IQ-9075 EVK (OS 1.9)",
+  "model": "yolov12s_960.onnx",
+  "imgsz": 960,
+  "size_note": "matches backend/config.py",
+  "latency_ms": 62.3,
+  "fps": 16.051364365971107,
+  "peak_mem_mb": null,
+  "jobs": {
+    "quantize": "https://workbench.aihub.qualcomm.com/jobs/j5w78qkmg/",
+    "compile": "https://workbench.aihub.qualcomm.com/jobs/jgnno34qg/",
+    "profile": "https://workbench.aihub.qualcomm.com/jobs/jp8x6znog/"
+  },
+  "note": "Read from the live profile page (jp8x6znog): median 62.3 ms, minimum 61.4 ms, peak memory 2\u20136 MB. Supersedes the 61.45 ms / 8.9 MB previously recorded, which was the minimum and an unverified memory figure.",
+  "runtime": "qnn_context_binary",
+  "precision": "INT8 w / INT8 a",
+  "units": {
+    "NPU": 489
+  },
+  "total_layers": 489,
+  "npu_layers": 489,
+  "npu_share": 100.0,
+  "measured_at": "2026-08-26 (reconstructed)",
+  "stat": "median (console)",
+  "latency_min_ms": 61.4,
+  "latency_max_ms": null,
+  "samples": null,
+  "peak_mem_range": "2 \u2013 6 MB",
+  "first_load_ms": 253.1,
+  "warm_load_ms": 247.2,
+  "versions": {
+    "QAIRT": "v2.45.0.260326154327",
+    "QNN Backend API": "5.45.0",
+    "QNN Core API": "2.34.0",
+    "Qualcomm Linux": "1.9-ver.1.0",
+    "AI Hub Workbench": "aihub-2026.08.14.0"
+  }
+}

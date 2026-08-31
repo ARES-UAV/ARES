@@ -277,7 +277,7 @@ python tools/fetch_tiles.py
 ```
 
 **Why:** CLAUDE.md constraint 3 — map tiles need internet and venue wifi fails.
-*Discovering that on 5 September is not a plan.*
+*Discovering that on 10 September is not a plan.*
 
 Downloads a 1 km box centred on the GPS origin, at zoom 14 through 19, into
 `backend/data/tiles/`. The backend then serves them from `/tiles/{z}/{x}/{y}.png`

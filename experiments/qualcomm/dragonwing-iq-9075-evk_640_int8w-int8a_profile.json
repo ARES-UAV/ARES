@@ -1,0 +1,3578 @@
+{
+  "execution_summary": {
+    "estimated_inference_time": 10481,
+    "estimated_inference_peak_memory": 6860800,
+    "first_load_time": 199976,
+    "first_load_peak_memory": 6270976,
+    "warm_load_time": 182872,
+    "warm_load_peak_memory": 4300800,
+    "compile_time": 0,
+    "compile_peak_memory": 0,
+    "compile_memory_increase_range": [
+      0,
+      0
+    ],
+    "compile_memory_peak_range": [
+      0,
+      0
+    ],
+    "first_load_memory_increase_range": [
+      1884160,
+      2706816
+    ],
+    "first_load_memory_peak_range": [
+      3383296,
+      4205952
+    ],
+    "warm_load_memory_increase_range": [
+      0,
+      653504
+    ],
+    "warm_load_memory_peak_range": [
+      1417216,
+      2242704
+    ],
+    "inference_memory_increase_range": [
+      0,
+      47312
+    ],
+    "inference_memory_peak_range": [
+      1269760,
+      4128944
+    ],
+    "all_compile_times": [],
+    "all_first_load_times": [
+      199976
+    ],
+    "all_warm_load_times": [
+      182872
+    ],
+    "all_inference_times": [
+      14245,
+      10709,
+      14052,
+      11010,
+      14150,
+      12263,
+      11665,
+      13974,
+      10481,
+      14124,
+      10955,
+      13073,
+      11060,
+      13859,
+      11997,
+      11922,
+      11891,
+      11568,
+      13909,
+      12350,
+      12559,
+      13090,
+      11329,
+      14505,
+      12715,
+      12744,
+      11307,
+      14046,
+      14227,
+      14039,
+      14124,
+      14080,
+      14229,
+      14247,
+      13966,
+      14619,
+      13894,
+      13840,
+      13957,
+      14199,
+      14317,
+      13549,
+      14172,
+      14013,
+      13559,
+      14070,
+      13891,
+      14408,
+      14123,
+      13742,
+      13874,
+      13857,
+      13923,
+      13948,
+      13808,
+      14334,
+      14205,
+      13977,
+      14363,
+      13689,
+      13920,
+      13746,
+      14263,
+      14498,
+      14827,
+      14394,
+      14138,
+      14673,
+      14206,
+      14544,
+      13854,
+      13852,
+      14583,
+      14535,
+      14048,
+      13913,
+      14057,
+      14521,
+      14764,
+      15173,
+      13843,
+      14504,
+      13603,
+      14064,
+      13914,
+      14439,
+      14111,
+      14595,
+      14236,
+      14346,
+      14223,
+      14017,
+      14170,
+      14507,
+      13876,
+      14490,
+      13840,
+      14264,
+      14161,
+      14588
+    ]
+  },
+  "execution_detail": [
+    {
+      "name": "Input",
+      "type": "Input",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 37060
+    },
+    {
+      "name": "images_hoist_0231",
+      "type": "images",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 1122318
+    },
+    {
+      "name": "/model.0/conv/Conv",
+      "type": "/model.0/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 2036960
+    },
+    {
+      "name": "/model.0/act/Sigmoid",
+      "type": "/model.0/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.0/act/Mul",
+      "type": "/model.0/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 607664
+    },
+    {
+      "name": "/model.1/conv/Conv",
+      "type": "/model.1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 204422
+    },
+    {
+      "name": "/model.1/act/Sigmoid",
+      "type": "/model.1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.1/act/Mul",
+      "type": "/model.1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 321022
+    },
+    {
+      "name": "/model.2/cv1/conv/Conv",
+      "type": "/model.2/cv1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 23029
+    },
+    {
+      "name": "/model.2/cv1/act/Sigmoid",
+      "type": "/model.2/cv1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.2/cv1/act/Mul",
+      "type": "/model.2/cv1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 338565
+    },
+    {
+      "name": "node_Slice_5922",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 59811
+    },
+    {
+      "name": "node_Slice_5925",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 59057
+    },
+    {
+      "name": "/model.2/m.0/cv1/conv/Conv",
+      "type": "/model.2/m.0/cv1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 23638
+    },
+    {
+      "name": "/model.2/m.0/cv1/act/Sigmoid",
+      "type": "/model.2/m.0/cv1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.2/m.0/cv1/act/Mul",
+      "type": "/model.2/m.0/cv1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 140000
+    },
+    {
+      "name": "/model.2/m.0/cv2/conv/Conv",
+      "type": "/model.2/m.0/cv2/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 18137
+    },
+    {
+      "name": "/model.2/m.0/cv2/act/Sigmoid",
+      "type": "/model.2/m.0/cv2/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.2/m.0/cv2/act/Mul",
+      "type": "/model.2/m.0/cv2/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 209372
+    },
+    {
+      "name": "/model.2/m.0/Add",
+      "type": "/model.2/m.0/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 86459
+    },
+    {
+      "name": "/model.2/Concat",
+      "type": "/model.2/Concat",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.2/cv2/conv/Conv",
+      "type": "/model.2/cv2/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 37719
+    },
+    {
+      "name": "/model.2/cv2/act/Sigmoid",
+      "type": "/model.2/cv2/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.2/cv2/act/Mul",
+      "type": "/model.2/cv2/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 666202
+    },
+    {
+      "name": "/model.3/conv/Conv",
+      "type": "/model.3/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 295596
+    },
+    {
+      "name": "/model.3/act/Sigmoid",
+      "type": "/model.3/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.3/act/Mul",
+      "type": "/model.3/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 132225
+    },
+    {
+      "name": "/model.4/cv1/conv/Conv",
+      "type": "/model.4/cv1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 10721
+    },
+    {
+      "name": "/model.4/cv1/act/Sigmoid",
+      "type": "/model.4/cv1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.4/cv1/act/Mul",
+      "type": "/model.4/cv1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 153477
+    },
+    {
+      "name": "node_Slice_5929",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 25260
+    },
+    {
+      "name": "node_Slice_5932",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 23484
+    },
+    {
+      "name": "/model.4/m.0/cv1/conv/Conv",
+      "type": "/model.4/m.0/cv1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 9715
+    },
+    {
+      "name": "/model.4/m.0/cv1/act/Sigmoid",
+      "type": "/model.4/m.0/cv1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.4/m.0/cv1/act/Mul",
+      "type": "/model.4/m.0/cv1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 36361
+    },
+    {
+      "name": "/model.4/m.0/cv2/conv/Conv",
+      "type": "/model.4/m.0/cv2/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 11038
+    },
+    {
+      "name": "/model.4/m.0/cv2/act/Sigmoid",
+      "type": "/model.4/m.0/cv2/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.4/m.0/cv2/act/Mul",
+      "type": "/model.4/m.0/cv2/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 83362
+    },
+    {
+      "name": "/model.4/m.0/Add",
+      "type": "/model.4/m.0/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 38036
+    },
+    {
+      "name": "/model.4/Concat",
+      "type": "/model.4/Concat",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.4/cv2/conv/Conv",
+      "type": "/model.4/cv2/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 51874
+    },
+    {
+      "name": "/model.4/cv2/act/Sigmoid",
+      "type": "/model.4/cv2/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.4/cv2/act/Mul",
+      "type": "/model.4/cv2/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 635948
+    },
+    {
+      "name": "/model.5/conv/Conv",
+      "type": "/model.5/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 210107
+    },
+    {
+      "name": "/model.5/act/Sigmoid",
+      "type": "/model.5/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.5/act/Mul",
+      "type": "/model.5/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 73826
+    },
+    {
+      "name": "/model.6/cv1/conv/Conv",
+      "type": "/model.6/cv1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 15061
+    },
+    {
+      "name": "/model.6/cv1/act/Sigmoid",
+      "type": "/model.6/cv1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.6/cv1/act/Mul",
+      "type": "/model.6/cv1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 86728
+    },
+    {
+      "name": "/model.6/m.0/m.0.0/attn/qkv/conv/Conv",
+      "type": "/model.6/m.0/m.0.0/attn/qkv/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 8914
+    },
+    {
+      "name": "/model.6/m.0/m.0.0/attn/Reshape",
+      "type": "/model.6/m.0/m.0.0/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 131085
+    },
+    {
+      "name": "/model.6/m.0/m.0.0/attn/Transpose_1",
+      "type": "/model.6/m.0/m.0.0/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 130162
+    },
+    {
+      "name": "node_Slice_5099",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "node_Slice_5102",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "node_Slice_5105",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.6/m.0/m.0.0/attn/Mul",
+      "type": "/model.6/m.0/m.0.0/attn/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 21890
+    },
+    {
+      "name": "/model.6/m.0/m.0.0/attn/Transpose_5",
+      "type": "/model.6/m.0/m.0.0/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 36089
+    },
+    {
+      "name": "/model.6/m.0/m.0.0/attn/Transpose_2",
+      "type": "/model.6/m.0/m.0.0/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 23012
+    },
+    {
+      "name": "/model.6/m.0/m.0.0/attn/Reshape_4_output_0",
+      "type": "/model.6/m.0/m.0.0/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 49517
+    },
+    {
+      "name": "/model.6/m.0/m.0.0/attn/MatMul",
+      "type": "/model.6/m.0/m.0.0/attn/MatMul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 1019218
+    },
+    {
+      "name": "/model.6/m.0/m.0.0/attn/Softmax",
+      "type": "/model.6/m.0/m.0.0/attn/Softmax",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 1143947
+    },
+    {
+      "name": "/model.6/m.0/m.0.0/attn/pe/conv/Conv",
+      "type": "/model.6/m.0/m.0.0/attn/pe/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 16556
+    },
+    {
+      "name": "/model.6/m.0/m.0.0/attn/Transpose_3",
+      "type": "/model.6/m.0/m.0.0/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.6/m.0/m.0.0/attn/MatMul_1",
+      "type": "/model.6/m.0/m.0.0/attn/MatMul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 3100898
+    },
+    {
+      "name": "/model.6/m.0/m.0.0/attn/Transpose_4",
+      "type": "/model.6/m.0/m.0.0/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 81760
+    },
+    {
+      "name": "/model.6/m.0/m.0.0/attn/Reshape_3_output_0",
+      "type": "/model.6/m.0/m.0.0/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 105644
+    },
+    {
+      "name": "/model.6/m.0/m.0.0/attn/Add",
+      "type": "/model.6/m.0/m.0.0/attn/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 21918
+    },
+    {
+      "name": "/model.6/m.0/m.0.0/attn/proj/conv/Conv",
+      "type": "/model.6/m.0/m.0.0/attn/proj/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 5078
+    },
+    {
+      "name": "/model.6/m.0/m.0.0/Add",
+      "type": "/model.6/m.0/m.0.0/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 16602
+    },
+    {
+      "name": "/model.6/m.0/m.0.0/mlp/mlp.0/conv/Conv",
+      "type": "/model.6/m.0/m.0.0/mlp/mlp.0/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 6867
+    },
+    {
+      "name": "/model.6/m.0/m.0.0/mlp/mlp.0/act/Sigmoid",
+      "type": "/model.6/m.0/m.0.0/mlp/mlp.0/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.6/m.0/m.0.0/mlp/mlp.0/act/Mul",
+      "type": "/model.6/m.0/m.0.0/mlp/mlp.0/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 64207
+    },
+    {
+      "name": "/model.6/m.0/m.0.0/mlp/mlp.1/conv/Conv",
+      "type": "/model.6/m.0/m.0.0/mlp/mlp.1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 5436
+    },
+    {
+      "name": "/model.6/m.0/m.0.0/Add_1",
+      "type": "/model.6/m.0/m.0.0/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 19481
+    },
+    {
+      "name": "/model.6/m.0/m.0.1/attn/qkv/conv/Conv",
+      "type": "/model.6/m.0/m.0.1/attn/qkv/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 9005
+    },
+    {
+      "name": "/model.6/m.0/m.0.1/attn/Reshape",
+      "type": "/model.6/m.0/m.0.1/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 137925
+    },
+    {
+      "name": "/model.6/m.0/m.0.1/attn/Transpose_1",
+      "type": "/model.6/m.0/m.0.1/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 113999
+    },
+    {
+      "name": "node_Slice_5109",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "node_Slice_5112",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "node_Slice_5115",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.6/m.0/m.0.1/attn/Mul",
+      "type": "/model.6/m.0/m.0.1/attn/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 25227
+    },
+    {
+      "name": "/model.6/m.0/m.0.1/attn/Transpose_5",
+      "type": "/model.6/m.0/m.0.1/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 33014
+    },
+    {
+      "name": "/model.6/m.0/m.0.1/attn/Transpose_2",
+      "type": "/model.6/m.0/m.0.1/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 22799
+    },
+    {
+      "name": "/model.6/m.0/m.0.1/attn/Reshape_4_output_0",
+      "type": "/model.6/m.0/m.0.1/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 49853
+    },
+    {
+      "name": "/model.6/m.0/m.0.1/attn/MatMul",
+      "type": "/model.6/m.0/m.0.1/attn/MatMul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 1138254
+    },
+    {
+      "name": "/model.6/m.0/m.0.1/attn/Softmax",
+      "type": "/model.6/m.0/m.0.1/attn/Softmax",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 1134217
+    },
+    {
+      "name": "/model.6/m.0/m.0.1/attn/pe/conv/Conv",
+      "type": "/model.6/m.0/m.0.1/attn/pe/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 15136
+    },
+    {
+      "name": "/model.6/m.0/m.0.1/attn/Transpose_3",
+      "type": "/model.6/m.0/m.0.1/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.6/m.0/m.0.1/attn/MatMul_1",
+      "type": "/model.6/m.0/m.0.1/attn/MatMul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 3350075
+    },
+    {
+      "name": "/model.6/m.0/m.0.1/attn/Transpose_4",
+      "type": "/model.6/m.0/m.0.1/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 34500
+    },
+    {
+      "name": "/model.6/m.0/m.0.1/attn/Reshape_3_output_0",
+      "type": "/model.6/m.0/m.0.1/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 61856
+    },
+    {
+      "name": "/model.6/m.0/m.0.1/attn/Add",
+      "type": "/model.6/m.0/m.0.1/attn/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 20345
+    },
+    {
+      "name": "/model.6/m.0/m.0.1/attn/proj/conv/Conv",
+      "type": "/model.6/m.0/m.0.1/attn/proj/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 4700
+    },
+    {
+      "name": "/model.6/m.0/m.0.1/Add",
+      "type": "/model.6/m.0/m.0.1/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 20283
+    },
+    {
+      "name": "/model.6/m.0/m.0.1/mlp/mlp.0/conv/Conv",
+      "type": "/model.6/m.0/m.0.1/mlp/mlp.0/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 6518
+    },
+    {
+      "name": "/model.6/m.0/m.0.1/mlp/mlp.0/act/Sigmoid",
+      "type": "/model.6/m.0/m.0.1/mlp/mlp.0/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.6/m.0/m.0.1/mlp/mlp.0/act/Mul",
+      "type": "/model.6/m.0/m.0.1/mlp/mlp.0/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 67929
+    },
+    {
+      "name": "/model.6/m.0/m.0.1/mlp/mlp.1/conv/Conv",
+      "type": "/model.6/m.0/m.0.1/mlp/mlp.1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 11261
+    },
+    {
+      "name": "/model.6/m.0/m.0.1/Add_1",
+      "type": "/model.6/m.0/m.0.1/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 40036
+    },
+    {
+      "name": "/model.6/m.1/m.1.0/attn/qkv/conv/Conv",
+      "type": "/model.6/m.1/m.1.0/attn/qkv/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 8985
+    },
+    {
+      "name": "/model.6/m.1/m.1.0/attn/Reshape",
+      "type": "/model.6/m.1/m.1.0/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 235390
+    },
+    {
+      "name": "/model.6/m.1/m.1.0/attn/Transpose_1",
+      "type": "/model.6/m.1/m.1.0/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 110795
+    },
+    {
+      "name": "node_Slice_5599",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "node_Slice_5602",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "node_Slice_5605",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.6/m.1/m.1.0/attn/Mul",
+      "type": "/model.6/m.1/m.1.0/attn/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 24938
+    },
+    {
+      "name": "/model.6/m.1/m.1.0/attn/Transpose_5",
+      "type": "/model.6/m.1/m.1.0/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 36263
+    },
+    {
+      "name": "/model.6/m.1/m.1.0/attn/Transpose_2",
+      "type": "/model.6/m.1/m.1.0/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 22317
+    },
+    {
+      "name": "/model.6/m.1/m.1.0/attn/Reshape_4_output_0",
+      "type": "/model.6/m.1/m.1.0/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 54070
+    },
+    {
+      "name": "/model.6/m.1/m.1.0/attn/MatMul",
+      "type": "/model.6/m.1/m.1.0/attn/MatMul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 1183546
+    },
+    {
+      "name": "/model.6/m.1/m.1.0/attn/Softmax",
+      "type": "/model.6/m.1/m.1.0/attn/Softmax",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 1136242
+    },
+    {
+      "name": "/model.6/m.1/m.1.0/attn/pe/conv/Conv",
+      "type": "/model.6/m.1/m.1.0/attn/pe/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 15581
+    },
+    {
+      "name": "/model.6/m.1/m.1.0/attn/Transpose_3",
+      "type": "/model.6/m.1/m.1.0/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.6/m.1/m.1.0/attn/MatMul_1",
+      "type": "/model.6/m.1/m.1.0/attn/MatMul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 2959955
+    },
+    {
+      "name": "/model.6/m.1/m.1.0/attn/Transpose_4",
+      "type": "/model.6/m.1/m.1.0/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 36385
+    },
+    {
+      "name": "/model.6/m.1/m.1.0/attn/Reshape_3_output_0",
+      "type": "/model.6/m.1/m.1.0/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 50380
+    },
+    {
+      "name": "/model.6/m.1/m.1.0/attn/Add",
+      "type": "/model.6/m.1/m.1.0/attn/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 19411
+    },
+    {
+      "name": "/model.6/m.1/m.1.0/attn/proj/conv/Conv",
+      "type": "/model.6/m.1/m.1.0/attn/proj/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 4883
+    },
+    {
+      "name": "/model.6/m.1/m.1.0/Add",
+      "type": "/model.6/m.1/m.1.0/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 17114
+    },
+    {
+      "name": "/model.6/m.1/m.1.0/mlp/mlp.0/conv/Conv",
+      "type": "/model.6/m.1/m.1.0/mlp/mlp.0/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 7019
+    },
+    {
+      "name": "/model.6/m.1/m.1.0/mlp/mlp.0/act/Sigmoid",
+      "type": "/model.6/m.1/m.1.0/mlp/mlp.0/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.6/m.1/m.1.0/mlp/mlp.0/act/Mul",
+      "type": "/model.6/m.1/m.1.0/mlp/mlp.0/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 72761
+    },
+    {
+      "name": "/model.6/m.1/m.1.0/mlp/mlp.1/conv/Conv",
+      "type": "/model.6/m.1/m.1.0/mlp/mlp.1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 4817
+    },
+    {
+      "name": "/model.6/m.1/m.1.0/Add_1",
+      "type": "/model.6/m.1/m.1.0/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 17479
+    },
+    {
+      "name": "/model.6/m.1/m.1.1/attn/qkv/conv/Conv",
+      "type": "/model.6/m.1/m.1.1/attn/qkv/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 9893
+    },
+    {
+      "name": "/model.6/m.1/m.1.1/attn/Reshape",
+      "type": "/model.6/m.1/m.1.1/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 121653
+    },
+    {
+      "name": "/model.6/m.1/m.1.1/attn/Transpose_1",
+      "type": "/model.6/m.1/m.1.1/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 116041
+    },
+    {
+      "name": "node_Slice_5609",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "node_Slice_5612",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "node_Slice_5615",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.6/m.1/m.1.1/attn/Mul",
+      "type": "/model.6/m.1/m.1.1/attn/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 36338
+    },
+    {
+      "name": "/model.6/m.1/m.1.1/attn/Transpose_5",
+      "type": "/model.6/m.1/m.1.1/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 36803
+    },
+    {
+      "name": "/model.6/m.1/m.1.1/attn/Transpose_2",
+      "type": "/model.6/m.1/m.1.1/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 24568
+    },
+    {
+      "name": "/model.6/m.1/m.1.1/attn/Reshape_4_output_0",
+      "type": "/model.6/m.1/m.1.1/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 50775
+    },
+    {
+      "name": "/model.6/m.1/m.1.1/attn/MatMul",
+      "type": "/model.6/m.1/m.1.1/attn/MatMul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 1106300
+    },
+    {
+      "name": "/model.6/m.1/m.1.1/attn/Softmax",
+      "type": "/model.6/m.1/m.1.1/attn/Softmax",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 1114148
+    },
+    {
+      "name": "/model.6/m.1/m.1.1/attn/pe/conv/Conv",
+      "type": "/model.6/m.1/m.1.1/attn/pe/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 14378
+    },
+    {
+      "name": "/model.6/m.1/m.1.1/attn/Transpose_3",
+      "type": "/model.6/m.1/m.1.1/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.6/m.1/m.1.1/attn/MatMul_1",
+      "type": "/model.6/m.1/m.1.1/attn/MatMul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 3204051
+    },
+    {
+      "name": "/model.6/m.1/m.1.1/attn/Transpose_4",
+      "type": "/model.6/m.1/m.1.1/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 33748
+    },
+    {
+      "name": "/model.6/m.1/m.1.1/attn/Reshape_3_output_0",
+      "type": "/model.6/m.1/m.1.1/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 44835
+    },
+    {
+      "name": "/model.6/m.1/m.1.1/attn/Add",
+      "type": "/model.6/m.1/m.1.1/attn/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 14202
+    },
+    {
+      "name": "/model.6/m.1/m.1.1/attn/proj/conv/Conv",
+      "type": "/model.6/m.1/m.1.1/attn/proj/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 3988
+    },
+    {
+      "name": "/model.6/m.1/m.1.1/Add",
+      "type": "/model.6/m.1/m.1.1/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 14999
+    },
+    {
+      "name": "/model.6/m.1/m.1.1/mlp/mlp.0/conv/Conv",
+      "type": "/model.6/m.1/m.1.1/mlp/mlp.0/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 7785
+    },
+    {
+      "name": "/model.6/m.1/m.1.1/mlp/mlp.0/act/Sigmoid",
+      "type": "/model.6/m.1/m.1.1/mlp/mlp.0/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.6/m.1/m.1.1/mlp/mlp.0/act/Mul",
+      "type": "/model.6/m.1/m.1.1/mlp/mlp.0/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 68302
+    },
+    {
+      "name": "/model.6/m.1/m.1.1/mlp/mlp.1/conv/Conv",
+      "type": "/model.6/m.1/m.1.1/mlp/mlp.1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 5348
+    },
+    {
+      "name": "/model.6/m.1/m.1.1/Add_1",
+      "type": "/model.6/m.1/m.1.1/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 16559
+    },
+    {
+      "name": "/model.6/Concat",
+      "type": "/model.6/Concat",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.6/cv2/conv/Conv",
+      "type": "/model.6/cv2/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 13401
+    },
+    {
+      "name": "/model.6/cv2/act/Sigmoid",
+      "type": "/model.6/cv2/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.6/cv2/act/Mul",
+      "type": "/model.6/cv2/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 158941
+    },
+    {
+      "name": "/model.7/conv/Conv",
+      "type": "/model.7/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 104394
+    },
+    {
+      "name": "/model.7/act/Sigmoid",
+      "type": "/model.7/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.7/act/Mul",
+      "type": "/model.7/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 47744
+    },
+    {
+      "name": "/model.8/cv1/conv/Conv",
+      "type": "/model.8/cv1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 6037
+    },
+    {
+      "name": "/model.8/cv1/act/Sigmoid",
+      "type": "/model.8/cv1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.8/cv1/act/Mul",
+      "type": "/model.8/cv1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 41208
+    },
+    {
+      "name": "/model.8/m.0/m.0.0/attn/qkv/conv/Conv",
+      "type": "/model.8/m.0/m.0.0/attn/qkv/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 15049
+    },
+    {
+      "name": "/model.8/m.0/m.0.0/attn/Reshape",
+      "type": "/model.8/m.0/m.0.0/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 45524
+    },
+    {
+      "name": "/model.8/m.0/m.0.0/attn/Transpose_1",
+      "type": "/model.8/m.0/m.0.0/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 33022
+    },
+    {
+      "name": "node_Slice_2183",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "node_Slice_2186",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "node_Slice_2189",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 12374
+    },
+    {
+      "name": "/model.8/m.0/m.0.0/attn/Mul",
+      "type": "/model.8/m.0/m.0.0/attn/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 9026
+    },
+    {
+      "name": "/model.8/m.0/m.0.0/attn/Reshape_3",
+      "type": "/model.8/m.0/m.0.0/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 25693
+    },
+    {
+      "name": "/model.8/m.0/m.0.0/attn/Transpose_2",
+      "type": "/model.8/m.0/m.0.0/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 9070
+    },
+    {
+      "name": "/model.8/m.0/m.0.0/attn/MatMul",
+      "type": "/model.8/m.0/m.0.0/attn/MatMul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 266664
+    },
+    {
+      "name": "/model.8/m.0/m.0.0/attn/Softmax",
+      "type": "/model.8/m.0/m.0.0/attn/Softmax",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 920482
+    },
+    {
+      "name": "/model.8/m.0/m.0.0/attn/Transpose_7_output_0_qdq_0231",
+      "type": "/model.8/m.0/m.0.0/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 17649
+    },
+    {
+      "name": "/model.8/m.0/m.0.0/attn/pe/conv/Conv",
+      "type": "/model.8/m.0/m.0.0/attn/pe/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 23024
+    },
+    {
+      "name": "/model.8/m.0/m.0.0/attn/Transpose_3",
+      "type": "/model.8/m.0/m.0.0/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.8/m.0/m.0.0/attn/MatMul_1",
+      "type": "/model.8/m.0/m.0.0/attn/MatMul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 1118906
+    },
+    {
+      "name": "/model.8/m.0/m.0.0/attn/Reshape_2",
+      "type": "/model.8/m.0/m.0.0/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 17516
+    },
+    {
+      "name": "/model.8/m.0/m.0.0/attn/Transpose_6_output_0_qdq_0231",
+      "type": "/model.8/m.0/m.0.0/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 17199
+    },
+    {
+      "name": "/model.8/m.0/m.0.0/attn/Add",
+      "type": "/model.8/m.0/m.0.0/attn/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 17335
+    },
+    {
+      "name": "/model.8/m.0/m.0.0/attn/proj/conv/Conv",
+      "type": "/model.8/m.0/m.0.0/attn/proj/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 4708
+    },
+    {
+      "name": "/model.8/m.0/m.0.0/Add",
+      "type": "/model.8/m.0/m.0.0/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 13799
+    },
+    {
+      "name": "/model.8/m.0/m.0.0/mlp/mlp.0/conv/Conv",
+      "type": "/model.8/m.0/m.0.0/mlp/mlp.0/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 6947
+    },
+    {
+      "name": "/model.8/m.0/m.0.0/mlp/mlp.0/act/Sigmoid",
+      "type": "/model.8/m.0/m.0.0/mlp/mlp.0/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.8/m.0/m.0.0/mlp/mlp.0/act/Mul",
+      "type": "/model.8/m.0/m.0.0/mlp/mlp.0/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 52627
+    },
+    {
+      "name": "/model.8/m.0/m.0.0/mlp/mlp.1/conv/Conv",
+      "type": "/model.8/m.0/m.0.0/mlp/mlp.1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 6241
+    },
+    {
+      "name": "/model.8/m.0/m.0.0/Add_1",
+      "type": "/model.8/m.0/m.0.0/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 23821
+    },
+    {
+      "name": "/model.8/m.0/m.0.1/attn/qkv/conv/Conv",
+      "type": "/model.8/m.0/m.0.1/attn/qkv/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 10150
+    },
+    {
+      "name": "/model.8/m.0/m.0.1/attn/Reshape",
+      "type": "/model.8/m.0/m.0.1/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 79864
+    },
+    {
+      "name": "/model.8/m.0/m.0.1/attn/Transpose_1",
+      "type": "/model.8/m.0/m.0.1/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 40852
+    },
+    {
+      "name": "node_Slice_4037",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "node_Slice_4040",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "node_Slice_4043",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 11545
+    },
+    {
+      "name": "/model.8/m.0/m.0.1/attn/Mul",
+      "type": "/model.8/m.0/m.0.1/attn/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 8247
+    },
+    {
+      "name": "/model.8/m.0/m.0.1/attn/Reshape_3",
+      "type": "/model.8/m.0/m.0.1/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 19936
+    },
+    {
+      "name": "/model.8/m.0/m.0.1/attn/Transpose_2",
+      "type": "/model.8/m.0/m.0.1/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 9399
+    },
+    {
+      "name": "/model.8/m.0/m.0.1/attn/MatMul",
+      "type": "/model.8/m.0/m.0.1/attn/MatMul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 214648
+    },
+    {
+      "name": "/model.8/m.0/m.0.1/attn/Softmax",
+      "type": "/model.8/m.0/m.0.1/attn/Softmax",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 923380
+    },
+    {
+      "name": "/model.8/m.0/m.0.1/attn/Transpose_7_output_0_qdq_0231",
+      "type": "/model.8/m.0/m.0.1/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 19193
+    },
+    {
+      "name": "/model.8/m.0/m.0.1/attn/pe/conv/Conv",
+      "type": "/model.8/m.0/m.0.1/attn/pe/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 15962
+    },
+    {
+      "name": "/model.8/m.0/m.0.1/attn/Transpose_3",
+      "type": "/model.8/m.0/m.0.1/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.8/m.0/m.0.1/attn/MatMul_1",
+      "type": "/model.8/m.0/m.0.1/attn/MatMul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 1110718
+    },
+    {
+      "name": "/model.8/m.0/m.0.1/attn/Reshape_2",
+      "type": "/model.8/m.0/m.0.1/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 18317
+    },
+    {
+      "name": "/model.8/m.0/m.0.1/attn/Transpose_6_output_0_qdq_0231",
+      "type": "/model.8/m.0/m.0.1/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 15837
+    },
+    {
+      "name": "/model.8/m.0/m.0.1/attn/Add",
+      "type": "/model.8/m.0/m.0.1/attn/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 14616
+    },
+    {
+      "name": "/model.8/m.0/m.0.1/attn/proj/conv/Conv",
+      "type": "/model.8/m.0/m.0.1/attn/proj/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 4138
+    },
+    {
+      "name": "/model.8/m.0/m.0.1/Add",
+      "type": "/model.8/m.0/m.0.1/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 13824
+    },
+    {
+      "name": "/model.8/m.0/m.0.1/mlp/mlp.0/conv/Conv",
+      "type": "/model.8/m.0/m.0.1/mlp/mlp.0/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 8215
+    },
+    {
+      "name": "/model.8/m.0/m.0.1/mlp/mlp.0/act/Sigmoid",
+      "type": "/model.8/m.0/m.0.1/mlp/mlp.0/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.8/m.0/m.0.1/mlp/mlp.0/act/Mul",
+      "type": "/model.8/m.0/m.0.1/mlp/mlp.0/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 38091
+    },
+    {
+      "name": "/model.8/m.0/m.0.1/mlp/mlp.1/conv/Conv",
+      "type": "/model.8/m.0/m.0.1/mlp/mlp.1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 6287
+    },
+    {
+      "name": "/model.8/m.0/m.0.1/Add_1",
+      "type": "/model.8/m.0/m.0.1/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 26530
+    },
+    {
+      "name": "/model.8/m.1/m.1.0/attn/qkv/conv/Conv",
+      "type": "/model.8/m.1/m.1.0/attn/qkv/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 11061
+    },
+    {
+      "name": "/model.8/m.1/m.1.0/attn/Reshape",
+      "type": "/model.8/m.1/m.1.0/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 50201
+    },
+    {
+      "name": "/model.8/m.1/m.1.0/attn/Transpose_1",
+      "type": "/model.8/m.1/m.1.0/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 34865
+    },
+    {
+      "name": "node_Slice_2203",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "node_Slice_2206",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "node_Slice_2209",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 12585
+    },
+    {
+      "name": "/model.8/m.1/m.1.0/attn/Mul",
+      "type": "/model.8/m.1/m.1.0/attn/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 8998
+    },
+    {
+      "name": "/model.8/m.1/m.1.0/attn/Reshape_3",
+      "type": "/model.8/m.1/m.1.0/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 20300
+    },
+    {
+      "name": "/model.8/m.1/m.1.0/attn/Transpose_2",
+      "type": "/model.8/m.1/m.1.0/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 8698
+    },
+    {
+      "name": "/model.8/m.1/m.1.0/attn/MatMul",
+      "type": "/model.8/m.1/m.1.0/attn/MatMul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 195205
+    },
+    {
+      "name": "/model.8/m.1/m.1.0/attn/Softmax",
+      "type": "/model.8/m.1/m.1.0/attn/Softmax",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 938395
+    },
+    {
+      "name": "/model.8/m.1/m.1.0/attn/Transpose_7_output_0_qdq_0231",
+      "type": "/model.8/m.1/m.1.0/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 18122
+    },
+    {
+      "name": "/model.8/m.1/m.1.0/attn/pe/conv/Conv",
+      "type": "/model.8/m.1/m.1.0/attn/pe/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 15505
+    },
+    {
+      "name": "/model.8/m.1/m.1.0/attn/Transpose_3",
+      "type": "/model.8/m.1/m.1.0/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.8/m.1/m.1.0/attn/MatMul_1",
+      "type": "/model.8/m.1/m.1.0/attn/MatMul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 1085966
+    },
+    {
+      "name": "/model.8/m.1/m.1.0/attn/Reshape_2",
+      "type": "/model.8/m.1/m.1.0/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 17132
+    },
+    {
+      "name": "/model.8/m.1/m.1.0/attn/Transpose_6_output_0_qdq_0231",
+      "type": "/model.8/m.1/m.1.0/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 16337
+    },
+    {
+      "name": "/model.8/m.1/m.1.0/attn/Add",
+      "type": "/model.8/m.1/m.1.0/attn/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 18058
+    },
+    {
+      "name": "/model.8/m.1/m.1.0/attn/proj/conv/Conv",
+      "type": "/model.8/m.1/m.1.0/attn/proj/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 4646
+    },
+    {
+      "name": "/model.8/m.1/m.1.0/Add",
+      "type": "/model.8/m.1/m.1.0/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 15608
+    },
+    {
+      "name": "/model.8/m.1/m.1.0/mlp/mlp.0/conv/Conv",
+      "type": "/model.8/m.1/m.1.0/mlp/mlp.0/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 9374
+    },
+    {
+      "name": "/model.8/m.1/m.1.0/mlp/mlp.0/act/Sigmoid",
+      "type": "/model.8/m.1/m.1.0/mlp/mlp.0/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.8/m.1/m.1.0/mlp/mlp.0/act/Mul",
+      "type": "/model.8/m.1/m.1.0/mlp/mlp.0/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 45694
+    },
+    {
+      "name": "/model.8/m.1/m.1.0/mlp/mlp.1/conv/Conv",
+      "type": "/model.8/m.1/m.1.0/mlp/mlp.1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 7584
+    },
+    {
+      "name": "/model.8/m.1/m.1.0/Add_1",
+      "type": "/model.8/m.1/m.1.0/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 13369
+    },
+    {
+      "name": "/model.8/m.1/m.1.1/attn/qkv/conv/Conv",
+      "type": "/model.8/m.1/m.1.1/attn/qkv/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 12238
+    },
+    {
+      "name": "/model.8/m.1/m.1.1/attn/Reshape",
+      "type": "/model.8/m.1/m.1.1/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 45981
+    },
+    {
+      "name": "/model.8/m.1/m.1.1/attn/Transpose_1",
+      "type": "/model.8/m.1/m.1.1/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 96088
+    },
+    {
+      "name": "node_Slice_2213",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "node_Slice_2216",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "node_Slice_2219",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 13041
+    },
+    {
+      "name": "/model.8/m.1/m.1.1/attn/Mul",
+      "type": "/model.8/m.1/m.1.1/attn/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 8006
+    },
+    {
+      "name": "/model.8/m.1/m.1.1/attn/Reshape_3",
+      "type": "/model.8/m.1/m.1.1/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 18535
+    },
+    {
+      "name": "/model.8/m.1/m.1.1/attn/Transpose_2",
+      "type": "/model.8/m.1/m.1.1/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 10410
+    },
+    {
+      "name": "/model.8/m.1/m.1.1/attn/MatMul",
+      "type": "/model.8/m.1/m.1.1/attn/MatMul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 216840
+    },
+    {
+      "name": "/model.8/m.1/m.1.1/attn/Softmax",
+      "type": "/model.8/m.1/m.1.1/attn/Softmax",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 957661
+    },
+    {
+      "name": "/model.8/m.1/m.1.1/attn/Transpose_7_output_0_qdq_0231",
+      "type": "/model.8/m.1/m.1.1/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 27691
+    },
+    {
+      "name": "/model.8/m.1/m.1.1/attn/pe/conv/Conv",
+      "type": "/model.8/m.1/m.1.1/attn/pe/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 14589
+    },
+    {
+      "name": "/model.8/m.1/m.1.1/attn/Transpose_3",
+      "type": "/model.8/m.1/m.1.1/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.8/m.1/m.1.1/attn/MatMul_1",
+      "type": "/model.8/m.1/m.1.1/attn/MatMul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 1104948
+    },
+    {
+      "name": "/model.8/m.1/m.1.1/attn/Reshape_2",
+      "type": "/model.8/m.1/m.1.1/attn/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 17646
+    },
+    {
+      "name": "/model.8/m.1/m.1.1/attn/Transpose_6_output_0_qdq_0231",
+      "type": "/model.8/m.1/m.1.1/attn/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 16607
+    },
+    {
+      "name": "/model.8/m.1/m.1.1/attn/Add",
+      "type": "/model.8/m.1/m.1.1/attn/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 13623
+    },
+    {
+      "name": "/model.8/m.1/m.1.1/attn/proj/conv/Conv",
+      "type": "/model.8/m.1/m.1.1/attn/proj/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 5197
+    },
+    {
+      "name": "/model.8/m.1/m.1.1/Add",
+      "type": "/model.8/m.1/m.1.1/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 14382
+    },
+    {
+      "name": "/model.8/m.1/m.1.1/mlp/mlp.0/conv/Conv",
+      "type": "/model.8/m.1/m.1.1/mlp/mlp.0/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 8253
+    },
+    {
+      "name": "/model.8/m.1/m.1.1/mlp/mlp.0/act/Sigmoid",
+      "type": "/model.8/m.1/m.1.1/mlp/mlp.0/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.8/m.1/m.1.1/mlp/mlp.0/act/Mul",
+      "type": "/model.8/m.1/m.1.1/mlp/mlp.0/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 40253
+    },
+    {
+      "name": "/model.8/m.1/m.1.1/mlp/mlp.1/conv/Conv",
+      "type": "/model.8/m.1/m.1.1/mlp/mlp.1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 6456
+    },
+    {
+      "name": "/model.8/m.1/m.1.1/Add_1",
+      "type": "/model.8/m.1/m.1.1/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 15615
+    },
+    {
+      "name": "/model.8/Concat",
+      "type": "/model.8/Concat",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.8/cv2/conv/Conv",
+      "type": "/model.8/cv2/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 42504
+    },
+    {
+      "name": "/model.8/cv2/act/Sigmoid",
+      "type": "/model.8/cv2/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.8/cv2/act/Mul",
+      "type": "/model.8/cv2/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 82657
+    },
+    {
+      "name": "/model.9/Resize",
+      "type": "/model.9/Resize",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 84777
+    },
+    {
+      "name": "/model.10/Concat",
+      "type": "/model.10/Concat",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.11/cv1/conv/Conv",
+      "type": "/model.11/cv1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 12105
+    },
+    {
+      "name": "/model.11/cv1/act/Sigmoid",
+      "type": "/model.11/cv1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.11/cv1/act/Mul",
+      "type": "/model.11/cv1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 68338
+    },
+    {
+      "name": "/model.11/m.0/cv1/conv/Conv",
+      "type": "/model.11/m.0/cv1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 3505
+    },
+    {
+      "name": "/model.11/m.0/cv2/conv/Conv",
+      "type": "/model.11/m.0/cv2/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 2638
+    },
+    {
+      "name": "/model.11/m.0/cv1/act/Sigmoid",
+      "type": "/model.11/m.0/cv1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.11/m.0/cv2/act/Sigmoid",
+      "type": "/model.11/m.0/cv2/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.11/m.0/cv1/act/Mul",
+      "type": "/model.11/m.0/cv1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 17365
+    },
+    {
+      "name": "/model.11/m.0/cv2/act/Mul",
+      "type": "/model.11/m.0/cv2/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 20484
+    },
+    {
+      "name": "/model.11/m.0/m/m.0/cv1/conv/Conv",
+      "type": "/model.11/m.0/m/m.0/cv1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 8165
+    },
+    {
+      "name": "/model.11/m.0/m/m.0/cv1/act/Sigmoid",
+      "type": "/model.11/m.0/m/m.0/cv1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.11/m.0/m/m.0/cv1/act/Mul",
+      "type": "/model.11/m.0/m/m.0/cv1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 17748
+    },
+    {
+      "name": "/model.11/m.0/m/m.0/cv2/conv/Conv",
+      "type": "/model.11/m.0/m/m.0/cv2/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 7653
+    },
+    {
+      "name": "/model.11/m.0/m/m.0/cv2/act/Sigmoid",
+      "type": "/model.11/m.0/m/m.0/cv2/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.11/m.0/m/m.0/cv2/act/Mul",
+      "type": "/model.11/m.0/m/m.0/cv2/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 17004
+    },
+    {
+      "name": "/model.11/m.0/m/m.0/Add",
+      "type": "/model.11/m.0/m/m.0/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 8007
+    },
+    {
+      "name": "/model.11/m.0/m/m.1/cv1/conv/Conv",
+      "type": "/model.11/m.0/m/m.1/cv1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 6481
+    },
+    {
+      "name": "/model.11/m.0/m/m.1/cv1/act/Sigmoid",
+      "type": "/model.11/m.0/m/m.1/cv1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.11/m.0/m/m.1/cv1/act/Mul",
+      "type": "/model.11/m.0/m/m.1/cv1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 17652
+    },
+    {
+      "name": "/model.11/m.0/m/m.1/cv2/conv/Conv",
+      "type": "/model.11/m.0/m/m.1/cv2/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 6854
+    },
+    {
+      "name": "/model.11/m.0/m/m.1/cv2/act/Sigmoid",
+      "type": "/model.11/m.0/m/m.1/cv2/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.11/m.0/m/m.1/cv2/act/Mul",
+      "type": "/model.11/m.0/m/m.1/cv2/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 17281
+    },
+    {
+      "name": "/model.11/m.0/m/m.1/Add",
+      "type": "/model.11/m.0/m/m.1/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 7414
+    },
+    {
+      "name": "/model.11/m.0/Concat",
+      "type": "/model.11/m.0/Concat",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.11/m.0/cv3/conv/Conv",
+      "type": "/model.11/m.0/cv3/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 4104
+    },
+    {
+      "name": "/model.11/m.0/cv3/act/Sigmoid",
+      "type": "/model.11/m.0/cv3/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.11/m.0/cv3/act/Mul",
+      "type": "/model.11/m.0/cv3/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 33837
+    },
+    {
+      "name": "/model.11/Concat",
+      "type": "/model.11/Concat",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.11/cv2/conv/Conv",
+      "type": "/model.11/cv2/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 8889
+    },
+    {
+      "name": "/model.11/cv2/act/Sigmoid",
+      "type": "/model.11/cv2/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.11/cv2/act/Mul",
+      "type": "/model.11/cv2/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 160653
+    },
+    {
+      "name": "/model.12/Resize",
+      "type": "/model.12/Resize",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 186571
+    },
+    {
+      "name": "/model.13/Concat",
+      "type": "/model.13/Concat",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.14/cv1/conv/Conv",
+      "type": "/model.14/cv1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 17685
+    },
+    {
+      "name": "/model.14/cv1/act/Sigmoid",
+      "type": "/model.14/cv1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.14/cv1/act/Mul",
+      "type": "/model.14/cv1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 143659
+    },
+    {
+      "name": "/model.14/m.0/cv1/conv/Conv",
+      "type": "/model.14/m.0/cv1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 7822
+    },
+    {
+      "name": "/model.14/m.0/cv2/conv/Conv",
+      "type": "/model.14/m.0/cv2/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 5719
+    },
+    {
+      "name": "/model.14/m.0/cv1/act/Sigmoid",
+      "type": "/model.14/m.0/cv1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.14/m.0/cv2/act/Sigmoid",
+      "type": "/model.14/m.0/cv2/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.14/m.0/cv1/act/Mul",
+      "type": "/model.14/m.0/cv1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 37892
+    },
+    {
+      "name": "/model.14/m.0/cv2/act/Mul",
+      "type": "/model.14/m.0/cv2/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 37528
+    },
+    {
+      "name": "/model.14/m.0/m/m.0/cv1/conv/Conv",
+      "type": "/model.14/m.0/m/m.0/cv1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 6672
+    },
+    {
+      "name": "/model.14/m.0/m/m.0/cv1/act/Sigmoid",
+      "type": "/model.14/m.0/m/m.0/cv1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.14/m.0/m/m.0/cv1/act/Mul",
+      "type": "/model.14/m.0/m/m.0/cv1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 36636
+    },
+    {
+      "name": "/model.14/m.0/m/m.0/cv2/conv/Conv",
+      "type": "/model.14/m.0/m/m.0/cv2/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 7865
+    },
+    {
+      "name": "/model.14/m.0/m/m.0/cv2/act/Sigmoid",
+      "type": "/model.14/m.0/m/m.0/cv2/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.14/m.0/m/m.0/cv2/act/Mul",
+      "type": "/model.14/m.0/m/m.0/cv2/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 36542
+    },
+    {
+      "name": "/model.14/m.0/m/m.0/Add",
+      "type": "/model.14/m.0/m/m.0/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 18292
+    },
+    {
+      "name": "/model.14/m.0/m/m.1/cv1/conv/Conv",
+      "type": "/model.14/m.0/m/m.1/cv1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 6547
+    },
+    {
+      "name": "/model.14/m.0/m/m.1/cv1/act/Sigmoid",
+      "type": "/model.14/m.0/m/m.1/cv1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.14/m.0/m/m.1/cv1/act/Mul",
+      "type": "/model.14/m.0/m/m.1/cv1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 56650
+    },
+    {
+      "name": "/model.14/m.0/m/m.1/cv2/conv/Conv",
+      "type": "/model.14/m.0/m/m.1/cv2/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 7635
+    },
+    {
+      "name": "/model.14/m.0/m/m.1/cv2/act/Sigmoid",
+      "type": "/model.14/m.0/m/m.1/cv2/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.14/m.0/m/m.1/cv2/act/Mul",
+      "type": "/model.14/m.0/m/m.1/cv2/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 37290
+    },
+    {
+      "name": "/model.14/m.0/m/m.1/Add",
+      "type": "/model.14/m.0/m/m.1/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 34835
+    },
+    {
+      "name": "/model.14/m.0/Concat",
+      "type": "/model.14/m.0/Concat",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.14/m.0/cv3/conv/Conv",
+      "type": "/model.14/m.0/cv3/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 6611
+    },
+    {
+      "name": "/model.14/m.0/cv3/act/Sigmoid",
+      "type": "/model.14/m.0/cv3/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.14/m.0/cv3/act/Mul",
+      "type": "/model.14/m.0/cv3/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 72466
+    },
+    {
+      "name": "/model.14/Concat",
+      "type": "/model.14/Concat",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.14/cv2/conv/Conv",
+      "type": "/model.14/cv2/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 12811
+    },
+    {
+      "name": "/model.14/cv2/act/Sigmoid",
+      "type": "/model.14/cv2/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.14/cv2/act/Mul",
+      "type": "/model.14/cv2/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 172808
+    },
+    {
+      "name": "/model.15/conv/Conv",
+      "type": "/model.15/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 133769
+    },
+    {
+      "name": "/model.21/cv2.0/cv2.0.0/conv/Conv",
+      "type": "/model.21/cv2.0/cv2.0.0/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 36217
+    },
+    {
+      "name": "/model.21/cv3.0/cv3.0.0/cv3.0.0.0/conv/Conv",
+      "type": "/model.21/cv3.0/cv3.0.0/cv3.0.0.0/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 18197
+    },
+    {
+      "name": "/model.15/act/Sigmoid",
+      "type": "/model.15/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.21/cv2.0/cv2.0.0/act/Sigmoid",
+      "type": "/model.21/cv2.0/cv2.0.0/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.21/cv3.0/cv3.0.0/cv3.0.0.0/act/Sigmoid",
+      "type": "/model.21/cv3.0/cv3.0.0/cv3.0.0.0/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.15/act/Mul",
+      "type": "/model.15/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 35094
+    },
+    {
+      "name": "/model.21/cv2.0/cv2.0.0/act/Mul",
+      "type": "/model.21/cv2.0/cv2.0.0/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 77676
+    },
+    {
+      "name": "/model.21/cv3.0/cv3.0.0/cv3.0.0.0/act/Mul",
+      "type": "/model.21/cv3.0/cv3.0.0/cv3.0.0.0/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 167461
+    },
+    {
+      "name": "/model.16/Concat",
+      "type": "/model.16/Concat",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.21/cv2.0/cv2.0.1/conv/Conv",
+      "type": "/model.21/cv2.0/cv2.0.1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 19064
+    },
+    {
+      "name": "/model.21/cv3.0/cv3.0.0/cv3.0.0.1/conv/Conv",
+      "type": "/model.21/cv3.0/cv3.0.0/cv3.0.0.1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 14264
+    },
+    {
+      "name": "/model.17/cv1/conv/Conv",
+      "type": "/model.17/cv1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 7019
+    },
+    {
+      "name": "/model.21/cv2.0/cv2.0.1/act/Sigmoid",
+      "type": "/model.21/cv2.0/cv2.0.1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.21/cv3.0/cv3.0.0/cv3.0.0.1/act/Sigmoid",
+      "type": "/model.21/cv3.0/cv3.0.0/cv3.0.0.1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.17/cv1/act/Sigmoid",
+      "type": "/model.17/cv1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.21/cv2.0/cv2.0.1/act/Mul",
+      "type": "/model.21/cv2.0/cv2.0.1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 69139
+    },
+    {
+      "name": "/model.21/cv3.0/cv3.0.0/cv3.0.0.1/act/Mul",
+      "type": "/model.21/cv3.0/cv3.0.0/cv3.0.0.1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 163801
+    },
+    {
+      "name": "/model.17/cv1/act/Mul",
+      "type": "/model.17/cv1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 69844
+    },
+    {
+      "name": "/model.21/cv2.0/cv2.0.2/Conv",
+      "type": "/model.21/cv2.0/cv2.0.2/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 6067
+    },
+    {
+      "name": "/model.21/cv3.0/cv3.0.1/cv3.0.1.0/conv/Conv",
+      "type": "/model.21/cv3.0/cv3.0.1/cv3.0.1.0/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 23566
+    },
+    {
+      "name": "/model.17/m.0/cv1/conv/Conv",
+      "type": "/model.17/m.0/cv1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 3097
+    },
+    {
+      "name": "/model.17/m.0/cv2/conv/Conv",
+      "type": "/model.17/m.0/cv2/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 2866
+    },
+    {
+      "name": "/model.21/Reshape",
+      "type": "/model.21/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 34046
+    },
+    {
+      "name": "/model.21/cv3.0/cv3.0.1/cv3.0.1.0/act/Sigmoid",
+      "type": "/model.21/cv3.0/cv3.0.1/cv3.0.1.0/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.17/m.0/cv1/act/Sigmoid",
+      "type": "/model.17/m.0/cv1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.17/m.0/cv2/act/Sigmoid",
+      "type": "/model.17/m.0/cv2/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.21/cv3.0/cv3.0.1/cv3.0.1.0/act/Mul",
+      "type": "/model.21/cv3.0/cv3.0.1/cv3.0.1.0/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 149647
+    },
+    {
+      "name": "/model.17/m.0/cv1/act/Mul",
+      "type": "/model.17/m.0/cv1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 17286
+    },
+    {
+      "name": "/model.17/m.0/cv2/act/Mul",
+      "type": "/model.17/m.0/cv2/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 17119
+    },
+    {
+      "name": "/model.21/cv3.0/cv3.0.1/cv3.0.1.1/conv/Conv",
+      "type": "/model.21/cv3.0/cv3.0.1/cv3.0.1.1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 13630
+    },
+    {
+      "name": "/model.17/m.0/m/m.0/cv1/conv/Conv",
+      "type": "/model.17/m.0/m/m.0/cv1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 7775
+    },
+    {
+      "name": "/model.21/cv3.0/cv3.0.1/cv3.0.1.1/act/Sigmoid",
+      "type": "/model.21/cv3.0/cv3.0.1/cv3.0.1.1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.17/m.0/m/m.0/cv1/act/Sigmoid",
+      "type": "/model.17/m.0/m/m.0/cv1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.21/cv3.0/cv3.0.1/cv3.0.1.1/act/Mul",
+      "type": "/model.21/cv3.0/cv3.0.1/cv3.0.1.1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 145756
+    },
+    {
+      "name": "/model.17/m.0/m/m.0/cv1/act/Mul",
+      "type": "/model.17/m.0/m/m.0/cv1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 17044
+    },
+    {
+      "name": "/model.21/cv3.0/cv3.0.2/Conv",
+      "type": "/model.21/cv3.0/cv3.0.2/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 6793
+    },
+    {
+      "name": "/model.17/m.0/m/m.0/cv2/conv/Conv",
+      "type": "/model.17/m.0/m/m.0/cv2/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 7216
+    },
+    {
+      "name": "/model.21/Reshape_3",
+      "type": "/model.21/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 21591
+    },
+    {
+      "name": "/model.17/m.0/m/m.0/cv2/act/Sigmoid",
+      "type": "/model.17/m.0/m/m.0/cv2/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.17/m.0/m/m.0/cv2/act/Mul",
+      "type": "/model.17/m.0/m/m.0/cv2/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 17181
+    },
+    {
+      "name": "/model.17/m.0/m/m.0/Add",
+      "type": "/model.17/m.0/m/m.0/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 9959
+    },
+    {
+      "name": "/model.17/m.0/m/m.1/cv1/conv/Conv",
+      "type": "/model.17/m.0/m/m.1/cv1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 6161
+    },
+    {
+      "name": "/model.17/m.0/m/m.1/cv1/act/Sigmoid",
+      "type": "/model.17/m.0/m/m.1/cv1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.17/m.0/m/m.1/cv1/act/Mul",
+      "type": "/model.17/m.0/m/m.1/cv1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 16619
+    },
+    {
+      "name": "/model.17/m.0/m/m.1/cv2/conv/Conv",
+      "type": "/model.17/m.0/m/m.1/cv2/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 6273
+    },
+    {
+      "name": "/model.17/m.0/m/m.1/cv2/act/Sigmoid",
+      "type": "/model.17/m.0/m/m.1/cv2/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.17/m.0/m/m.1/cv2/act/Mul",
+      "type": "/model.17/m.0/m/m.1/cv2/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 18740
+    },
+    {
+      "name": "/model.17/m.0/m/m.1/Add",
+      "type": "/model.17/m.0/m/m.1/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 8962
+    },
+    {
+      "name": "/model.17/m.0/Concat",
+      "type": "/model.17/m.0/Concat",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.17/m.0/cv3/conv/Conv",
+      "type": "/model.17/m.0/cv3/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 4496
+    },
+    {
+      "name": "/model.17/m.0/cv3/act/Sigmoid",
+      "type": "/model.17/m.0/cv3/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.17/m.0/cv3/act/Mul",
+      "type": "/model.17/m.0/cv3/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 32973
+    },
+    {
+      "name": "/model.17/Concat",
+      "type": "/model.17/Concat",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.17/cv2/conv/Conv",
+      "type": "/model.17/cv2/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 9254
+    },
+    {
+      "name": "/model.17/cv2/act/Sigmoid",
+      "type": "/model.17/cv2/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.17/cv2/act/Mul",
+      "type": "/model.17/cv2/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 78160
+    },
+    {
+      "name": "/model.18/conv/Conv",
+      "type": "/model.18/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 71408
+    },
+    {
+      "name": "/model.21/cv2.1/cv2.1.0/conv/Conv",
+      "type": "/model.21/cv2.1/cv2.1.0/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 21959
+    },
+    {
+      "name": "/model.21/cv3.1/cv3.1.0/cv3.1.0.0/conv/Conv",
+      "type": "/model.21/cv3.1/cv3.1.0/cv3.1.0.0/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 11504
+    },
+    {
+      "name": "/model.18/act/Sigmoid",
+      "type": "/model.18/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.21/cv2.1/cv2.1.0/act/Sigmoid",
+      "type": "/model.21/cv2.1/cv2.1.0/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.21/cv3.1/cv3.1.0/cv3.1.0.0/act/Sigmoid",
+      "type": "/model.21/cv3.1/cv3.1.0/cv3.1.0.0/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.18/act/Mul",
+      "type": "/model.18/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 22088
+    },
+    {
+      "name": "/model.21/cv2.1/cv2.1.0/act/Mul",
+      "type": "/model.21/cv2.1/cv2.1.0/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 17021
+    },
+    {
+      "name": "/model.21/cv3.1/cv3.1.0/cv3.1.0.0/act/Mul",
+      "type": "/model.21/cv3.1/cv3.1.0/cv3.1.0.0/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 63778
+    },
+    {
+      "name": "/model.19/Concat",
+      "type": "/model.19/Concat",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.21/cv2.1/cv2.1.1/conv/Conv",
+      "type": "/model.21/cv2.1/cv2.1.1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 7398
+    },
+    {
+      "name": "/model.21/cv3.1/cv3.1.0/cv3.1.0.1/conv/Conv",
+      "type": "/model.21/cv3.1/cv3.1.0/cv3.1.0.1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 6236
+    },
+    {
+      "name": "/model.20/cv1/conv/Conv",
+      "type": "/model.20/cv1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 18497
+    },
+    {
+      "name": "/model.21/cv2.1/cv2.1.1/act/Sigmoid",
+      "type": "/model.21/cv2.1/cv2.1.1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.21/cv3.1/cv3.1.0/cv3.1.0.1/act/Sigmoid",
+      "type": "/model.21/cv3.1/cv3.1.0/cv3.1.0.1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.20/cv1/act/Sigmoid",
+      "type": "/model.20/cv1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.21/cv2.1/cv2.1.1/act/Mul",
+      "type": "/model.21/cv2.1/cv2.1.1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 17324
+    },
+    {
+      "name": "/model.21/cv3.1/cv3.1.0/cv3.1.0.1/act/Mul",
+      "type": "/model.21/cv3.1/cv3.1.0/cv3.1.0.1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 39564
+    },
+    {
+      "name": "/model.20/cv1/act/Mul",
+      "type": "/model.20/cv1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 59958
+    },
+    {
+      "name": "/model.21/cv2.1/cv2.1.2/Conv",
+      "type": "/model.21/cv2.1/cv2.1.2/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 2625
+    },
+    {
+      "name": "/model.21/cv3.1/cv3.1.1/cv3.1.1.0/conv/Conv",
+      "type": "/model.21/cv3.1/cv3.1.1/cv3.1.1.0/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 5863
+    },
+    {
+      "name": "node_Slice_5585",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 9057
+    },
+    {
+      "name": "node_Slice_5588",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 9565
+    },
+    {
+      "name": "/model.21/Reshape_1",
+      "type": "/model.21/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 8900
+    },
+    {
+      "name": "/model.21/cv3.1/cv3.1.1/cv3.1.1.0/act/Sigmoid",
+      "type": "/model.21/cv3.1/cv3.1.1/cv3.1.1.0/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.20/m.0/cv1/conv/Conv",
+      "type": "/model.20/m.0/cv1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 2674
+    },
+    {
+      "name": "/model.20/m.0/cv2/conv/Conv",
+      "type": "/model.20/m.0/cv2/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 2342
+    },
+    {
+      "name": "/model.21/cv3.1/cv3.1.1/cv3.1.1.0/act/Mul",
+      "type": "/model.21/cv3.1/cv3.1.1/cv3.1.1.0/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 31134
+    },
+    {
+      "name": "/model.20/m.0/cv1/act/Sigmoid",
+      "type": "/model.20/m.0/cv1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.20/m.0/cv2/act/Sigmoid",
+      "type": "/model.20/m.0/cv2/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.21/cv3.1/cv3.1.1/cv3.1.1.1/conv/Conv",
+      "type": "/model.21/cv3.1/cv3.1.1/cv3.1.1.1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 5422
+    },
+    {
+      "name": "/model.20/m.0/cv1/act/Mul",
+      "type": "/model.20/m.0/cv1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 10249
+    },
+    {
+      "name": "/model.20/m.0/cv2/act/Mul",
+      "type": "/model.20/m.0/cv2/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 10004
+    },
+    {
+      "name": "/model.21/cv3.1/cv3.1.1/cv3.1.1.1/act/Sigmoid",
+      "type": "/model.21/cv3.1/cv3.1.1/cv3.1.1.1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.20/m.0/m/m.0/cv1/conv/Conv",
+      "type": "/model.20/m.0/m/m.0/cv1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 17017
+    },
+    {
+      "name": "/model.21/cv3.1/cv3.1.1/cv3.1.1.1/act/Mul",
+      "type": "/model.21/cv3.1/cv3.1.1/cv3.1.1.1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 33607
+    },
+    {
+      "name": "/model.20/m.0/m/m.0/cv1/act/Sigmoid",
+      "type": "/model.20/m.0/m/m.0/cv1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.21/cv3.1/cv3.1.2/Conv",
+      "type": "/model.21/cv3.1/cv3.1.2/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 2821
+    },
+    {
+      "name": "/model.20/m.0/m/m.0/cv1/act/Mul",
+      "type": "/model.20/m.0/m/m.0/cv1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 11358
+    },
+    {
+      "name": "/model.21/Reshape_4",
+      "type": "/model.21/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 4872
+    },
+    {
+      "name": "/model.20/m.0/m/m.0/cv2/conv/Conv",
+      "type": "/model.20/m.0/m/m.0/cv2/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 10870
+    },
+    {
+      "name": "/model.20/m.0/m/m.0/cv2/act/Sigmoid",
+      "type": "/model.20/m.0/m/m.0/cv2/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.20/m.0/m/m.0/cv2/act/Mul",
+      "type": "/model.20/m.0/m/m.0/cv2/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 11142
+    },
+    {
+      "name": "/model.20/m.0/m/m.0/Add",
+      "type": "/model.20/m.0/m/m.0/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 5067
+    },
+    {
+      "name": "/model.20/m.0/m/m.1/cv1/conv/Conv",
+      "type": "/model.20/m.0/m/m.1/cv1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 10230
+    },
+    {
+      "name": "/model.20/m.0/m/m.1/cv1/act/Sigmoid",
+      "type": "/model.20/m.0/m/m.1/cv1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.20/m.0/m/m.1/cv1/act/Mul",
+      "type": "/model.20/m.0/m/m.1/cv1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 10073
+    },
+    {
+      "name": "/model.20/m.0/m/m.1/cv2/conv/Conv",
+      "type": "/model.20/m.0/m/m.1/cv2/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 10171
+    },
+    {
+      "name": "/model.20/m.0/m/m.1/cv2/act/Sigmoid",
+      "type": "/model.20/m.0/m/m.1/cv2/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.20/m.0/m/m.1/cv2/act/Mul",
+      "type": "/model.20/m.0/m/m.1/cv2/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 10622
+    },
+    {
+      "name": "/model.20/m.0/m/m.1/Add",
+      "type": "/model.20/m.0/m/m.1/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 5777
+    },
+    {
+      "name": "/model.20/m.0/Concat",
+      "type": "/model.20/m.0/Concat",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.20/m.0/cv3/conv/Conv",
+      "type": "/model.20/m.0/cv3/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 3469
+    },
+    {
+      "name": "/model.20/m.0/cv3/act/Sigmoid",
+      "type": "/model.20/m.0/cv3/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.20/m.0/cv3/act/Mul",
+      "type": "/model.20/m.0/cv3/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 22479
+    },
+    {
+      "name": "/model.20/Concat",
+      "type": "/model.20/Concat",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.20/cv2/conv/Conv",
+      "type": "/model.20/cv2/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 17598
+    },
+    {
+      "name": "/model.20/cv2/act/Sigmoid",
+      "type": "/model.20/cv2/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.20/cv2/act/Mul",
+      "type": "/model.20/cv2/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 39423
+    },
+    {
+      "name": "/model.21/cv2.2/cv2.2.0/conv/Conv",
+      "type": "/model.21/cv2.2/cv2.2.0/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 15886
+    },
+    {
+      "name": "/model.21/cv3.2/cv3.2.0/cv3.2.0.0/conv/Conv",
+      "type": "/model.21/cv3.2/cv3.2.0/cv3.2.0.0/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 18222
+    },
+    {
+      "name": "/model.21/cv2.2/cv2.2.0/act/Sigmoid",
+      "type": "/model.21/cv2.2/cv2.2.0/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.21/cv3.2/cv3.2.0/cv3.2.0.0/act/Sigmoid",
+      "type": "/model.21/cv3.2/cv3.2.0/cv3.2.0.0/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.21/cv2.2/cv2.2.0/act/Mul",
+      "type": "/model.21/cv2.2/cv2.2.0/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 7154
+    },
+    {
+      "name": "/model.21/cv3.2/cv3.2.0/cv3.2.0.0/act/Mul",
+      "type": "/model.21/cv3.2/cv3.2.0/cv3.2.0.0/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 55525
+    },
+    {
+      "name": "/model.21/cv2.2/cv2.2.1/conv/Conv",
+      "type": "/model.21/cv2.2/cv2.2.1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 3307
+    },
+    {
+      "name": "/model.21/cv3.2/cv3.2.0/cv3.2.0.1/conv/Conv",
+      "type": "/model.21/cv3.2/cv3.2.0/cv3.2.0.1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 3424
+    },
+    {
+      "name": "/model.21/cv2.2/cv2.2.1/act/Sigmoid",
+      "type": "/model.21/cv2.2/cv2.2.1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.21/cv3.2/cv3.2.0/cv3.2.0.1/act/Sigmoid",
+      "type": "/model.21/cv3.2/cv3.2.0/cv3.2.0.1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.21/cv2.2/cv2.2.1/act/Mul",
+      "type": "/model.21/cv2.2/cv2.2.1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 5969
+    },
+    {
+      "name": "/model.21/cv3.2/cv3.2.0/cv3.2.0.1/act/Mul",
+      "type": "/model.21/cv3.2/cv3.2.0/cv3.2.0.1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 10661
+    },
+    {
+      "name": "/model.21/cv2.2/cv2.2.2/Conv",
+      "type": "/model.21/cv2.2/cv2.2.2/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 1549
+    },
+    {
+      "name": "/model.21/cv3.2/cv3.2.1/cv3.2.1.0/conv/Conv",
+      "type": "/model.21/cv3.2/cv3.2.1/cv3.2.1.0/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 5306
+    },
+    {
+      "name": "/model.21/Reshape_2",
+      "type": "/model.21/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 2329
+    },
+    {
+      "name": "/model.21/cv3.2/cv3.2.1/cv3.2.1.0/act/Sigmoid",
+      "type": "/model.21/cv3.2/cv3.2.1/cv3.2.1.0/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.21/Concat",
+      "type": "/model.21/Concat",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.21/cv3.2/cv3.2.1/cv3.2.1.0/act/Mul",
+      "type": "/model.21/cv3.2/cv3.2.1/cv3.2.1.0/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 10946
+    },
+    {
+      "name": "/model.21/dfl/Reshape",
+      "type": "/model.21/dfl/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 1125771
+    },
+    {
+      "name": "/model.21/cv3.2/cv3.2.1/cv3.2.1.1/conv/Conv",
+      "type": "/model.21/cv3.2/cv3.2.1/cv3.2.1.1/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 2664
+    },
+    {
+      "name": "/model.21/cv3.2/cv3.2.1/cv3.2.1.1/act/Sigmoid",
+      "type": "/model.21/cv3.2/cv3.2.1/cv3.2.1.1/act/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.21/dfl/Softmax",
+      "type": "/model.21/dfl/Softmax",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 916477
+    },
+    {
+      "name": "/model.21/cv3.2/cv3.2.1/cv3.2.1.1/act/Mul",
+      "type": "/model.21/cv3.2/cv3.2.1/cv3.2.1.1/act/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 10853
+    },
+    {
+      "name": "/model.21/dfl/Transpose_1",
+      "type": "/model.21/dfl/Transpose",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 59868
+    },
+    {
+      "name": "/model.21/cv3.2/cv3.2.2/Conv",
+      "type": "/model.21/cv3.2/cv3.2.2/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 1549
+    },
+    {
+      "name": "/model.21/dfl/conv/Conv",
+      "type": "/model.21/dfl/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 9850
+    },
+    {
+      "name": "/model.21/Reshape_5",
+      "type": "/model.21/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 2103
+    },
+    {
+      "name": "/model.21/dfl/conv/Conv_output_0_updated_0123",
+      "type": "/model.21/dfl/conv/Conv",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 53151
+    },
+    {
+      "name": "/model.21/dfl/Reshape_1",
+      "type": "/model.21/dfl/Reshape",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "/model.21/Concat_1",
+      "type": "/model.21/Concat",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 0
+    },
+    {
+      "name": "node_Slice_5936",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 20710
+    },
+    {
+      "name": "node_Slice_5939",
+      "type": "node",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 22605
+    },
+    {
+      "name": "/model.21/Sigmoid",
+      "type": "/model.21/Sigmoid",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 22581
+    },
+    {
+      "name": "/model.21/Sub",
+      "type": "/model.21/Sub",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 26849
+    },
+    {
+      "name": "/model.21/Add_1",
+      "type": "/model.21/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 2406
+    },
+    {
+      "name": "/model.21/Add_2",
+      "type": "/model.21/Add",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 2795
+    },
+    {
+      "name": "/model.21/Sub_1",
+      "type": "/model.21/Sub",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 12641
+    },
+    {
+      "name": "/model.21/Div_1",
+      "type": "/model.21/Div",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 10875
+    },
+    {
+      "name": "/model.21/Concat_2",
+      "type": "/model.21/Concat",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 1500
+    },
+    {
+      "name": "/model.21/Mul_2",
+      "type": "/model.21/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 27803
+    },
+    {
+      "name": "/model.21/Mul_2_output_0_updated_021",
+      "type": "/model.21/Mul",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 31263
+    },
+    {
+      "name": "/model.21/Concat_3",
+      "type": "/model.21/Concat",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 72085
+    },
+    {
+      "name": "output_0_021",
+      "type": "output",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 291081
+    },
+    {
+      "name": "Output",
+      "type": "Output",
+      "compute_unit": "NPU",
+      "execution_time": 0,
+      "execution_cycles": 10782
+    }
+  ]
+}

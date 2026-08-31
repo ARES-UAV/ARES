@@ -289,6 +289,85 @@ td.nt{color:var(--dim);font-size:12px}
   box-shadow:7px 7px 0 var(--panel)}
 .fp svg{display:block;margin:0 auto;min-width:540px}
 
+/* ── result chart ─────────────────────────────────────────────────
+   The PNG is rendered on --void by simulation/make_site_chart.py, so
+   with the box padded to zero it sits flush and reads as part of the
+   page rather than as a pasted-in figure.
+   min-width beats the global max-width:100% on specificity, which is
+   what makes it scroll inside the box on a phone instead of shrinking
+   to an unreadable 390px-wide chart. */
+.fp.chart{padding:0}
+.fp.chart img{display:block;width:100%;min-width:680px;max-width:none}
+/* Named figcap, not cap — td.cap already exists further up. */
+.figcap{margin-top:12px;font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--dim);line-height:1.7}
+.figcap b{color:var(--p2);font-weight:700}
+
+/* Two tables abreast on desktop, stacked on anything narrower. */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+@media(max-width:900px){.duo{grid-template-columns:1fr}}
+.duo .tw{margin-top:0}
+.duo table{min-width:0}
+.thead{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--cy);
+  font-weight:700;padding:14px 20px 0}
+
+/* Three headline numbers abreast. Not .stats — that grid is built for
+   four and would leave a hole at three. */
+.numrow{display:grid;grid-template-columns:repeat(3,1fr);border:1.5px solid var(--line);
+  background:var(--panel);margin-top:14px}
+.numrow>div{padding:26px 22px;border-right:1.5px solid var(--line);transition:background .2s}
+.numrow>div:last-child{border-right:none}
+.numrow>div:hover{background:var(--raised)}
+.numrow .v{font-family:var(--disp);font-weight:900;font-size:clamp(30px,4.6vw,48px);
+  line-height:1;letter-spacing:-.04em;color:var(--cy);font-variant-numeric:tabular-nums}
+.numrow .k{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
+  margin-top:11px;line-height:1.6}
+.numrow .k b{color:var(--ink-soft);font-weight:500}
+@media(max-width:760px){
+  .numrow{grid-template-columns:1fr}
+  .numrow>div{border-right:none;border-bottom:1.5px solid var(--line)}
+  .numrow>div:last-child{border-bottom:none}
+}
+
+/* The utility formula, set like a readout rather than prose. */
+.eq{border:1.5px solid var(--cy-3);background:var(--void);box-shadow:6px 6px 0 var(--panel);
+  margin-top:42px;overflow-x:auto}
+.eq .eqline{padding:26px 22px;font-size:clamp(12px,1.9vw,17px);white-space:nowrap;
+  min-width:min-content;letter-spacing:.02em}
+.eq .eqline .o{color:var(--dim)}
+.eq .eqline .a{color:var(--cy);font-weight:700}
+.eq .eqline .b{color:var(--p2);font-weight:700}
+.eq .eqfoot{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr)}
+.eq .eqfoot>div{padding:16px 20px;border-right:1px solid var(--line)}
+.eq .eqfoot>div:last-child{border-right:none}
+.eq .eqfoot .t{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--cy);font-weight:700}
+.eq .eqfoot p{margin-top:8px;font-size:12px;color:var(--ink-soft);line-height:1.55}
+@media(max-width:760px){
+  .eq .eqfoot{grid-template-columns:1fr}
+  .eq .eqfoot>div{border-right:none;border-bottom:1px solid var(--line)}
+  .eq .eqfoot>div:last-child{border-bottom:none}
+}
+
+/* A claim we are NOT making, marked as such. */
+.warnbox{border:1.5px solid var(--p3);background:rgba(224,106,31,.07);padding:24px;margin-top:42px}
+.warnbox .fn{font-size:10px;letter-spacing:.18em;color:var(--p2);font-weight:700;text-transform:uppercase}
+.warnbox .say{margin-top:14px;font-size:14px;color:var(--ink);line-height:1.65}
+.warnbox .no{margin-top:14px;font-size:14px;color:var(--dim);line-height:1.65;text-decoration:line-through;
+  text-decoration-color:var(--p3)}
+.warnbox .why{margin-top:14px;font-size:12.5px;color:var(--ink-soft);line-height:1.6}
+tr.ship td{background:var(--cy-1)}
+tr.ship:hover td{background:var(--cy-2)}
+/* Section header inside a table body — groups two rows without rowspan,
+   which vertically centres a label across rows of unequal height and
+   reads as a mistake. */
+tr.grp td{background:var(--void);color:var(--dim);font-size:9.5px;letter-spacing:.18em;
+  text-transform:uppercase;padding:15px 20px 9px;border-bottom:1px solid var(--line)}
+tr.grp:hover td{background:var(--void)}
+td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+/* NOT .hero — that is the page header, and its 72px padding
+   silently inflated every highlighted row to 145px. */
+td.win{color:var(--cy);font-weight:700}
+
 /* ── shots ────────────────────────────────────────────────────── */
 .shot{border:1.5px dashed var(--line);background:var(--panel);aspect-ratio:16/9;
   display:grid;place-content:center;text-align:center;gap:7px;padding:22px}
@@ -326,8 +405,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 img,svg,video{max-width:100%}
 
 /* Wide content scrolls inside its own box; the page body never does. */
-.tw,.fp{-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
-.tw::after,.fp::after{content:"swipe →";display:none;font-size:9px;letter-spacing:.16em;
+.tw,.fp,.eq{-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.tw::after,.fp::after,.eq::after{content:"swipe →";display:none;font-size:9px;letter-spacing:.16em;
   text-transform:uppercase;color:var(--dim);padding:8px 14px 0}
 
 /* Screenshots are 16:9 already — contain rather than cover so a phone
@@ -385,6 +464,7 @@ img,svg,video{max-width:100%}
       <a href="#recall">THE DECISION</a>
       <a href="#scope">SCOPE</a>
       <a href="#edge">ON-DEVICE</a>
+      <a href="#search">ADAPTIVE</a>
     </div>
     <a class="btn" href="https://github.com/dewangdhakad/ARES">SOURCE →</a>
   </div>
@@ -427,7 +507,7 @@ img,svg,video{max-width:100%}
 
 <div class="mq">
   <div class="mqt" id="mq">
-    <span>7,081 DETECTIONS <i>◆</i></span><span>333 TRACK IDS <i>◆</i></span><span>23 SURVIVORS <i>◆</i></span><span>RECALL 0.824 AT CONF 0.18 <i>◆</i></span><span>1.8 CM / PIXEL <i>◆</i></span><span>23 M FOOTPRINT <i>◆</i></span><span>2.5 S PERSISTENCE <i>◆</i></span><span>ZERO INVENTED DATA <i>◆</i></span>
+    <span>7,081 DETECTIONS <i>◆</i></span><span>333 TRACK IDS <i>◆</i></span><span>23 SURVIVORS <i>◆</i></span><span>RECALL 0.824 AT CONF 0.18 <i>◆</i></span><span>489/489 LAYERS ON NPU <i>◆</i></span><span>1.8 CM / PIXEL <i>◆</i></span><span>23 M FOOTPRINT <i>◆</i></span><span>2.5 S PERSISTENCE <i>◆</i></span><span>3.2× FASTER TO HALF · SIMULATED <i>◆</i></span><span>ZERO INVENTED DATA <i>◆</i></span>
   </div>
 </div>
 
@@ -563,6 +643,7 @@ img,svg,video{max-width:100%}
           <tr><td class="cap">Priority ranking</td><td><span class="pill b">Built</span></td><td class="nt">A transparent weighted formula, printed on screen</td></tr>
           <tr><td class="cap">Command dashboard</td><td><span class="pill b">Built</span></td><td class="nt">Works with the backend switched off</td></tr>
           <tr><td class="cap">Offline resilience</td><td><span class="pill b">Built</span></td><td class="nt">A consequence of on-device inference, not a feature</td></tr>
+          <tr><td class="cap">Adaptive search planning</td><td><span class="pill p">Simulated</span></td><td class="nt">A 100-seed study against a lawnmower baseline — <a href="#search" style="color:var(--cy)">§&nbsp;06</a>. Never flown</td></tr>
           <tr><td class="cap">RGB + thermal fusion</td><td><span class="pill p">Partial</span></td><td class="nt">Public thermal datasets, not physical hardware</td></tr>
           <tr><td class="cap">Hazard classification</td><td><span class="pill p">Partial</span></td><td class="nt">3 of 7 classes — fire/smoke, flood, collapse</td></tr>
           <tr><td class="cap">Autonomous nav · SLAM</td><td><span class="pill d">Described</span></td><td class="nt">Architecture only. Deliberately not built, and not mocked</td></tr>
@@ -598,12 +679,83 @@ img,svg,video{max-width:100%}
     <p class="lead rv d1">
       It needs to not miss the ground. We measured ours on Qualcomm AI Hub, on real
       hosted silicon: <em class="hi">4.8 FPS</em> on a Dragonwing RB3 Gen 2 and
-      <em class="hi">16.3 FPS</em> on an IQ-9075, at 960 px INT8, under 10 MB peak memory —
+      <em class="hi">16.1 FPS</em> on an IQ-9075, at 960 px INT8, under 7 MB peak memory —
       with <em class="hi">489 of 489 layers</em> executing on the Hexagon NPU.
     </p>
     <p class="lead rv d1" style="margin-top:18px;font-size:13px">
       The 100 % is the headline, not the frame rate. An attention-centric YOLOv12 maps
       completely onto the accelerator, with nothing falling back to CPU.
+    </p>
+
+    <!-- ── every run, not just the shipped one ──────────────────── -->
+    <div class="tw rv d1">
+      <table>
+        <thead><tr><th>BOARD</th><th>SILICON</th><th>INPUT</th><th>LATENCY · MEDIAN</th><th>FPS</th><th>PEAK MEM</th><th>ON NPU</th></tr></thead>
+        <tbody>
+          <tr class="ship">
+            <td class="cap">Dragonwing RB3 Gen 2 <span class="pill b" style="margin-left:6px">Shipped</span></td>
+            <td class="nt">QCS6490</td><td class="n nt">960</td>
+            <td class="n">209.5 ms</td><td class="n win">4.8</td><td class="n nt">3 – 7 MB</td><td class="n nt">489/489 · 100 %</td></tr>
+          <tr>
+            <td class="cap">Dragonwing IQ-9075 EVK</td>
+            <td class="nt">QCS9075</td><td class="n nt">960</td>
+            <td class="n">62.3 ms</td><td class="n">16.1</td><td class="n nt">2 – 6 MB</td><td class="n nt">489/489 · 100 %</td></tr>
+          <tr>
+            <td class="cap">Dragonwing RB3 Gen 2</td>
+            <td class="nt">QCS6490</td><td class="n nt">640</td>
+            <td class="n">28.4 ms</td><td class="n">35.2</td><td class="n nt">3 – 6 MB</td><td class="n nt">489/489 · 100 %</td></tr>
+          <tr>
+            <td class="cap">Dragonwing IQ-9075 EVK</td>
+            <td class="nt">QCS9075</td><td class="n nt">640</td>
+            <td class="n">14.0 ms</td><td class="n">71.2</td><td class="n nt">6.5 MB</td><td class="n nt">489/489 · 100 %</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="figcap rv d1">
+      Qualcomm AI Hub · hosted physical devices, not emulators · INT8 weights and activations ·
+      <span style="text-transform:none">qnn_context_binary</span> · QAIRT 2.45.0 · measured 26 Aug 2026.
+      We publish the <b>RB3 figure</b>, not the IQ-9075's 16.1 — it is the slower of the two
+      boards and the drone-class one. Quoting the better of two measurements is not reporting.
+    </p>
+
+    <!-- ── the correction, kept visible ─────────────────────────── -->
+    <div class="duo rv d1">
+      <div class="tw">
+        <div class="thead">We published the wrong statistic for a fortnight</div>
+        <table>
+          <thead><tr><th>RUN</th><th>MINIMUM</th><th>MEDIAN</th><th>OVERSTATED BY</th></tr></thead>
+          <tbody>
+            <tr><td class="cap">RB3 · 960</td><td class="n nt">207.6 ms</td><td class="n">209.5 ms</td><td class="n nt">0.9 %</td></tr>
+            <tr><td class="cap">IQ-9075 · 960</td><td class="n nt">61.4 ms</td><td class="n">62.3 ms</td><td class="n nt">1.5 %</td></tr>
+            <tr><td class="cap">RB3 · 640</td><td class="n nt">26.5 ms</td><td class="n">28.4 ms</td><td class="n nt">7.2 %</td></tr>
+            <tr><td class="cap">IQ-9075 · 640</td><td class="n nt">10.48 ms</td><td class="n">14.04 ms</td><td class="n" style="color:var(--p2);font-weight:700">34.0 %</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tw">
+        <div class="thead">Resolution scaling · not established</div>
+        <table>
+          <thead><tr><th>COST OF 960 OVER 640</th><th>RATIO</th></tr></thead>
+          <tbody>
+            <tr><td class="cap">Pixel count</td><td class="n nt">2.25×</td></tr>
+            <tr><td class="cap">Tesla T4 GPU</td><td class="n nt">2.62×</td></tr>
+            <tr><td class="cap">Attention's quadratic ceiling</td><td class="n nt">5.06×</td></tr>
+            <tr><td class="cap">IQ-9075 NPU</td><td class="n">4.44×</td></tr>
+            <tr><td class="cap">RB3 Gen 2 NPU</td><td class="n">7.38×</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p class="figcap rv d1">
+      Left — AI&nbsp;Hub's <span style="text-transform:none">estimated_inference_time</span>, and the
+      "minimum inference time" on its console, is the <b>fastest of ~100 samples</b>. We quoted it.
+      Every figure on this page is now the median. The gap scales inversely with the
+      measurement: at 200&nbsp;ms per inference it is under 1&nbsp;%, at 14&nbsp;ms it is a third.
+      <span style="color:var(--ink-soft)">DEVICE_FPS = 4.8 survived unchanged — which was luck, not diligence.</span><br>
+      Right — the IQ-9075 lands inside the band where a mix of quadratic attention and linear
+      convolution belongs; the weaker RB3 is still above it, plausibly memory pressure.
+      <b>Two devices is not a trend.</b> Settling it means benchmarking a pure-convolution
+      YOLOv8n at both sizes on the same board.
     </p>
 
     <div class="fp rv d1">
@@ -642,7 +794,7 @@ img,svg,video{max-width:100%}
       <div class="tri">
         <span class="fn">WHY NOT FASTER</span>
         <h3>640 buys nothing</h3>
-        <p>We measured 640 too: 37.7 FPS, about 174 looks. But detection failures across consecutive frames are correlated — a person too small to resolve stays too small. That is 152 extra chances to re-fail, for 4.7 points less recall.</p>
+        <p>We measured 640 too: 35.2 FPS, about 163 looks. But detection failures across consecutive frames are correlated — a person too small to resolve stays too small. That is 141 extra chances to re-fail, for 4.7 points less recall.</p>
       </div>
       <div class="tri">
         <span class="fn">NOT MEASURED</span>
@@ -653,10 +805,121 @@ img,svg,video{max-width:100%}
   </div>
 </section>
 
+<!-- ═══ ADAPTIVE SEARCH ═════════════════════════════════════════ -->
+<section id="search">
+  <div class="wrap">
+    <div class="mark rv"><span class="sq"></span> § 06 — WHERE TO LOOK NEXT</div>
+    <h2 class="rv">SEEING IS HALF OF IT.<br>KNOWING <em class="hi">WHERE TO LOOK.</em></h2>
+    <p class="lead rv d1">
+      A search UAV today flies a lawnmower grid — cell 1, cell 2, cell 3, to the end of
+      the battery. It is complete, it is predictable, and it cannot use a single thing it
+      learns on the way. Twenty minutes of flight covers about <em class="hi">half</em> a
+      500 m square, so <b style="color:var(--ink)">which half you fly is the whole problem</b>.
+    </p>
+
+    <div class="eq rv d1">
+      <div class="eqline">
+        <span class="o">utility(cell) =</span>
+        &nbsp;<span class="a">belief + staleness</span>
+        &nbsp;<span class="o">/</span>&nbsp;
+        <span class="b">travel time + search time</span>
+      </div>
+      <div class="eqfoot">
+        <div>
+          <div class="t">Finds per second</div>
+          <p>Dividing by travel time means a slightly worse cell that is much closer can win. "Sweep the area around a find" is arithmetic here, not a special case.</p>
+        </div>
+        <div>
+          <div class="t">Coverage stays guaranteed</div>
+          <p>Staleness grows in any cell nobody has looked at, so an ignored one eventually outranks a mildly interesting one. Priority changes the <em class="hi">order</em>, not the promise.</p>
+        </div>
+        <div>
+          <div class="t">One pass is not proof</div>
+          <p>The Bayesian update uses our <em class="hi">measured</em> 0.824 recall. Because it is not 1.0, flying over a cell and seeing nobody never drives belief to zero.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="fp chart rv d1">
+      <img src="img/adaptive-search.png"
+           alt="Three panels of survivors found against time, for a good, mediocre and uninformative prior. In every panel the adaptive planner's curve rises earlier and higher than the lawnmower baseline; the gap narrows as the prior gets worse.">
+    </div>
+    <p class="figcap rv d1">
+      100 seeds · both planners fly <b>identical</b> worlds — same survivors, same battery,
+      same detection coin-flips — so the only thing that varies is where they choose to go.
+      Prior correlation is measured against ground truth and reported; it is not a tuned dial.
+    </p>
+
+    <div class="numrow rv d2">
+      <div><div class="v">3.2×</div><div class="k">Faster to half the survivors<br><b>Good prior · corr +0.65</b></div></div>
+      <div><div class="v">2.2×</div><div class="k">Faster with a half-wrong map<br><b>Mediocre prior · corr +0.38</b></div></div>
+      <div><div class="v">1.3×</div><div class="k">Faster knowing nothing at all<br><b>Uniform prior · corr −0.01</b></div></div>
+    </div>
+
+    <div class="tw rv d2">
+      <table>
+        <thead><tr><th>PLANNER</th><th>FOUND / 20</th><th>TIME TO HALF</th><th>REACHED 80 %</th><th>AREA COVERED</th></tr></thead>
+        <tbody>
+          <tr class="grp"><td colspan="5">GOOD PRIOR · CORRELATION +0.65</td></tr>
+          <tr><td class="cap">Lawnmower</td><td class="n nt">11.0</td><td class="n nt">935 s</td><td class="n nt">10 / 100</td><td class="n nt">56 %</td></tr>
+          <tr class="ship"><td class="cap">Adaptive</td><td class="n win">20.0</td><td class="n win">291 s</td><td class="n win">81 / 100</td><td class="n nt">33 %</td></tr>
+
+          <tr class="grp"><td colspan="5">MEDIOCRE PRIOR · CORRELATION +0.38</td></tr>
+          <tr><td class="cap">Lawnmower</td><td class="n nt">10.5</td><td class="n nt">938 s</td><td class="n nt">10 / 100</td><td class="n nt">56 %</td></tr>
+          <tr class="ship"><td class="cap">Adaptive</td><td class="n win">19.0</td><td class="n win">430 s</td><td class="n win">79 / 100</td><td class="n nt">42 %</td></tr>
+
+          <tr class="grp"><td colspan="5">UNIFORM PRIOR · CORRELATION −0.01 · NO INFORMATION AT ALL</td></tr>
+          <tr><td class="cap">Lawnmower</td><td class="n nt">11.0</td><td class="n nt">938 s</td><td class="n nt">10 / 100</td><td class="n nt">56 %</td></tr>
+          <tr class="ship"><td class="cap">Adaptive</td><td class="n nt">11.0</td><td class="n win">715 s</td><td class="n">18 / 100</td><td class="n nt">48 %</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="figcap rv d2">
+      Medians across 100 seeds. The column that says the most is <b>reached 80 %</b>:
+      a lawnmower gets there in 10 runs out of 100 whatever the prior, because it cannot
+      use information. Adaptive with a usable map gets there in 81.
+    </p>
+
+    <div class="trio rv d2" style="margin-top:42px">
+      <div class="tri">
+        <span class="fn">THE CLIFF IS NOT WHERE WE EXPECTED</span>
+        <h3>Rough beats nothing</h3>
+        <p>Going from no information to a half-wrong map takes the count from 11 to 19 of 20. Going from half-wrong to good adds one more. So the hazard classifier's job is <em class="hi">stop the map being blank</em>, not be precise — and open building footprints alone would likely do most of it.</p>
+      </div>
+      <div class="tri">
+        <span class="fn">WITH A USELESS MAP</span>
+        <h3>It does not collapse</h3>
+        <p>At correlation −0.01 it still reaches half 1.3× faster, and 80 % in 18 runs against 10. Not from the prior — from what it learns in flight. Nothing is attractive at launch, so it starts out flying a grid; the first person it finds makes it work that ground instead of marching on. <b>It finds no more people overall, though.</b></p>
+      </div>
+      <div class="tri">
+        <span class="fn">THE COST, STATED</span>
+        <h3>It covers less ground</h3>
+        <p>33 % of the area against the lawnmower's 56 %. More people, sooner, over less ground. If the objective were <em class="am">map everything</em> rather than <em class="am">find people fast</em>, the lawnmower wins — and that belongs in the table, not a footnote.</p>
+      </div>
+    </div>
+
+    <div class="warnbox rv d2">
+      <span class="fn">⚠ THE CLAIM, AND THE ONE NEXT TO IT WE DO NOT MAKE</span>
+      <p class="say">
+        “In simulation, with a detector at our measured 0.824 recall, adaptive search reached
+        half the survivors 3.2× faster than a lawnmower grid and found 20 of 20 against 11.”
+      </p>
+      <p class="no">“Our system finds survivors 3× faster.”</p>
+      <p class="why">
+        The second is a flight claim and there is no aircraft. No wind, no GPS error, no
+        obstacles, and survivors that do not move. The prior is synthetic — its correlation is
+        a swept parameter, not a measurement of any real information source. Two bugs were
+        found and fixed by watching coverage rather than the headline; both are written up in
+        <span style="color:var(--cy)">simulation/RESULTS.md</span> along with everything above.
+      </p>
+    </div>
+  </div>
+</section>
+
 <!-- ═══ RESULTS ═════════════════════════════════════════════════ -->
 <section id="results">
   <div class="wrap">
-    <div class="mark rv"><span class="sq"></span> § 06 — MEASURED</div>
+    <div class="mark rv"><span class="sq"></span> § 07 — MEASURED</div>
     <h2 class="rv">THE <em class="hi">NUMBERS.</em></h2>
     <p class="lead rv d1">
       Trained on combined C2A and VisDrone under one unified <span style="color:var(--cy)">person</span>
@@ -698,8 +961,12 @@ img,svg,video{max-width:100%}
         Below: the same weights, the same thresholds — conf 0.18, imgsz 960 — run over
         C2A disaster imagery. Nothing re-tuned for the picture.
       </p>
-      <div class="shot" style="aspect-ratio:auto;padding:0;border-style:solid;margin-top:22px">
-        <img src="img/disaster-detections.png" alt="The same trained model detecting people in disaster imagery: collapsed structures, rubble and flood scenes, with detection counts per image" style="aspect-ratio:auto">
+      <!-- img/disaster-detections.png does not exist in the repo — this was a
+           broken image on the live site. Placeholder until the figure is
+           generated: same weights, conf 0.18, imgsz 960, over C2A. -->
+      <div class="shot" style="margin-top:22px">
+        <div class="h">FIGURE PENDING</div>
+        <div class="f">C2A DISASTER DETECTIONS · SAME WEIGHTS · CONF 0.18 · IMGSZ 960</div>
       </div>
     </div>
   </div>
@@ -708,7 +975,7 @@ img,svg,video{max-width:100%}
 <!-- ═══ TEAM ════════════════════════════════════════════════════ -->
 <section>
   <div class="wrap">
-    <div class="mark rv"><span class="sq"></span> § 07 — TEAM</div>
+    <div class="mark rv"><span class="sq"></span> § 08 — TEAM</div>
     <h2 class="rv">WHO BUILT IT.</h2>
     <div class="team">
       <div class="mem rv"><div class="nm">DEWANG</div><p>Detection model, hazard classifier, on-device benchmark, backend and dashboard.</p></div>
@@ -741,7 +1008,11 @@ img,svg,video{max-width:100%}
       our trained YOLOv12s weights over that footage. Altitude, field of view, GPS origin and
       flight track are fixed per-clip constants, disclosed on the dashboard rather than
       implied to be sensed. The de-duplication panel above is a schematic illustration, not
-      model output. Map tiles © OpenStreetMap contributors, cached locally.
+      model output. The adaptive search result in § 06 is a simulation study and has never
+      been flown; its one measured input is the detector's 0.824 recall, and every other
+      quantity in it is assumed, chosen or swept. On-device latencies are INT8 and every
+      accuracy figure is FP32 — two different models, reported separately, because INT8
+      accuracy is not yet measured. Map tiles © OpenStreetMap contributors, cached locally.
     </p>
   </div>
 </footer>
