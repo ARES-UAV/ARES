@@ -52,6 +52,12 @@ from backend.localize import METRES_PER_DEGREE_LAT
 # One survivor's inputs: (latitude, longitude, confidence).
 SurvivorPoint = Tuple[float, float, float]
 
+# Precomputed cosine of a latitude, radians turned to metres. Kept module-level
+# so the hot pairwise loops below do not re-derive the same trig per comparison:
+# distance only requires the squared metres (no sqrt) when it is being checked
+# against a threshold, and that check is the whole neighbour loop.
+_SQ_METRES_PER_DEGREE_LAT: float = METRES_PER_DEGREE_LAT * METRES_PER_DEGREE_LAT
+
 
 @dataclass(frozen=True)
 class PriorityBreakdown:
@@ -92,6 +98,22 @@ def metres_between(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     north_m = (lat1 - lat2) * METRES_PER_DEGREE_LAT
     east_m = (lon1 - lon2) * METRES_PER_DEGREE_LAT * math.cos(mean_lat)
     return math.hypot(north_m, east_m)
+
+
+def _squared_metres(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Squared ground distance in m², without the sqrt.
+
+    Every consumer of `metres_between` that compares the result against a
+    threshold accepts the monotonic square instead — saving a `math.hypot`
+    per call in the O(n²) neighbour loops, which are the hot path of scoring
+    and grouping. The squared value is never surfaced: it exists only to be
+    compared, never to be read.
+    """
+    north = (lat1 - lat2) * METRES_PER_DEGREE_LAT
+    east = (lon1 - lon2) * METRES_PER_DEGREE_LAT * math.cos(
+        math.radians((lat1 + lat2) / 2.0)
+    )
+    return north * north + east * east
 
 
 def cluster_score(neighbours: int, saturation: Optional[int] = None) -> float:
@@ -290,16 +312,20 @@ def score_all(
     )
 
     # ── Pass one: the cluster term, before deciding whether to use it ─
+    # Precompute the per-point constants once so the O(n²) loop below does
+    # not re-derive radians/cosines for the same point every comparison.
+    radius_sq = config.CLUSTER_RADIUS_M * config.CLUSTER_RADIUS_M
     neighbour_counts: List[int] = []
     cluster_scores: List[float] = []
     for index, (latitude, longitude) in enumerate(geometry):
+        lat0 = latitude
         neighbours = 0
         for other_index, (other_lat, other_lon) in enumerate(geometry):
             if other_index == index:
                 continue
             if (
-                metres_between(latitude, longitude, other_lat, other_lon)
-                <= config.CLUSTER_RADIUS_M
+                _squared_metres(lat0, longitude, other_lat, other_lon)
+                <= radius_sq
             ):
                 neighbours += 1
         neighbour_counts.append(neighbours)

@@ -364,7 +364,7 @@ def survivors() -> List[Survivor]:
     # on screen at once. `events.final_bands` is where the log's assessment
     # ends up, and re-scoring against it is idempotent (see `priority.band_for`),
     # so the two cannot diverge.
-    previous_bands = events_module.final_bands(records)
+    previous_bands = events_module.final_bands(records, confirmed_at)
     scores = priority.score_all(
         positions,
         [previous_bands.get(track_id) for track_id in track_ids],
