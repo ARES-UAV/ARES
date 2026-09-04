@@ -32,4 +32,4 @@ collected during the mission.
 
 ## Current Phase
 
-Research and software prototyping.
+Research,software prototyping and working on hardware using ROS and other tools
