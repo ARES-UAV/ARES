@@ -116,19 +116,46 @@ class Flight:
 class Drone:
     """Position, battery, and the act of flying somewhere while looking down."""
 
-    def __init__(self, world: World, planner_name: str):
+    def __init__(self, world: World, planner_name: str, recorder=None):
+        """`recorder`, when given, is handed the flight as it happens.
+
+        It is the ONLY thing here that knows about being watched, and every
+        call goes through `self._rec(...)`, a no-op when nothing is recording.
+        That is deliberate: the judge lab replays traces produced by THIS code
+        path, so what a judge watches is the algorithm the 100-seed benchmark
+        ran — not a second implementation that would drift from it the moment
+        either was edited.
+        """
         self.w = world
         self.pos = C.BASE_CELL
         self.t = 0.0
+        self.rec = recorder
         self.flight = Flight(planner=planner_name,
                              total_survivors=int(world.truth.sum()))
         self.flight.path.append(self.pos)
         self.w.observe(*self.pos, self.t)     # look at the launch cell
+        self._rec("step", t=0.0, y=self.pos[0], x=self.pos[1], found=0)
+
+    def _rec(self, kind: str, **kw) -> None:
+        if self.rec is not None:
+            self.rec(kind, **kw)
 
     # ── battery ───────────────────────────────────────────────────────
     @property
     def remaining(self) -> float:
         return C.BATTERY_S - self.t
+
+    def must_turn_back_since(self, t0: float,
+                             frm: tuple[int, int] | None = None) -> bool:
+        """Turn-back test for a sortie that launched at `t0`.
+
+        `remaining` counts from the campaign clock, which keeps running across
+        sorties. A second sortie starts with a fresh battery, so the test has
+        to be relative to its own launch rather than to zero.
+        """
+        frm = frm or self.pos
+        used = self.t - t0
+        return (C.BATTERY_S - used) <= travel_time(frm, C.BASE_CELL) * (1 + C.RESERVE_FRAC)
 
     def must_turn_back(self, frm: tuple[int, int] | None = None) -> bool:
         """Is there only just enough charge left to get home?
@@ -141,7 +168,8 @@ class Drone:
         return self.remaining <= travel_time(frm, C.BASE_CELL) * (1 + C.RESERVE_FRAC)
 
     # ── the core action ───────────────────────────────────────────────
-    def fly_to(self, target: tuple[int, int], *, stop_on_find: bool = False) -> int:
+    def fly_to(self, target: tuple[int, int], *, stop_on_find: bool = False,
+               t0: float = 0.0) -> int:
         """Fly to a cell, observing every cell crossed on the way.
 
         Returns how many people were found en route. Stops early if the
@@ -154,7 +182,8 @@ class Drone:
             step_s = travel_time(self.pos, cell)
 
             # Refuse the step if taking it would strand us.
-            if self.remaining - step_s <= travel_time(cell, C.BASE_CELL) * (1 + C.RESERVE_FRAC):
+            left = C.BATTERY_S - (self.t - t0)
+            if left - step_s <= travel_time(cell, C.BASE_CELL) * (1 + C.RESERVE_FRAC):
                 return found_here
 
             self.t += step_s
@@ -164,20 +193,35 @@ class Drone:
 
             n = self.w.observe(cell[0], cell[1], self.t)
             found_here += n
+            self._rec("step", t=self.t, y=cell[0], x=cell[1], found=n)
 
             if n and stop_on_find:
                 return found_here
 
         return found_here
 
-    def go_home(self) -> None:
+    def go_home(self, use_belief: bool = True) -> None:
         """Return to base — and keep searching the whole way.
 
         THE RETURN LEG IS NOT DEAD TIME
             A straight line home observes whatever happens to lie on it. A
             greedy walk that prefers high-belief neighbours, while still
             closing the distance to base, covers better ground for the same
-            fuel. That is the only difference between this and a straight run.
+            fuel.
+
+        `use_belief=False` FOR THE BASELINE, AND WHY IT MATTERS
+            The lawnmower is the control: a fixed pattern that CANNOT use
+            information. With a belief-guided return leg it could, for the last
+            tenth of the flight — so the write-up's "it cannot use information"
+            was not quite true, and on screen the drone visibly left its rows
+            and wandered, which reads as a bug.
+
+            Measured over 100 seeds, blind vs belief-guided return, the
+            baseline finds 11.0 either way and covers 56% vs 55%. The error
+            was in the CONSERVATIVE direction — it made the baseline slightly
+            stronger — so nothing published needs retracting. It is fixed
+            because the sentence describing it has to be true, not because the
+            numbers moved.
         """
         guard = 0
         while self.pos != C.BASE_CELL and guard < C.GRID_N * 4:
@@ -195,7 +239,11 @@ class Drone:
                     # Only steps that actually bring us closer to base.
                     if metres((ny, nx), C.BASE_CELL) >= here_d:
                         continue
-                    score = self.w.belief[ny, nx]
+                    # The baseline closes distance and nothing else. The
+                    # camera still records what it passes over — it just stops
+                    # CHOOSING by what it hopes to find.
+                    score = (self.w.belief[ny, nx] if use_belief
+                             else -metres((ny, nx), C.BASE_CELL))
                     if score > best_score:
                         best, best_score = (ny, nx), score
 
@@ -207,7 +255,8 @@ class Drone:
             self.flight.path_m += metres(self.pos, best)
             self.pos = best
             self.flight.path.append(best)
-            self.w.observe(best[0], best[1], self.t)
+            n = self.w.observe(best[0], best[1], self.t)
+            self._rec("step", t=self.t, y=best[0], x=best[1], found=n, homing=True)
 
         self.flight.returned_home = (self.pos == C.BASE_CELL)
 
@@ -237,18 +286,18 @@ def lawnmower_order() -> list[tuple[int, int]]:
     return order
 
 
-def run_lawnmower(world: World) -> Flight:
+def run_lawnmower(world: World, recorder=None) -> Flight:
     """Fly the fixed pattern until the battery says come home.
 
     Reads neither the prior nor any detection. It cannot adapt — that is the
     point of it.
     """
-    d = Drone(world, "lawnmower")
+    d = Drone(world, "lawnmower", recorder)
     for cell in lawnmower_order():
         if d.must_turn_back():
             break
         d.fly_to(cell)
-    d.go_home()
+    d.go_home(use_belief=False)     # the control must stay information-blind
     return d.finish()
 
 
@@ -290,7 +339,7 @@ def utility(world: World, frm: tuple[int, int], t: float) -> np.ndarray:
     return u
 
 
-def run_adaptive(world: World) -> Flight:
+def run_adaptive(world: World, recorder=None) -> Flight:
     """Fly to wherever the expected payoff per second is highest.
 
     COMMITMENT
@@ -304,7 +353,7 @@ def run_adaptive(world: World) -> Flight:
         survivors between priority bands every frame. Require a decisive
         change, not any change.
     """
-    d = Drone(world, "adaptive")
+    d = Drone(world, "adaptive", recorder)
     last_choice_t = -np.inf
     target: tuple[int, int] | None = None
 
@@ -318,6 +367,17 @@ def run_adaptive(world: World) -> Flight:
             u = utility(world, d.pos, d.t)
             target = tuple(np.unravel_index(np.argmax(u), u.shape))
             last_choice_t = d.t
+            # The three quantities behind the choice, recorded so the lab can
+            # show a judge WHY this cell won instead of asserting that it did.
+            stale = world.staleness(d.t)
+            dist_m = float(np.hypot(target[0] - d.pos[0],
+                                    target[1] - d.pos[1])) * C.CELL_M
+            d._rec("decide", t=d.t, frm=d.pos, target=target,
+                   utility=float(u[target]),
+                   belief=float(world.belief[target]),
+                   staleness=float(stale[target]),
+                   cost_s=dist_m / C.DRONE_SPEED_MS + C.CELL_M / C.DRONE_SPEED_MS,
+                   belief_map=world.belief.copy())
 
         before = d.pos
         # stop_on_find: a detection reshapes the belief map, so re-plan at once

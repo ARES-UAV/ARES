@@ -31,6 +31,36 @@ records that the decision was resolved on measured numbers, not preference.
 **The known risk:** YOLOv12 trades some speed for accuracy versus v11. On a Pi
 that trade needs verifying. It has not been yet — see A21.
 
+### Addendum, 18 September 2026 — the assumption was tested and did not hold
+
+The claim above that `s`-class v12 was the right architecture rested on COCO
+numbers and Ultralytics' own framing, never on a controlled test of *this*
+dataset. It has now had one: **YOLOv8s trained on the same combined C2A +
+VisDrone data, validated on the same split, at `imgsz=960`, default `max_det`,
+epoch-matched.**
+
+| | recall | precision | mAP50 | TP | FP |
+|---|---:|---:|---:|---:|---:|
+| **YOLOv8s @960** | **0.8264** | **0.8445** | **0.8453** | **71,147** | **13,103** |
+| YOLOv12s @960 | 0.8234 | 0.8217 | 0.8330 | 70,884 | 15,376 |
+
+YOLOv8s is better on every one — and the precision gap matters more than it
+looks: **2,273 fewer false positives** at a recall-favouring threshold is 2,273
+fewer boxes a rescuer has to dismiss.
+
+**What has not changed: the shipped model.** Accuracy was only half the
+question. YOLOv8s is 11.13 M parameters and 28.4 GFLOPs against v12s's 9.23 M
+and 23.2 — *heavier*, and the deployment constraint is a 209.5 ms frame on the
+RB3, not mAP. The swap is gated on that benchmark, with the rule fixed before
+the numbers arrived: **faster than 209.5 ms → swap; slower → keep v12s.**
+
+**The lesson worth keeping** is not "v8s is better". It is that A1 was decided
+on published benchmarks from another dataset and stood unchallenged for three
+weeks. A prediction made while designing the comparison — that pure-convolution
+v8s would degrade *more gracefully* at 640 — was also wrong, and by a clear
+margin: v12s lost 6.0 % mAP50, v8s lost 8.9 %. Both are recorded in
+`experiments/MODEL_COMPARISON_V8S_V12S.md` § 7 rather than quietly dropped.
+
 ---
 
 ## A2. Combined C2A + VisDrone, one `person` class

@@ -378,6 +378,80 @@ credibility hit. Volunteered, each is evidence of judgment.
 
 # 7. Architecture and software
 
+### "Where does the search algorithm actually run?"
+
+> On the aircraft. Everything that makes a decision runs onboard — detection,
+> tracking, localization, priority, and the planner that picks where to fly
+> next. The ground station receives survivor records and draws the map. It does
+> not issue commands.
+
+**Follow-up you should invite:** *"Why not run the planner on the ground, where
+there's more compute?"*
+
+> Because the planner commits to a new target every twenty seconds. Over a
+> twenty-minute sortie that's sixty decisions, and on the ground every one of
+> them is a radio round trip — sixty single points of failure, and the moment
+> the link drops the aircraft has no next target. We put the loop where it can
+> close without a radio.
+
+**The sentence to have ready:**
+
+> *"The link carries information out, not commands in. Losing it costs the
+> operator live awareness. It does not stop the search."*
+
+---
+
+### "Can one drone really carry all of that?"
+
+Do not estimate this out loud. The numbers exist:
+
+| Stage | Time | Runs |
+|---|---:|---|
+| **Detection @960 INT8** | **209.5 ms** | every frame *(measured, RB3 Gen 2)* |
+| Localization, 23 survivors | 0.25 ms | every frame |
+| Priority scoring, O(n²) | 1.57 ms | every frame |
+| **Planner — 400 cells + argmax** | **0.28 ms** | **once per 20 s** |
+
+> Everything after detection costs under one percent of the frame budget —
+> 0.87 %. The planner runs once every twenty seconds and takes 0.28
+> milliseconds, a duty cycle of 0.0014 %. Detection is the entire cost. The
+> intelligence on top of it is effectively free.
+
+Two things make that answer safe to give:
+
+- **It is two computers, not one.** A Pixhawk-class flight controller runs
+  ArduPilot and handles stabilisation and failsafe; the Qualcomm companion
+  computer runs perception and planning and hands targets down over MAVLink. If
+  the companion board dies, the aircraft still flies and still comes home.
+- **The timings are from our own code**, run over the demo clip's 7,081
+  detections and the 20×20 planner grid, then scaled 8× as a pessimistic ARM
+  allowance — not from a datasheet.
+
+**If they push on what *is* hard, say it plainly:** running two detectors for
+RGB + thermal fusion measured 2.4 FPS; sustained thermal and power draw are
+**not measured**; and the integration itself is not built — the loop has only
+ever closed in simulation.
+
+---
+
+### "YOLOv8s scores higher than YOLOv12s. Why are you shipping v12s?"
+
+This is a strong question and the honest answer is better than a dodge:
+
+> Because accuracy was only half the question. We ran the controlled comparison
+> — same data, same split, same resolution, epoch-matched — and YOLOv8s did
+> win: recall 0.8264 against 0.8234, and 2,273 fewer false positives. But v8s
+> is the heavier network, 11.1 million parameters against 9.2, and our binding
+> constraint is a 209.5 millisecond frame on the device, not mAP. The swap is
+> gated on a latency benchmark, and we fixed the rule before we had the number:
+> faster than 209.5 milliseconds, we swap; slower, we keep v12s.
+
+**Why this lands well:** it shows a pre-registered decision rule. Volunteering
+that your current model is not the most accurate one you trained is the kind of
+answer judges remember.
+
+---
+
 ### "Why is offline resilience a feature?"
 
 > It isn't one — it's a consequence, and that's a stronger position.
@@ -527,7 +601,7 @@ credibility hit. Volunteered, each is evidence of judgment.
 | "The AI figures it out" | Name the actual mechanism |
 | "It's about 95% accurate" | Quote precision, recall and mAP separately |
 | "It works in real time" | "It runs at N FPS on a Pi 4, and here's why that's enough" |
-| "We don't have any weaknesses" | ID switches, no ground-truth count, no Pi benchmark yet |
+| "We don't have any weaknesses" | ID switches, no ground-truth count, INT8 accuracy unmeasured, sustained power/thermal unmeasured |
 | "That's just a placeholder" | If it's on screen, defend it or remove it before the demo |
 | "Claude wrote that part" | You directed it, you reviewed it, you can explain it. That's authorship |
 

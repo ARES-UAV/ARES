@@ -2,6 +2,33 @@
 
 *Last updated 23 Aug 2026 · owner: Dewang*
 
+
+> ### ⚠ Partly superseded — read this first (18 Sept 2026)
+>
+> This document is kept because it records how the model decision was actually
+> made. Three of its conclusions have since been overtaken by measurement:
+>
+> 1. **The "two-model story" is dead.** This file proposes YOLOv8n onboard and
+>    YOLOv12s as *"the ground-station model, re-runs the footage once it
+>    lands."* ARES no longer has a ground-station model. **Everything that
+>    decides anything runs on the aircraft** — the ground station receives
+>    survivor records and draws the map. Do not pitch the two-tier split.
+> 2. **The target device is not a Raspberry Pi 4.** It is a Qualcomm Dragonwing
+>    RB3 Gen 2 (QCS6490), and the benchmark has been run: YOLOv12s INT8 at
+>    960 px is **209.5 ms / 4.8 FPS** on the NPU. The "benchmark plan" table
+>    below was never filled in on a Pi and will not be. See
+>    `ARES_MEASURED_NUMBERS.md`.
+> 3. **No fallback to YOLOv8n was needed.** v12s clears a usable rate on the
+>    real device.
+>
+> The architecture ranking here was also measured at 640 px on the C2A-only
+> split. The controlled comparison at the deployed 960 px on the combined split
+> is in **`MODEL_COMPARISON_V8S_V12S.md`**, and it reverses the result:
+> **YOLOv8s beats YOLOv12s on every headline metric.** v12s remains shipped
+> pending a device-latency benchmark.
+
+---
+
 This repository already contains four completed detection experiments. This document pulls them into one place, states what they do and do not prove, and names the single comparison that is still missing.
 
 ---

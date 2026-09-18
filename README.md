@@ -120,7 +120,9 @@ All rows evaluated on the **same** C2A test split — 2,043 images, 72,523 insta
 
 **Key finding.** Domain-specific fine-tuning matters more than architecture: a COCO-pretrained YOLOv8n finds fewer than one survivor in five (recall 0.189); fine-tuned on disaster imagery the same network finds nearly three in four (0.728) — a **285% relative gain in recall from training data alone**.
 
-**Stated caveat.** The YOLOv8 models trained for 50 epochs and YOLOv12s for 59 (the shipped checkpoint records `epoch: 58`, zero-indexed). This is therefore not a controlled architecture comparison and is not presented as one — it establishes which model to ship, which was the question being asked. Full analysis in [`experiments/MODEL_SELECTION.md`](./experiments/MODEL_SELECTION.md).
+**Stated caveat.** The YOLOv8 models trained for 50 epochs and YOLOv12s for 59 (the shipped checkpoint records `epoch: 58`, zero-indexed). This table is therefore not a controlled architecture comparison and is not presented as one — it establishes which model to ship, which was the question being asked. Full analysis in [`experiments/MODEL_SELECTION.md`](./experiments/MODEL_SELECTION.md).
+
+> **Superseded in part, 18 Sept 2026.** A controlled comparison has since been run — same combined validation split, `imgsz=960`, default `max_det`, epoch-matched — and **YOLOv8s beats YOLOv12s on every headline metric** (recall 0.8264 vs 0.8234, precision 0.8445 vs 0.8217, mAP50 0.8453 vs 0.8330). YOLOv12s remains the shipped model pending a device-latency benchmark; the swap rule was fixed in advance at *faster than 209.5 ms on the RB3 → swap.* See [`experiments/MODEL_COMPARISON_V8S_V12S.md`](./experiments/MODEL_COMPARISON_V8S_V12S.md).
 
 ### Detection threshold — and what it buys
 

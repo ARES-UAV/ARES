@@ -130,7 +130,11 @@ The checkpoint records `epoch: 58` of a planned 100 (zero-indexed — 59 epochs 
 - **Raspberry Pi 4 is still unmeasured.** `DEVICE_FPS = None` renders "not yet measured". Qualcomm figures do not fill a Pi row.
 - **INT8 accuracy is unmeasured.** All device latencies are INT8; all accuracy figures above are FP32. Never present them as one system.
 
-**Before changing model architecture, read `experiments/MODEL_SELECTION.md`.** This repo already contains trained YOLOv8n and YOLOv8s models whose relationship to YOLOv12s is not yet established — they were measured on a different test split.
+**Before changing model architecture, read `experiments/MODEL_SELECTION.md` and `experiments/MODEL_COMPARISON_V8S_V12S.md`.**
+
+*Updated 18 Sept 2026.* The YOLOv8s ↔ YOLOv12s relationship is **no longer open** — it was settled on a controlled comparison (same combined C2A + VisDrone validation split, `imgsz=960`, default `max_det`, epoch-matched). **YOLOv8s wins on every headline metric**: recall 0.8264 vs 0.8234, precision 0.8445 vs 0.8217, mAP50 0.8453 vs 0.8330 — 263 more true positives and 2,273 fewer false positives.
+
+**The shipped model is still YOLOv12s.** Accuracy was only ever half the question; the swap is gated on device latency against v12s's measured 209.5 ms on the RB3, and that benchmark is still running. The decision rule was pre-registered before the numbers arrived: **faster than 209.5 ms → swap; slower → keep v12s.** Do not pre-empt it in any document.
 
 ---
 

@@ -160,6 +160,98 @@ by construction, and it uses every run.
 
 ---
 
+## 6b. "Do you ever find the rest?" — the multi-sortie campaign
+
+`tools`: `simulation/multi_sortie.py` · record `simulation/results/multi_sortie.json`
+
+The strongest objection to § 7's trade — adaptive covers 33 % against the
+lawnmower's 56 % — is the obvious one:
+
+> *"A grid is systematic. Fly it long enough and it finds everyone. Yours goes
+> where it guesses. Do the ones it skipped ever get searched?"*
+
+One 20-minute sortie cannot answer that: neither aircraft finishes the area.
+So fly four, back to back, over one persistent world. The lawnmower resumes its
+pattern where the battery stopped it — what an operator actually does. Adaptive
+keeps its belief map, so cells it skipped have been accruing **staleness** the
+whole time.
+
+**Cumulative found (coverage), 60 seeds, medians:**
+
+| prior | planner | sortie 1 | sortie 2 | sortie 3 | sortie 4 |
+|---|---|---|---|---|---|
+| good | lawnmower | 10.0 (55 %) | **17.0 (100 %)** | 17.0 (100 %) | 17.0 (100 %) |
+| good | **adaptive** | **20.0** (33 %) | 20.0 (77 %) | 20.0 (99 %) | 20.0 (100 %) |
+| mediocre | lawnmower | 10.0 (55 %) | 17.0 (100 %) | 17.0 (100 %) | 17.0 (100 %) |
+| mediocre | **adaptive** | 19.0 (42 %) | **20.0** (82 %) | 20.0 (99 %) | 20.0 (100 %) |
+| uniform | lawnmower | 10.0 (55 %) | 17.0 (100 %) | 17.0 (100 %) | 17.0 (100 %) |
+| uniform | **adaptive** | 11.0 (48 %) | 18.0 (85 %) | 19.0 (98 %) | **20.0 (100 %)** |
+
+### The objection's premise is wrong
+
+**The lawnmower covers 100 % of the area by sortie 2 — and still finds 17 of
+20. Then it stops improving, for ever.**
+
+That plateau is not a coverage failure. It is arithmetic:
+
+```
+20 survivors  x  P(detect) 0.824  =  16.5 expected on a single look
+                                     measured plateau: 17.0
+```
+
+A complete sweep is not a complete search. At our measured recall roughly one
+person in six is missed on any given pass, and a planner that visits every cell
+exactly once has no mechanism to go back — nothing in a fixed pattern says
+"look again".
+
+**Adaptive reaches 20 of 20 from every prior**, including the uninformative
+one, because the Bayesian miss-update never drives a cell's belief to zero. One
+look is not proof of absence, so a cell that came up empty stays worth
+revisiting, and the staleness term guarantees the unvisited ones rise anyway.
+
+### Two claims this supports, and one it retires
+
+**Supports:**
+
+> Adaptive reaches full coverage — 100 % by the third or fourth sortie — so
+> skipped cells are queued, not abandoned. The staleness term is a coverage
+> guarantee, and it is now measured rather than asserted.
+
+> Over a campaign, adaptive finds **more people**, not merely the same people
+> sooner: 20 of 20 against the grid's 17 of 20, with both at 100 % coverage.
+
+**Retires:** the framing in § 7 that the single-sortie coverage gap (33 % vs
+56 %) is a straight cost. Across a campaign it is a scheduling difference, and
+the grid's higher first-sortie coverage buys it nothing it keeps.
+
+### Caveats
+
+1. Four sorties over one static world. Survivors do not move, and no new ones
+   appear — a real second sortie hours later faces a changed scene.
+2. Battery swaps are free and instant here. No transit to a landing site, no
+   turnaround.
+3. The lawnmower could revisit if someone told it to. Nothing in a grid pattern
+   does, which is the point — but a fairer "grid plus a second sweep" baseline
+   would close part of the 17-vs-20 gap and is worth measuring before the
+   claim is used against a sophisticated audience.
+
+### A harness bug worth recording
+
+The first version of this experiment reported the lawnmower **frozen at 55 %
+coverage and 11 survivors for every sortie after the first** — a far more
+flattering result, and false.
+
+`fly_to` refuses a step that would strand the aircraft and returns without
+moving. The sortie loop advanced its pattern index regardless, so across sortie
+1 the index walked all 400 cells while the drone sat still, and every later
+sortie found the pattern already exhausted. Fixed by advancing the index only
+when the aircraft actually reached the cell.
+
+The tell was the coverage column: identical to three decimal places across four
+sorties. A real planner does not produce numbers that clean.
+
+---
+
 ## 7. What may and may not be claimed
 
 **May:**

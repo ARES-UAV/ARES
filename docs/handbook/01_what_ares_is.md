@@ -196,13 +196,53 @@ give a bad answer on stage.
 ### What ARES is designed to be
 
 ```
-Drone in flight
-  ├── camera → YOLOv12s running on a Raspberry Pi 4
-  ├── ByteTrack assigns IDs
-  ├── pixel → GPS using onboard telemetry
-  ├── priority scoring
-  └── radio link → a few KB of JSON → command dashboard
+Drone in flight — the loop closes here, with the radio switched off
+  ┌─→ camera → detection (YOLO, INT8, on the companion computer)
+  │      → ByteTrack assigns IDs
+  │      → pixel → GPS using onboard telemetry
+  │      → priority scoring
+  │      → belief update over the search grid
+  │      → planner picks the next target
+  │      → flight controller flies to it
+  └──────┘
+
+Radio link (optional) → a few KB of JSON → command dashboard
 ```
+
+**Everything that decides anything runs on the aircraft.** The ground station
+is where people look, not where choices are made:
+
+> *"The link carries information out, not commands in. Losing it costs the
+> operator live awareness. It does not stop the search."*
+
+The reason this is affordable is bandwidth, not latency. Streaming 1280×720
+video needs ~3,000 kbps; sending confirmed survivor records once a second needs
+~22 kbps — **about 136× less.** The whole demo mission, all 23 survivors, is
+**2.7 KB**. On-device inference turns a video-bandwidth problem into a
+text-bandwidth problem.
+
+The planner is the newest stage and the one to be careful about: it is
+**designed** to run onboard and has been **measured** to fit there (below), but
+it has only ever been flown in simulation. See `simulation/` and
+`docs/PRIORITY_PRIOR_AND_OFFLINE.md` § 3–4.
+
+### Does one drone have the compute for all that?
+
+Measured on the project's own code rather than estimated, with an 8× pessimistic
+allowance for ARM:
+
+| Stage | Time | Runs |
+|---|---:|---|
+| **Detection @960 INT8** | **209.5 ms** | every frame *(measured on RB3 Gen 2)* |
+| Localization, 23 survivors | 0.25 ms | every frame |
+| Priority scoring, O(n²) | 1.57 ms | every frame |
+| **Planner — 400 cells + argmax** | **0.28 ms** | **once per 20 s** |
+
+Everything downstream of detection costs **0.87 % of the frame budget**, and the
+planner's duty cycle is **0.0014 %**. Detection is the whole cost; the
+intelligence is free. What is genuinely hard is running *two* detectors for
+RGB + thermal fusion (measured: 2.4 FPS), and sustained thermal and power draw,
+which is **not measured**.
 
 ### What the demo actually does
 
@@ -239,6 +279,7 @@ scoping; they punish claims that fall over under one question.
 | Offline resilience | **Built** — a consequence of on-device inference |
 | Multi-sensor fusion (RGB + thermal) | *Partial* — public thermal datasets, not hardware |
 | Hazard classification | *Partial* — 3 of 7 classes, Phase 2 |
+| Adaptive search planning | *Simulated* — 100-seed study vs a lawnmower baseline. **Never flown** |
 | Autonomous navigation, GPS-denied SLAM | **Described only** — architecture write-up |
 
 The rule: **do not build, mock, or imply the "described only" row.** An

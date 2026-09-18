@@ -29,7 +29,7 @@ removes every live-inference failure mode from the stage.
 | **Playback clock** | **Frontend** | `App.jsx` · `currentFrame`, read off the `<video>` element |
 | **Per-frame overlay + counts** | **Frontend** | `detectionIndex.js` |
 | **Map** | **Frontend** | Leaflet; tiles served by the backend from `/tiles/...` |
-| **Adaptive search** | **Neither** | `simulation/` — a standalone study, **not wired to the dashboard** |
+| **Adaptive search** | **Neither** | `simulation/` — a standalone study, **not wired to the dashboard**. By design it runs *onboard*, not here — see below |
 
 ### The mission log is deliberately split
 
@@ -59,12 +59,29 @@ counting confirmed survivors.
 
 The frontend fetches each **once on mount**. It does not poll.
 
-### Adaptive search is not in the product
+### Adaptive search is not in *this* product — and was never meant to be
 
 `simulation/` is a research study with its own world, planners and metrics. It
 shares `backend/config.py`'s constants and nothing else. No dashboard panel
 reads it. When the deck says "adaptive search", it is describing that study —
 which is why `CLAUDE.md`'s scope table marks it *simulation only, not flown*.
+
+**Do not read "Neither" as "unplaced".** This table says where code runs *in
+this repository*, and the answer for the planner is neither the backend nor the
+frontend. Where it is *designed* to run is the aircraft, and that is a
+deliberate architectural choice, not a gap:
+
+- The planner commits to a target every `COMMIT_S = 20 s`. Over a 1200-second
+  sortie that is **60 decisions**. On the ground, each one is a radio round
+  trip — 60 single points of failure per flight, and the moment the link drops
+  the aircraft has no next target.
+- It has been measured to fit: **0.28 ms per decision**, a **0.0014 %** duty
+  cycle on the companion computer. Compute is not the obstacle.
+
+So the honest phrasing is **"designed onboard, proven in simulation, never
+flown"** — not "runs on the ground station" (wrong) and not "Phase 2"
+(superseded). Full argument and timings: `docs/PRIORITY_PRIOR_AND_OFFLINE.md`
+§ 3–4.
 
 ---
 

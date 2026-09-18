@@ -196,6 +196,39 @@ scale ~7×, it is memory and tiling.
 
 ---
 
+## Compute budget — does it fit on the aircraft?
+
+Measured 18 Sept 2026 by timing this repository's own modules over the demo
+clip's 7,081 detections and `simulation/`'s 20×20 planner grid, then scaling
+**8×** as a pessimistic allowance for ARM against the development machine.
+
+| Stage | Time | Frequency |
+|---|---:|---|
+| **Detection @960 INT8** | **209.5 ms** | every frame *(measured on RB3 Gen 2)* |
+| Localization (`backend/localize.py`), 23 survivors | 0.25 ms | every frame |
+| Priority scoring (`backend/priority.py`), O(n²) | 1.57 ms | every frame |
+| **Planner (`simulation/planners.py`), 400 cells + argmax** | **0.28 ms** | **once per `COMMIT_S = 20 s`** |
+
+```
+downstream work per frame   ~1.8 ms
+detection per frame        209.5 ms
+                           ─────────
+downstream share              0.87 %
+```
+
+**Planner duty cycle: 0.0014 %.** Detection is the entire compute cost;
+everything that makes the system *adaptive* rather than merely a detector is
+free by comparison.
+
+**What this does and does not establish.** It establishes that compute is not
+the obstacle to running the planner onboard — that was the open question and it
+is now closed. It does **not** establish that the integrated loop works: it has
+never been assembled on hardware. Two detectors for RGB + thermal fusion
+measured **2.4 FPS**, and sustained thermal and power draw remain unmeasured
+(below).
+
+---
+
 ## Not measured
 
 State these as unmeasured wherever they appear.
@@ -206,10 +239,12 @@ State these as unmeasured wherever they appear.
 | **Raspberry Pi 4** | Different silicon, with no neural accelerator. The Qualcomm figures do not fill a Pi row. |
 | **Power draw** | Duty cycle is a proxy, not a measurement. |
 | **Ground-truth survivor count** | Demo clip shows 23 unique tracks; no hand count to check it against. |
+| **Sustained thermal / power under load** | The 209.5 ms figure is a benchmark, not a 20-minute sortie. Throttling is plausible and untested. |
+| **The integrated onboard loop** | Each stage is timed in isolation. Perception → planner → flight controller has only ever closed in simulation. |
 
-Two labelled gaps beside eight measured numbers is a stronger position than ten
-numbers with no gaps — a table with no gaps invites the question of which
-entries were guessed.
+Six labelled gaps beside the measured numbers above is a stronger position than
+a table with no gaps — a table with no gaps invites the question of which
+entries were guessed. Say them before a judge finds them.
 
 
 ---
