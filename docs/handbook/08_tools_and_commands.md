@@ -155,7 +155,7 @@ Saved as `models/test_frame_dense.jpg`, for an honest Pi benchmark. See Part 4.
 ### Stage 5 — copy to `frontend/public/`
 
 The clip lives in **two places** because the backend serves the playback clock and
-the frontend serves the `<video>` element. That is CLAUDE.md constraint 2 — the
+the frontend serves the `<video>` element. That is CONVENTIONS.md constraint 2 — the
 video panel must work with the backend switched off.
 
 ### What the script tells you at the end
@@ -276,7 +276,7 @@ python tools/benchmark.py models/yolov12s.pt 960 models/test_frame_dense.jpg
 python tools/fetch_tiles.py
 ```
 
-**Why:** CLAUDE.md constraint 3 — map tiles need internet and venue wifi fails.
+**Why:** CONVENTIONS.md constraint 3 — map tiles need internet and venue wifi fails.
 *Discovering that on 10 September is not a plan.*
 
 Downloads a 1 km box centred on the GPS origin, at zoom 14 through 19, into

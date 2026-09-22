@@ -124,6 +124,13 @@ data/raw/
 !backend/data/tiles/
 !backend/data/tiles/**
 
+# Alert delivery ledger. RUNTIME STATE, not source: it records which alerts
+# actually reached a channel on one machine, so committing it would replay
+# another machine's delivery history as this one's — the dashboard would show
+# a drained queue it never drained. `backend/alerts.py` recreates it on the
+# first flush.
+backend/data/alerts.jsonl
+
 # ── Editors / OS ───────────────────────────────────────────────────
 .vscode/
 !.vscode/settings.json
@@ -132,4 +139,16 @@ data/raw/
 *.swo
 *~
 Thumbs.db
-.claude/skills/
+.claude/
+
+# ── Local working notes ────────────────────────────────────────────
+# Scratch that documents HOW the work got done rather than what it does.
+# Useful while a session is live, noise in a repository someone reads to
+# understand the system. Keep them locally if you want them; they do not
+# belong in the history.
+_to_delete/
+SESSION_*.md
+*_SESSION.md
+NOTES_*.md
+scratch/
+.DS_Store

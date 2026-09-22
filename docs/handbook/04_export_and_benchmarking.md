@@ -269,8 +269,8 @@ every time rather than quoting a remembered one:
 4.6 s × 16.1 FPS (IQ-9075)  = ~74 consecutive frames of the same ground
 ```
 
-An earlier draft flagged a conflict with `CLAUDE.md`, which once stated 7.7
-seconds — implying 3 m/s. That line is gone from `CLAUDE.md`, so there is
+An earlier draft flagged a conflict with `CONVENTIONS.md`, which once stated 7.7
+seconds — implying 3 m/s. That line is gone from `CONVENTIONS.md`, so there is
 nothing left to reconcile. The lesson stands regardless: **the pitch, the deck
 and this handbook all compute from the one constant.** The moment three
 documents each carry their own remembered number, one of them is wrong and

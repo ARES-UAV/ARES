@@ -182,7 +182,7 @@ Your `index.css` publishes the design tokens as Tailwind utilities via
 
 An open-source mapping library. Tiles, markers, zoom, pan.
 
-**Chosen because it needs no API key** — CLAUDE.md constraint 4. Google Maps and
+**Chosen because it needs no API key** — CONVENTIONS.md constraint 4. Google Maps and
 Mapbox both require one. OpenStreetMap tiles through Leaflet do not.
 
 ---

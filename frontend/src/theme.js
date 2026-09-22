@@ -47,9 +47,23 @@ export function token(name) {
 export const SURVIVOR = '--survivor'
 
 /**
- * Label text sitting ON a survivor-cyan chip, and the ring around a map
- * marker. The page ground, used as ink — dark on cyan, which is the only
- * legible direction for that pair.
+ * Hazards on the map.
+ *
+ * Always drawn as a TRIANGLE, never a circle — tokens.css explains why at
+ * length: Signal red and the ramp's `medium` step are only ~5 L* apart, so in
+ * greyscale or on a washed-out projector lightness will not tell them apart.
+ * Shape does what colour cannot, and Leaflet needs the resolved value for the
+ * same SVG-attribute reason everything else in this file does.
+ */
+export const HAZARD = '--hazard'
+
+/** The fill inside a hazard's influence radius. Already an rgba. */
+export const HAZARD_DIM = '--hazard-dim'
+
+/**
+ * Label text sitting ON a Beacon chip, and the ring around a map marker. The
+ * page ground, used as ink — dark on yellow, which is the only legible
+ * direction for that pair. Beacon is L* 84; nothing light survives on it.
  */
 export const ON_SURVIVOR = '--surface-0'
 
@@ -58,7 +72,21 @@ export const ON_SURVIVOR = '--surface-0'
  *
  * Not white. The token file's own note applies — full white on near-black
  * glares on a projector — and `--ink` is the value that was chosen instead.
- * It also cannot be survivor cyan: a cyan halo around a cyan box carries no
+ * It also cannot be Beacon: a yellow halo around a yellow box carries no
  * information at all.
  */
 export const SELECTION_HALO = '--ink'
+
+/**
+ * The safe (risk-weighted) route to the selected survivor.
+ *
+ * Read here for the same reason SURVIVOR is: Leaflet writes polyline styles as
+ * SVG presentation attributes, and no browser resolves `var()` in one.
+ */
+export const ROUTE = '--route'
+
+/** The shortest route, drawn dashed only when it differs from the safe one. */
+export const ROUTE_DIRECT = '--route-direct'
+
+/** The rescue staging point marker. */
+export const STAGING = '--staging'

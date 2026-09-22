@@ -17,7 +17,7 @@ import { FALLBACK_CONFIG } from './config.js'
  *
  *   assumed   — a fixed per-clip constant standing in for a measurement the
  *               prototype cannot make. Altitude, FOV, the flight track, the
- *               GPS origin. Disclosed, not hidden (CLAUDE.md, Localization).
+ *               GPS origin. Disclosed, not hidden (CONVENTIONS.md, Localization).
  *   chosen    — an operating decision, not a guess about the world. The value
  *               is exactly what it says it is; what is open to question is
  *               whether it was a good choice, so the basis says what it was
@@ -30,7 +30,7 @@ import { FALLBACK_CONFIG } from './config.js'
  *               row can ever earn this tag, and it has not earned it yet.
  *
  * The tags are a monotone trust ramp in ink, deliberately drawn in no colour
- * of their own: survivor cyan means "this is a detection" and the priority
+ * of their own: Beacon means "this is a detection" and the priority
  * ramp means rank, so borrowing either here would say something false about a
  * table of constants.
  *
@@ -346,7 +346,7 @@ export default function MissionParameters({ config, configOffline }) {
                   >
                     {row.value}
                   </span>
-                  {/* The "High Recall" wording CLAUDE.md requires on screen,
+                  {/* The "High Recall" wording CONVENTIONS.md requires on screen,
                       printed against the threshold that produces it rather
                       than floating on its own as an unbacked claim. */}
                   {row.label2 && (

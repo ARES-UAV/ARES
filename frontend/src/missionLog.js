@@ -18,7 +18,7 @@
  * That second half is not an oversight, it is the point. The obvious design
  * has the backend emit a confirmation event per track, and then the log's
  * confirmation lines are a second list of survivors that has to agree with the
- * header's count. CLAUDE.md's first dashboard requirement is that counts
+ * header's count. CONVENTIONS.md's first dashboard requirement is that counts
  * reconcile, and the standing rule in this codebase is that agreeing is not
  * the same as being one number. So the confirmation lines ARE the roster: one
  * line per element of the same array `survivorsInClip` is the length of. They
@@ -32,7 +32,7 @@
  * roster records, so confirmation is where the line goes.
  *
  * Nothing in this module authors an event. Every line traces to a detection
- * record — see the demo footage policy in CLAUDE.md. There is deliberately no
+ * record — see the demo footage policy in CONVENTIONS.md. There is deliberately no
  * "system ready" or "scanning sector 4" line, because there is no scan and no
  * sector, and a log that mixes real events with atmosphere is a log a judge
  * cannot trust any line of.

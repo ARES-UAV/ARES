@@ -190,7 +190,7 @@ G3 flight loop ──WebSocket──► /api/live ──► dashboard
 **Three rules, all non-negotiable.**
 
 1. **The replay path must keep working with the backend switched off.** That is
-   the demo-day fallback and it is in `CLAUDE.md` as a hard constraint. If live
+   the demo-day fallback and it is in `CONVENTIONS.md` as a hard constraint. If live
    mode can break it, live mode does not ship.
 2. **Counts must reconcile in live mode too.** Header, table and map all derive
    from one survivor array. The first mockup's worst flaw was 12 in the header

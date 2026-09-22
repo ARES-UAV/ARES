@@ -1,6 +1,6 @@
 """Rescue-priority scoring for located survivors.
 
-Robin owns this module (CLAUDE.md, Team). This is the stub written from the
+Robin owns this module (CONVENTIONS.md, Team). This is the stub written from the
 formula described there so the dashboard is not blocked waiting for it — swap
 his version in when it is ready, keeping `score_all`'s signature.
 

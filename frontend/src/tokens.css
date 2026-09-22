@@ -1,72 +1,149 @@
 /* ═══════════════════════════════════════════════════════════════════
    ARES — design tokens
-   Modern instrument palette: blue, white, grey, black and their shades.
-   Blue-black surfaces, ice-white ink — validated with the dataviz
-   palette checker.
+   IRONBOW. Near-black violet ground, thermal ramp, beacon yellow.
 
-   This refresh touches the UI chrome ONLY: surfaces, borders, text.
-   The semantic colours — survivor cyan and the orange priority ramp —
-   are untouched. They carry meaning and predate this palette:
+   The palette is the deck's, brought to the dashboard so the pitch and
+   the product are one object. It replaces the blue/cyan instrument
+   palette entirely — there is no blue left in this file.
 
-   1. Priority is an ORDINAL RAMP: one hue, monotone light→dark. It
-      stays orange so survivor rows read as rank against the blue-grey
-      chrome, with every colourblind-safe step gap intact.
+   Ironbow is the false-colour ramp thermal cameras use: cold violet
+   through magenta and orange to white-hot. It is the right ramp for
+   this product twice over. It is what a thermal payload's own output
+   looks like, and it is MONOTONIC IN LIGHTNESS, so priority survives a
+   projector, a photocopy and a colour vision deficiency.
 
-   2. Survivor cyan is a MARK colour only — boxes, pins, selection.
-      Never text, never a priority band.
+   ── Three collisions, and how each is resolved ────────────────────
+   The palette assigns some colours two jobs. Each is settled here,
+   once, so no colour on this dashboard means two things:
 
-   3. No raw hex outside this file. `theme.js` reads computed values off
-      `:root` for the two places CSS variables cannot reach (canvas and
-      Leaflet), so a token change flows through without a second edit.
+   1. BEACON YELLOW is survivor, and it also sits inside the ironbow
+      ramp near the hot end. Resolved by CONTEXT, which the code
+      already enforces: survivor colour appears only as marks over
+      imagery — bounding boxes, map pins, selection. Band colour
+      appears only as chips and stripes in the table, the log and the
+      legend. Verified: MapPanel colours every pin `--survivor` and
+      never by band. The two never share a surface.
+
+   2. SIGNAL RED is hazard, and the ironbow ramp passes through red on
+      its way from magenta to orange. Resolved two ways. The ramp
+      deliberately STEPS OVER red — `medium` is rose and `high` is
+      orange, with nothing between — so no band ever lands on Signal's
+      hue. And a hazard is always drawn as a TRIANGLE with its label,
+      never as a rounded swatch, because `medium` and Signal are only
+      ~5 L* apart and lightness alone will not separate them in
+      greyscale. Shape does the work colour cannot.
+
+   3. FLARE is "headings, emphasis" in the deck, and it is the `high`
+      band here. On the dashboard the RAMP WINS and headings are ink.
+      A deck heading is decoration; on an instrument, an orange word
+      next to an orange band reads as a priority. Colour on this
+      screen means rank, detection, hazard or measurement — never
+      emphasis.
+
+   ── Standing rules ────────────────────────────────────────────────
+   No raw hex outside this file. `theme.js` reads computed values off
+   `:root` for the two places CSS variables cannot reach — a canvas 2D
+   context and Leaflet's SVG presentation attributes — so a token
+   change flows through with no second edit.
+
+   Colour is never the only encoding. Every swatch is rendered beside
+   its word.
    ═══════════════════════════════════════════════════════════════════ */
 
 :root {
   /* ── Surfaces ─────────────────────────────────────────────────────
-     Near-black with a blue-bias cast — the "instrument glass" ground.
-     Cool steel, not neutral grey: white and the cyan accent read
-     against it with a cold, modern separation.                       */
-  --surface-0:      #0A1018;   /* page ground */
-  --surface-1:      #131F2B;   /* panels */
-  --surface-2:      #1D2C3A;   /* raised: rows, chips, hover */
+     Near-black with a faint VIOLET bias — the cold end of ironbow,
+     used as ground. Warm marks sit on it the way a thermal return
+     sits on cold sky, which is the whole reason the ramp reads.     */
+  --surface-0:      #0A0910;   /* Void   — page ground */
+  --surface-1:      #15131C;   /* Carbon — panels */
+  --surface-2:      #1F1B29;   /* raised: rows, chips, hover */
 
-  --border:         #2B3F52;
-  --border-soft:    #1B2A38;
+  --border:         #2A2536;   /* Slate  — rules, borders, inactive */
+  --border-soft:    #1D1926;
 
   /* ── Text ─────────────────────────────────────────────────────────
-     Ice-white to blue-grey, not pure white — full white on near-black
-     glares on a projector. The family is white → cool grey → slate.  */
-  --ink:            #EAF2FA;
-  --ink-soft:       #A9BFD3;
-  --ink-muted:      #6E8298;
+     Bone, never pure #FFF — full white on near-black glares on a
+     projector. Bone → Smoke → muted, all carrying the violet bias so
+     text reads as the same family as the ground rather than as a
+     layer floating over it.
+
+     `--ink-muted` is LIFTED from the palette card's Smoke-derived
+     tertiary. Measured: the obvious choice came out at 3.3:1 on
+     Carbon, and this file's own rule is that a caption has to survive
+     a projector. 4.9:1 is what that costs.                          */
+  --ink:            #F4EFE8;   /* Bone   — primary */
+  --ink-soft:       #9A93A8;   /* Smoke  — secondary, captions, axes */
+  --ink-muted:      #8A8399;   /* tertiary — eyebrows, units */
 
   /* ── Survivor mark ────────────────────────────────────────────────
-     ONE job: survivor detections — boxes, pins, selection.
-     Never used for text, never for a priority band.
-     Cyan is unmistakably distinct from the orange ramp — a detection
-     is a signal, a rank is a state, and they must not blend.          */
-  --survivor:       #22A7BD;
-  --survivor-dim:   rgba(34, 167, 189, 0.35);   /* unselected / trailing */
+     Beacon. ONE job: survivor detections — boxes, pins, selection.
+     Never text, never a priority band. The single most important
+     colour on the screen, and the brightest thing on it after the
+     critical band, which is the correct ordering for a system whose
+     entire purpose is finding people.                               */
+  --survivor:       #FFC93D;
+  --survivor-dim:   rgba(255, 201, 61, 0.35);   /* unselected / trailing */
 
-  /* ── Priority — ORDINAL RAMP, light → dark ───────────────────────
-     One hue, monotone lightness, all step gaps ≥ 0.06. Always paired
-     with its text label. Colour alone is never the encoding — a
-     projector, a photocopy or a colourblind judge must still read the
-     band. Unchanged by the UI palette refresh; the ramp stays orange
-     so a survivor row reads as rank against the blue-grey chrome.    */
-  --priority-low:      #FFCE9E;
-  --priority-medium:   #FB9A4A;
-  --priority-high:     #E06A1F;
-  --priority-critical: #A8410C;
+  /* ── Priority — IRONBOW RAMP, cold → hot ─────────────────────────
+     Monotonic in CIE L*: 36 → 44 → 67 → 95. Always paired with its
+     text label; colour alone is never the encoding.
 
-  /* ── Hazard (Phase 2, unused until the classifier exists) ─────────
-     Reserved. Crimson reads as alarm against the blue-grey chrome, and
-     it is deliberately outside the orange ramp so a hazard can never
-     be mistaken for a priority band.                                 */
-  --hazard:         #D63A5C;
+     The direction is inverted from the old orange ramp, which ran
+     light→dark. On a near-black ground the hottest band must be the
+     BRIGHTEST thing, not the darkest — a critical survivor drawn in
+     the colour closest to the background was the old palette's one
+     real flaw, and it only worked because the ground was lighter.
+
+     There is no "clear" band. `low` is the bottom of the ramp, drawn
+     in cold violet rather than a green, because the lowest-priority
+     person in a disaster zone still needs rescuing.
+
+     Nothing sits between `medium` and `high`. That gap is where red
+     lives, and red belongs to hazard — see collision 2 above.       */
+  --priority-low:      #7A3690;
+  --priority-medium:   #B53A72;
+  --priority-high:     #F7871F;   /* Flare */
+  --priority-critical: #FBEFC9;
+
+  /* ── Hazard ───────────────────────────────────────────────────────
+     Signal. Fire, flood, collapsed structure — never decorative, and
+     never a rounded swatch. A hazard is drawn as a TRIANGLE so it is
+     a different CLASS of object from a priority band, not merely a
+     different colour from one.                                      */
+  --hazard:         #D93A26;
+  --hazard-dim:     rgba(217, 58, 38, 0.22);   /* influence radius fill */
+
+  /* ── Measured ─────────────────────────────────────────────────────
+     Verify. Marks a figure that is traceable to a real measurement in
+     experiments/ARES_MEASURED_NUMBERS.md, as opposed to an assumed or
+     derived one. The only cool colour in the palette, deliberately:
+     provenance is not a temperature, and it must not be mistaken for
+     a rank. Kept scarce — if everything is badged as measured, the
+     badge stops meaning anything.                                   */
+  --verify:         #3FBFA8;
+  --verify-dim:     rgba(63, 191, 168, 0.16);
+
+  /* ── Ground routes ────────────────────────────────────────────────
+     Its own hue, OUTSIDE ironbow entirely. A route is not a
+     temperature: not a survivor, not a hazard, not a rank. Borrowing
+     any ramp colour would make the map say something it does not
+     mean. Periwinkle is the one part of the wheel the thermal ramp
+     never visits.
+
+     --route-direct is the shortest path, drawn only when it DIFFERS
+     from the safe one. Muted and dashed: it is the route not taken,
+     and it must not compete with the one the operator walks.        */
+  --route:          #8B87F0;
+  --route-direct:   rgba(154, 147, 168, 0.38);
+
+  /* The rescue staging point. Bone, not a ramp colour — it is a fixed
+     place on the map, not a ranked thing.                           */
+  --staging:        #F4EFE8;
 
   /* ── Not-measured / assumed ───────────────────────────────────────
-     Deliberately colourless. A value we haven't measured should read
-     as absent, not as a state. Muted ink on a raised surface.       */
+     Deliberately colourless. A value nobody measured should read as
+     absent, not as a state.                                         */
   --unmeasured-bg:  var(--surface-2);
   --unmeasured-ink: var(--ink-muted);
 

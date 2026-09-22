@@ -28,7 +28,7 @@ list**: a plan for six shots totalling ~60 seconds.
 | Title cards | shots 1, 3, 5, 6 — text on a dark ground | you, or Ujjaini |
 | **Assembly** | joining all six into one 60 s file | you *or* Ujjaini |
 
-CLAUDE.md gives Ujjaini the demo video. The clean handover: **you render the
+CONVENTIONS.md gives Ujjaini the demo video. The clean handover: **you render the
 two animation shots and hand her the mp4s**, she assembles them with the rest
 of the demo reel in her editor. She should not be opening Python.
 
@@ -165,7 +165,12 @@ Shot 03's numbers come from the good-prior seed: adaptive t50 220 s, lawnmower
 never found ten of the twenty. That is a real and very quotable result.
 
 **Caption these as the seed's numbers, not as the headline.** The 100-seed
-medians are 3.2× / 2.2× / 1.3×, and those belong on shot 06.
+medians are **3.11× / 2.10× / 1.27×**, and those belong on shot 06.
+
+> **Shot 03 and 05's figures are stale.** They come from an export made before
+> commit `828877b`, which changed the lawnmower's timing — see RESULTS.md §4.
+> Re-run `export_traces.py` and read the new seed's numbers off it before
+> burning either caption into the video. Do not carry 4.7× over on trust.
 
 A still becomes a video segment like this:
 

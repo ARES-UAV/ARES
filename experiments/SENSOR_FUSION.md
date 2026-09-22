@@ -61,7 +61,7 @@ pipeline.**
 **Fusion sits upstream of the data contract.** Both detectors run, their outputs
 are fused, and the result is written as `detections.json` in the existing
 format. Nothing downstream changes — not the backend, not the dashboard, not
-Robin's modules. The contract in `CLAUDE.md` is untouched, which is the rule.
+Robin's modules. The contract in `CONVENTIONS.md` is untouched, which is the rule.
 
 ---
 

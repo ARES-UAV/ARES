@@ -81,7 +81,7 @@ function Stat({ label, sublabel, mark, children }) {
 
 /**
  * A large figure. Ink, never a ramp colour — the priority ramp means rank and
- * survivor cyan means "this is a detection", and a count is neither.
+ * Beacon means "this is a detection", and a count is neither.
  */
 function Figure({ children, muted = false }) {
   return (
@@ -162,7 +162,7 @@ function seconds(value) {
  * Today, as the mission date.
  *
  * Computed rather than written down. A placeholder date is stale the day after
- * someone types it and reads as an unfinished dashboard (CLAUDE.md's design
+ * someone types it and reads as an unfinished dashboard (CONVENTIONS.md's design
  * review says exactly this), and there is no date this could be other than the
  * day it is being run.
  */
@@ -232,7 +232,7 @@ export default function HeaderBar({
         </div>
 
         <div className="ml-auto flex flex-wrap items-center gap-x-6 gap-y-2">
-          {/* Required on screen (CLAUDE.md, dashboard requirements). The
+          {/* Required on screen (CONVENTIONS.md, dashboard requirements). The
               threshold is the reason for the mode, so it is printed next to
               it rather than left as a claim — and the persistence rule is
               printed next to the threshold for the same reason. They are two
@@ -256,7 +256,7 @@ export default function HeaderBar({
               it stayed in the mission-parameters panel where a provenance tag
               could sit beside it.
 
-              It is measured now (Qualcomm AI Hub, real silicon), and CLAUDE.md
+              It is measured now (Qualcomm AI Hub, real silicon), and CONVENTIONS.md
               requires the measured figure on screen. The full provenance —
               which board, INT8, the 100% NPU placement, and the fact that INT8
               accuracy is a separate unmeasured thing — still lives in the
@@ -277,7 +277,7 @@ export default function HeaderBar({
           )}
 
           {/* The dashboard renders whether or not the backend is up
-              (CLAUDE.md, demo-day constraint 2). When it is down the clip and
+              (CONVENTIONS.md, demo-day constraint 2). When it is down the clip and
               camera constants come from the frontend's own copy, and saying so
               is the difference between a resilient dashboard and one quietly
               showing stale numbers. */}

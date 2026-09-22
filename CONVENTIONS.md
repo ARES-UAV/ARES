@@ -1,4 +1,4 @@
-# ARES — Repository Context
+# ARES — Repository Conventions
 
 ## What this project is
 
@@ -20,7 +20,7 @@ Every decision trades in favour of **working on demo day** over impressive-but-f
 
 ```
 ARES/
-├── CLAUDE.md              # this file
+├── CONVENTIONS.md              # this file
 ├── README.md
 ├── requirements.txt       # backend only — light, no torch
 ├── docs/                  # research + technical documentation

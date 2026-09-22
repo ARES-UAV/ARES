@@ -241,10 +241,63 @@ State these as unmeasured wherever they appear.
 | **Ground-truth survivor count** | Demo clip shows 23 unique tracks; no hand count to check it against. |
 | **Sustained thermal / power under load** | The 209.5 ms figure is a benchmark, not a 20-minute sortie. Throttling is plausible and untested. |
 | **The integrated onboard loop** | Each stage is timed in isolation. Perception → planner → flight controller has only ever closed in simulation. |
+| **Camera attitude during capture** | Every pin assumes a nadir camera. On a moving multirotor that is false, and it is the largest error term in localization — see below. |
 
-Six labelled gaps beside the measured numbers above is a stronger position than
-a table with no gaps — a table with no gaps invites the question of which
+Seven labelled gaps beside the measured numbers above is a stronger position
+than a table with no gaps — a table with no gaps invites the question of which
 entries were guessed. Say them before a judge finds them.
+
+---
+
+## The nadir assumption, quantified
+
+`backend/localize.py` projects pixels to GPS assuming the camera points
+straight down. A quadcopter translates **only** by tilting, so while the
+aircraft is moving between search cells that assumption does not hold, and the
+resulting error is a bearing error of `H · tan θ`:
+
+| Airframe tilt | Ground centre shifts (H = 20 m) | Share of the 23.09 m footprint |
+|---|---:|---:|
+| 5° | 1.75 m | 7.6 % |
+| 10° | 3.53 m | 15.3 % |
+| **20°** | **7.28 m** | **31.5 %** |
+| 30° | 11.55 m | 50.0 % |
+
+**A 20° tilt moves every pin by 7.3 m — roughly half of `CLUSTER_RADIUS_M`
+(15 m).** That is enough to merge two groups or split one, and group size is a
+scored term in `backend/priority.py`. So this does not stop at the coordinate:
+it propagates into the rescue order the dashboard displays.
+
+Altitude error is negligible beside it. GSD is linear in H, so a 0.4 m
+excursion is a 2 % scale error — 0.46 m across the entire frame. **Tilt is the
+term worth engineering against; height hold is not.**
+
+**Provenance.** The tilt angles and the airframe behaviour come from a
+quadcopter PID study on Swift Pico in MuJoCo — eYRC Khoj-o-Drone Task 1,
+September 2026, team eYRC#2802. That study measured a 1.525 kg airframe,
+21.88 N maximum thrust, hover at **68.4 %** of maximum, **+4.54 m/s² climb
+against −9.81 m/s² fall**, and **no aerodynamic damping at all**. It observed
+altitude leaving its tolerance band precisely while pitch and roll were making
+their large corrections, and put the thrust cost of tilting at `T·cos θ` —
+6 % at 20°, 13 % at 30°, against a margin of only 32 % above hover.
+
+That is a **different airframe in a different simulator**, so the angles are
+the right order of magnitude rather than ARES's own numbers. The displacement
+arithmetic above is exact for any airframe; only the choice of which tilt
+angles are realistic is borrowed.
+
+**What follows from it.** IMU fusion is not a checklist item on the roadmap —
+it is worth about 7 m of localization error, and that is the honest reason to
+build it. Two mitigations need no new sensor and belong in the flight plan:
+hold attitude while observing and translate between observations, or tag each
+frame with its tilt and drop detections above a threshold. The first costs
+search time, the second costs coverage, and both remove the error.
+
+**This does not correct the current demo.** Those pins come from stored
+VisDrone and C2A footage whose true camera attitude is unknown, so the nadir
+assumption is unverified for them as well. The honest statement is that the
+assumption is undischarged in both directions — not that the footage is nadir
+and only a real flight would differ.
 
 
 ---
@@ -258,7 +311,7 @@ through one constant, as designed:
 |---|---|
 | `backend/config.py` | `DEVICE_FPS = 4.8`, `DEVICE_NAME = "Dragonwing RB3 Gen 2 (QCS6490)"` |
 | `frontend/src/config.js` | same values, as the backend-offline fallback |
-| `frontend/src/HeaderBar.jsx` | renders it on screen — required by CLAUDE.md once measured |
+| `frontend/src/HeaderBar.jsx` | renders it on screen — required by CONVENTIONS.md once measured |
 | `frontend/src/MissionParameters.jsx` | carries the provenance: which board, INT8, 100 % NPU, and that INT8 accuracy is separate and unmeasured |
 
 **We publish the RB3 figure, not the IQ-9075's 16.1 FPS.** It is the slower of

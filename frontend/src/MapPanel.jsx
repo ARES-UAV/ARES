@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import PanelShell from './PanelShell.jsx'
 import L from 'leaflet'
 // Leaflet's own stylesheet is imported in main.jsx, NOT here. It has to load
 // before index.css or its light-theme defaults win the cascade on equal
@@ -13,7 +14,14 @@ import {
   TILE_ATTRIBUTION,
   TILE_URL,
 } from './config.js'
-import { token, SURVIVOR, SELECTION_HALO } from './theme.js'
+import {
+  token,
+  SURVIVOR,
+  SELECTION_HALO,
+  ROUTE,
+  ROUTE_DIRECT,
+  STAGING,
+} from './theme.js'
 
 /**
  * Survivor positions on an OpenStreetMap base layer.
@@ -76,6 +84,8 @@ function bindTrackTooltip(marker, trackId, selected) {
 }
 
 export default function MapPanel({
+  routes,
+  routesError,
   survivors,
   survivorsError,
   config,
@@ -89,8 +99,12 @@ export default function MapPanel({
   const mapRef = useRef(null)
   const markersRef = useRef(new Map())
   const fittedRef = useRef(false)
+  // One Leaflet layer group holding the whole route overlay, so a
+  // selection change clears it in one call instead of tracking each
+  // polyline and marker separately.
+  const routeLayerRef = useRef(null)
 
-  // Tiles come from the backend's bundled cache, not the internet (CLAUDE.md,
+  // Tiles come from the backend's bundled cache, not the internet (CONVENTIONS.md,
   // demo-day constraint 3 — venue wifi fails). Missing tiles otherwise render
   // as a silent grey rectangle, which looks like a broken dashboard rather
   // than a base map that has run out — so say which it is.
@@ -183,6 +197,8 @@ export default function MapPanel({
       observer.disconnect()
       map.remove()
       mapRef.current = null
+      // The group belonged to the map that was just destroyed.
+      routeLayerRef.current = null
       markers.clear()
       fittedRef.current = false
     }
@@ -270,7 +286,7 @@ export default function MapPanel({
         opacity: discovered ? 1 : 0.5,
         // The selected pin is ringed in ink, not in a ramp colour: those mean
         // rank, and a pin that turned orange when it was clicked would read as
-        // a change in priority. Not cyan either — a cyan ring around a cyan
+        // a change in priority. Not Beacon either — a Beacon ring around a Beacon
         // circle carries nothing.
         color: selected ? haloColor : survivorColor,
         fillColor: survivorColor,
@@ -293,31 +309,187 @@ export default function MapPanel({
     }
   }, [survivors, selectedTrackId])
 
-  return (
-    <section className="flex h-full min-h-0 flex-col">
-      <div className="mb-2 flex shrink-0 flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 className="eyebrow">Survivor map</h2>
-        {/* Deliberately NOT "N of M located". Every tracked survivor has a
-            position; this is how many the clip has confirmed by the current
-            frame, which is the header's "confirmed survivors" figure and the
-            same prop. "Located" invited the reading that localization had
-            failed for the rest. */}
-        <span className="figure text-eyebrow text-ink-muted">
-          {survivorsError
-            ? 'positions unavailable'
-            : survivorsSoFar === null
-              ? 'loading positions…'
-              : `${survivorsSoFar} of ${survivorsInClip} confirmed by this frame`}
-        </span>
-      </div>
 
+  // ── Draw the selected survivor's ground route ────────────────────
+  // ONE route at a time, and only for the selected survivor. Drawing all 23
+  // at once turns a 30 m field into a ball of wool that says nothing — the
+  // whole point of a route is "go this way to reach THIS person", which is a
+  // statement about one of them. It also matches the interaction the rest of
+  // the dashboard already has: click a pin or a row, see that track everywhere.
+  //
+  // This is the RESCUE TEAM's path on the ground, not the drone's flight path.
+  // They are different problems with different costs, and the caption under
+  // the map says so, because a line on a map cannot.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+
+    if (!routeLayerRef.current) routeLayerRef.current = L.layerGroup().addTo(map)
+    const layer = routeLayerRef.current
+    layer.clearLayers()
+
+    if (selectedTrackId === null || !routes) return
+    const route = routes.find((r) => r.track_id === selectedTrackId)
+    if (!route || !route.reachable || route.path.length === 0) return
+
+    const routeColor = token(ROUTE)
+    const directColor = token(ROUTE_DIRECT)
+    const stagingColor = token(STAGING)
+
+    // The route not taken, drawn first so it sits UNDER the one that was.
+    //
+    // Only when it actually differs. While no hazards are known the two paths
+    // are the same line, and drawing one on top of the other would imply a
+    // choice was made between them when nothing was avoided. An honest overlay
+    // has to be able to show that it did nothing.
+    if (route.hazard_aware && route.detour_m > 0) {
+      L.polyline(route.direct_path, {
+        color: directColor,
+        weight: 2,
+        dashArray: '4 6',
+        interactive: false,
+      }).addTo(layer)
+    }
+
+    L.polyline(route.path, {
+      color: routeColor,
+      weight: 4,
+      opacity: 0.95,
+      lineJoin: 'round',
+      lineCap: 'round',
+      interactive: false,
+    }).addTo(layer)
+
+    // Every route starts at the staging point, so the first vertex IS it —
+    // read off the route rather than fetched separately, which keeps the
+    // marker and the line from ever disagreeing about where the team sets out.
+    const [baseLat, baseLon] = route.path[0]
+    L.marker([baseLat, baseLon], {
+      interactive: false,
+      icon: L.divIcon({
+        className: 'ares-staging',
+        iconSize: [12, 12],
+        iconAnchor: [6, 6],
+        // A square, not a circle. Circles on this map mean "about here" — a
+        // localization estimate. The staging point is a chosen place, and
+        // giving it the estimate shape would claim an uncertainty it has not got.
+        html: `<span style="background:${stagingColor}"></span>`,
+      }),
+    })
+      .bindTooltip('Staging', {
+        permanent: true,
+        direction: 'left',
+        offset: [-8, 0],
+        className: 'ares-track-tooltip',
+      })
+      .addTo(layer)
+  }, [routes, selectedTrackId])
+
+  // ── What folds and what does not ──────────────────────────────────
+  // The two static paragraphs move behind the panel's Basis toggle: neither
+  // changes while the clip plays, and between them they were costing the map
+  // about a fifth of its height in 11px type. The route line stays on screen
+  // because it changes with the selection, which is exactly the test
+  // PanelShell states.
+  const basis = (
+    <>
+      <p>
+        Positions derived from pixel offset at a fixed{' '}
+        <span className="figure text-ink">{config.altitude_m} m</span> altitude and{' '}
+        <span className="figure text-ink">{config.camera_fov_deg}°</span> FOV over
+        flat terrain, along an assumed constant-velocity track of{' '}
+        <span className="figure text-ink">{config.drone_speed_ms} m/s</span> on
+        heading <span className="figure text-ink">{config.drone_heading_deg}°</span>.
+        Per-clip constants, not live telemetry.
+      </p>
+      <p className="mt-1.5">
+        Hollow markers are survivors the clip has not reached yet — exactly the
+        ones with no row in the priority queue. Click a marker or a row to
+        highlight that track in all three panels.
+      </p>
+      <p className="mt-1.5">
+        {survivors !== null && survivors.length > 0 ? (
+          <>
+            <span className="figure text-ink">
+              {new Set(survivors.map((s) => s.group_id)).size}
+            </span>{' '}
+            connected group
+            {new Set(survivors.map((s) => s.group_id)).size === 1 ? ' ' : 's '}
+            within{' '}
+            <span className="figure text-ink">{config.cluster_radius_m} m</span> of
+            one another (largest holds{' '}
+            <span className="figure text-ink">
+              {Math.max(0, ...survivors.map((s) => s.group_size))}
+            </span>{' '}
+            survivors). Groups are connected components at the same radius the
+            cluster term scores, so this is a map-side reading of the table's
+            group columns rather than a second count.
+          </>
+        ) : (
+          'Grouping awaits the first confirmed survivor.'
+        )}
+      </p>
+      <p className="mt-1.5">
+        Routes are a risk-avoidance corridor over the hazard grid — not a road
+        network, and not the drone&apos;s flight path.
+      </p>
+    </>
+  )
+
+  // The one live line under the map. Route state, because that is what the
+  // operator changes; everything static about routing is in `basis` above.
+  const routeStatus = routesError ? (
+    <>Ground routes unavailable — {routesError}. Positions are unaffected.</>
+  ) : routes === null ? (
+    'Ground routes loading…'
+  ) : selectedTrackId === null ? (
+    'Select a survivor to draw the rescue team’s ground route from staging.'
+  ) : (
+    (() => {
+      const r = routes.find((x) => x.track_id === selectedTrackId)
+      if (!r) return 'No route for this track.'
+      if (!r.reachable) return `Track #${r.track_id} could not be routed.`
+      if (!r.hazard_aware)
+        return (
+          <>
+            Route to <span className="figure text-ink-soft">#{r.track_id}</span>:{' '}
+            <span className="figure text-ink-soft">{r.length_m} m</span> — direct
+            line. No hazards known, so nothing was avoided.
+          </>
+        )
+      return (
+        <>
+          Route to <span className="figure text-ink-soft">#{r.track_id}</span>:{' '}
+          <span className="figure text-ink-soft">{r.length_m} m</span>,{' '}
+          <span className="figure text-ink-soft">+{r.detour_m} m</span> over direct,
+          dropping peak exposure{' '}
+          <span className="figure text-ink-soft">{r.direct_risk_max}</span> →{' '}
+          <span className="figure text-ink-soft">{r.risk_max}</span>.
+        </>
+      )
+    })()
+  )
+
+  return (
+    <PanelShell
+      title="Survivor map"
+      meta={
+        survivorsError
+          ? 'positions unavailable'
+          : survivorsSoFar === null
+            ? 'loading positions…'
+            : `${survivorsSoFar} of ${survivorsInClip} confirmed by this frame`
+      }
+      note={basis}
+      status={routeStatus}
+    >
       {/* Its own row, above the map, not an overlay on it. Leaflet puts the
           zoom control at the top-left of the map pane and gives it a z-index
           this banner would have to fight; a banner stacked under a "+" button
           hides the very word that says what is wrong. Taking a row costs a
           line of vertical space only when the tiles have actually failed. */}
       {tilesMissing && (
-        <div className="mb-2 shrink-0 rounded-md border border-edge bg-surface-2 px-3 py-2 text-eyebrow leading-relaxed text-ink-soft">
+        <div className="shrink-0 border-b border-edge bg-surface-2 px-3 py-2 text-eyebrow leading-relaxed text-ink-soft">
           Map tiles unavailable for this view — survivor positions are still
           plotted, the base map is not. Tiles are cached on disk for the search
           area only; positions do not come from the tile server.
@@ -329,7 +501,7 @@ export default function MapPanel({
           1280×720, so the row's height is the budget and the map is sized from
           it. Leaflet is already watched by a ResizeObserver that calls
           invalidateSize, so it re-tiles correctly at any size this produces. */}
-      <div className="relative isolate min-h-0 flex-1 overflow-hidden rounded-lg border border-edge">
+      <div className="relative isolate min-h-0 flex-1">
         <div ref={containerRef} className="h-full w-full bg-surface-1" />
 
         {/* Loading. The base map is already drawn underneath — this covers only
@@ -354,50 +526,6 @@ export default function MapPanel({
         )}
       </div>
 
-      {/* The assumption behind every pin, stated on the panel rather than
-          buried in the pitch. A judge asking "how do you know where they are?"
-          should be able to read the answer off the screen. */}
-      <p className="mt-2 shrink-0 text-eyebrow leading-relaxed text-ink-muted">
-        Positions derived from pixel offset at a fixed{' '}
-        <span className="figure text-ink-soft">{config.altitude_m} m</span> altitude
-        and{' '}
-        <span className="figure text-ink-soft">{config.camera_fov_deg}°</span> FOV
-        over flat terrain, along an assumed constant-velocity track of{' '}
-        <span className="figure text-ink-soft">{config.drone_speed_ms} m/s</span>{' '}
-        on heading{' '}
-        <span className="figure text-ink-soft">{config.drone_heading_deg}°</span>.
-        Per-clip constants, not live telemetry. Hollow markers are survivors the
-        clip has not reached yet — exactly the ones with no row in the priority
-        queue. Click a marker or a row to highlight that track in all three panels.
-      </p>
-
-      {/* Group annotation. Groups are connected components within the same
-          CLUSTER_RADIUS_M, so they are a map-side summary of the table's
-          `group_id`/`group_size` and the event log's cluster lines — one
-          geometry, three readings. On the demo clip every confirmed survivor
-          lands inside one 11 m patch, so this reads "one group of 23", which
-          is exactly why the cluster scoring term was dropped rather than
-          scored: a term identical in every row cannot rank them. */}
-      <p className="mt-1.5 shrink-0 text-eyebrow leading-relaxed text-ink-muted">
-        {survivors !== null && survivors.length > 0 ? (
-          <>
-            <span className="figure text-ink-soft">
-              {new Set((survivors ?? []).map((s) => s.group_id)).size}
-            </span>{' '}
-            connected group
-            {new Set((survivors ?? []).map((s) => s.group_id)).size === 1 ? ' ' : 's '}
-            within{' '}
-            <span className="figure text-ink-soft">{config.cluster_radius_m} m</span>{' '}
-            of one another (largest holds{' '}
-            <span className="figure text-ink-soft">
-              {Math.max(0, ...(survivors ?? []).map((s) => s.group_size))}
-            </span>{' '}
-            survivors).
-          </>
-        ) : (
-          'Grouping awaits the first confirmed survivor.'
-        )}
-      </p>
-    </section>
+    </PanelShell>
   )
 }

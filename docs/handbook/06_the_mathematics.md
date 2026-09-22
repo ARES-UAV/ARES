@@ -114,7 +114,7 @@ grows *northward*. So a pixel *below* the centre of the frame â€” a larger `y` â
 Writing `y - height/2` would mirror every survivor across the drone's position.
 The map would still look plausible. Every position would be wrong.
 
-The formula in `CLAUDE.md` is written in terms of a generic ground offset and
+The formula in `CONVENTIONS.md` is written in terms of a generic ground offset and
 leaves this flip implicit, which is exactly why `localize.py`'s docstring calls it
 out explicitly.
 

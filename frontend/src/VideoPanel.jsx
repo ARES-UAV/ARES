@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import PanelShell from './PanelShell.jsx'
 import { timecode } from './clock.js'
 import { detectionsAt } from './detectionIndex.js'
 import { CLIP_SRC } from './config.js'
@@ -259,7 +260,7 @@ export default function VideoPanel({
 
       ctx.globalAlpha = !hasSelection || selected ? 1 : 0.3
 
-      // The selected box gets a halo underneath the cyan stroke. Cyan on cyan
+      // The selected box gets a halo underneath the cyan stroke. Beacon on Beacon
       // cannot carry "this one" on its own, and the priority ramp is not
       // available to borrow from — those colours mean rank, and a box that
       // turned orange when it was clicked would read as a change in priority.
@@ -300,14 +301,39 @@ export default function VideoPanel({
 
   const played = lastFrame > 0 ? (Math.min(currentFrame, lastFrame) / lastFrame) * 100 : 0
 
-  return (
-    <section className="flex h-full min-h-0 flex-col">
-      <div className="mb-2 flex shrink-0 flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 className="eyebrow">Detection feed</h2>
-        <span className="figure text-eyebrow text-ink-muted">
-          replay of stored detections · no live inference
+  const basis = (
+    <>
+      <p>
+        A REPLAY of stored detections against the clip, not live inference. The
+        boxes were written once by the detector and are being played back
+        against the same footage — the dashboard is not running a model in your
+        browser, and it does not claim to.
+      </p>
+      <p className="mt-1.5">
+        Boxes are drawn in the detector&apos;s source coordinate space (
+        <span className="figure text-ink">
+          {config.source_width}×{config.source_height}
         </span>
-      </div>
+        ) and scaled to the picture, so the overlay geometry stays exact at any
+        panel size. Confidence threshold{' '}
+        <span className="figure text-ink">{config.confidence_threshold}</span> —
+        tuned for RECALL over precision, because a missed survivor costs more
+        than a false alarm.
+      </p>
+      <p className="mt-1.5">
+        Every box is a raw detection. Boxes outnumber the survivor queue below
+        because a track has to persist before the dashboard will call it a
+        person.
+      </p>
+    </>
+  )
+
+  return (
+    <PanelShell
+      title="Detection feed"
+      meta="replay of stored detections · no live inference"
+      note={basis}
+    >
 
       {/* The frame: the column's full width, and whatever height the row has
           left after the controls. The picture is letterboxed inside it rather
@@ -317,7 +343,7 @@ export default function VideoPanel({
           page ground are both surface-0, so the bars are invisible. */}
       <div
         ref={frameRef}
-        className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-t-lg border border-edge bg-surface-0"
+        className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-surface-0"
       >
         {/* The picture, at the source coordinate space's aspect ratio — not the
             video file's. Boxes are drawn in that space, so the picture is
@@ -379,9 +405,9 @@ export default function VideoPanel({
 
       {/* ── Playback controls ─────────────────────────────────────────
           Denominated in frames, because the whole dashboard is. The scrubber
-          is survivor cyan (see index.css) — it is a playback control, and
+          is Beacon (see index.css) — it is a playback control, and
           there is no priority meaning to misread from it. */}
-      <div className="flex shrink-0 items-center gap-3 rounded-b-lg border border-t-0 border-edge bg-surface-1 px-3 py-2.5">
+      <div className="flex shrink-0 items-center gap-3 border-t border-edge bg-surface-1 px-3 py-2.5">
         <ControlButton
           onClick={togglePlay}
           disabled={!ready}
@@ -464,6 +490,6 @@ export default function VideoPanel({
           </span>
         )}
       </div>
-    </section>
+    </PanelShell>
   )
 }

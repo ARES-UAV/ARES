@@ -267,7 +267,7 @@ which the alternative framing would not be.
 
 ## What is real and what is described
 
-This table is in `CLAUDE.md` and it belongs in the pitch. Judges reward honest
+This table is in `CONVENTIONS.md` and it belongs in the pitch. Judges reward honest
 scoping; they punish claims that fall over under one question.
 
 | Capability | Status |
@@ -313,7 +313,7 @@ never appear in a demo, a screenshot, or the recorded video.
 
 ```
 ARES/
-├── CLAUDE.md                  ← project context; the rules this repo runs on
+├── CONVENTIONS.md                  ← project context; the rules this repo runs on
 ├── README.md                  ← public-facing summary
 ├── requirements.txt           ← backend deps: fastapi, uvicorn, pydantic. That's all.
 │

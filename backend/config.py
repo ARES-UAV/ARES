@@ -15,13 +15,13 @@ DATA_DIR: Path = BASE_DIR / "data"
 
 # The clip's detection records: real YOLOv12s output over the demo clip,
 # produced offline by `tools/build_demo_clip.py` and replayed against the
-# playback clock (CLAUDE.md, demo-day constraint 1). Not the hand-generated
+# playback clock (CONVENTIONS.md, demo-day constraint 1). Not the hand-generated
 # development fixture this pointed at while the frontend was being built.
 DETECTIONS_PATH: Path = DATA_DIR / "detections.json"
 
 # Cached OpenStreetMap tiles, served by `GET /tiles/{z}/{x}/{y}.png`.
 #
-# Demo-day constraint 3 in CLAUDE.md: tiles need internet and venue wifi
+# Demo-day constraint 3 in CONVENTIONS.md: tiles need internet and venue wifi
 # fails. `tools/fetch_tiles.py` fills this directory from the ORIGIN_LAT /
 # ORIGIN_LON below, so moving the origin and re-running moves the bundle.
 # Untracked — tiles are downloaded, not committed.
@@ -230,7 +230,7 @@ CLUSTER_SATURATION: int = 4
 # Known hazard positions as (latitude, longitude).
 #
 # EMPTY ON PURPOSE, and it must stay empty until the hazard classifier produces
-# real output — hazard classification is Phase 2 (CLAUDE.md, Scope). Inventing
+# real output — hazard classification is Phase 2 (CONVENTIONS.md, Scope). Inventing
 # a fire here to make the map look busy is the same failure as hand-authoring
 # detections: one question from a judge exposes it.
 #
@@ -347,6 +347,116 @@ EVENT_SAMPLE_INTERVAL_S: float = 1.0
 # honest state for any device we have not put a model on.
 DEVICE_FPS: Optional[float] = 4.8      # 1e6 / 209_500 us = 4.77, median
 DEVICE_NAME: str = "Dragonwing RB3 Gen 2 (QCS6490)"
+
+# ── Safe access routes ─────────────────────────────────────────────
+# Ground routes from the rescue staging point to each survivor, computed by
+# `backend.routing`. This is the TEAM's path on foot, not the drone's flight
+# path — `simulation/planners.py` owns the second one, and conflating them is
+# the single most likely misreading of the map.
+#
+# Everything below is a tunable a judge can be shown, which is why it lives
+# here rather than inside the A* implementation.
+
+# Resolution of the cost grid, in metres. Five is about one pace: fine enough
+# that a route can hug the edge of a hazard rather than taking a blocky detour
+# around it, coarse enough that a 300 m square is a few thousand cells and A*
+# returns instantly.
+ROUTE_CELL_M: float = 5.0
+
+# Padding added around the bounding box of the staging point, the survivors
+# and the hazards. A detour has to have somewhere to go: without margin a
+# hazard sitting on the edge of the box walls the route in, and the planner
+# reports "unreachable" for what is really a grid that is too small.
+ROUTE_MARGIN_M: float = 40.0
+
+# How much a unit of hazard risk costs relative to clear ground. At 8.0 a step
+# through the worst cell the model will route through costs nine times a clear
+# step, so the planner will accept a detour of up to roughly eight times the
+# distance to avoid it.
+#
+# It is a preference, not a physical quantity — there is no measurement that
+# fixes how many extra metres a rescue team should walk to halve their risk
+# exposure, and pretending otherwise would be inventing a number. 8.0 makes
+# the avoidance clearly visible on the map while still refusing absurd
+# detours, and the dashboard prints it so the trade is on screen.
+ROUTE_HAZARD_WEIGHT: float = 8.0
+
+# Hard exclusion radius. Inside this distance of a known hazard the cell is
+# impassable rather than merely expensive.
+#
+# The soft penalty alone is not enough: with a long enough detour, any finite
+# weight eventually makes walking through a fire the cheaper option. A rescue
+# team would not make that trade, so the model must not either.
+#
+# The one exception is the destination. `backend.routing` never blocks the
+# survivor's own cell — someone detected inside a hazard zone is precisely who
+# the system exists to reach, and refusing to route to them would look like a
+# safety feature while being a bug.
+ROUTE_HAZARD_BLOCK_M: float = 10.0
+
+# Where the rescue team sets out from. `None` falls back to ORIGIN_LAT /
+# ORIGIN_LON — the drone's position at frame 0, which is also where whoever
+# launched it is standing. Assumed and disclosed, the same class of constant
+# as ALTITUDE_M, because the prototype has no way to know where a real staging
+# area would be.
+ROUTE_BASE_LAT: Optional[float] = None
+ROUTE_BASE_LON: Optional[float] = None
+
+# ── Emergency alerting ─────────────────────────────────────────────
+# Displaying a ranked queue is not alerting. Alerting is something LEAVING the
+# system, and these constants decide what leaves and where it goes.
+# `backend.alerts` derives every alert from the event timeline and the survivor
+# roster — nothing here authors one.
+
+# Members a group needs before it alerts. Three, not two: a pair within
+# CLUSTER_RADIUS_M is two people standing near each other, which the priority
+# score already weights. Three is the point at which the extraction itself
+# changes character and someone needs to be told separately.
+ALERT_CLUSTER_MIN: int = 3
+
+# How much a group has to GROW before it alerts a second time.
+#
+# Measured, not guessed: on the demo clip the first version of this rule fired
+# 18 cluster alerts, and they were one component accumulating members one at a
+# time — "group of 3", "group of 4", "group of 5", all the same people. An
+# operator who has been interrupted eighteen times for one group has learned
+# to ignore the nineteenth, which is the channel destroying itself.
+#
+# So a group alerts when it first reaches ALERT_CLUSTER_MIN, and after that
+# only when it has grown by this many since its last alert. Same principle as
+# the critical band: the TRANSITION is the news, not the state.
+ALERT_CLUSTER_STEP: int = 3
+
+# How close a survivor has to be to a known hazard to alert on proximity.
+# Half of HAZARD_INFLUENCE_M: the scoring term starts contributing at 50 m,
+# but a score is a ranking and an alert is an interruption, so the alert fires
+# only well inside the range where the score has already taken notice.
+#
+# Yields nothing while HAZARDS is empty, and the endpoint says so rather than
+# implying no survivor is near danger.
+ALERT_HAZARD_M: float = 25.0
+
+# Where alerts are POSTed as JSON. `None` means no channel is configured, which
+# is the state the prototype ships in and the honest default.
+#
+# A WEBHOOK, deliberately, and not SMS or email. Those need an API key — which
+# CONVENTIONS.md forbids — and a network this system is explicitly designed not to
+# depend on. A webhook is the right abstraction for a disaster-management
+# agency: they point it at whatever dispatch system they already run, and ARES
+# does not have to know what that is.
+ALERT_WEBHOOK_URL: Optional[str] = None
+
+# Per-alert delivery timeout. Short on purpose: a flush that blocks on a dead
+# link during a demo is a hung dashboard, and a queued alert costs a retry
+# while a hung dashboard costs the presentation.
+ALERT_TIMEOUT_S: float = 2.0
+
+# Append-only delivery ledger inside DATA_DIR. Holds what happened when we
+# tried to deliver an alert — never the alert itself, which is re-derived from
+# the clip. See the module docstring in `backend/alerts.py` for why.
+#
+# Runtime state, not source: add `backend/data/alerts.jsonl` to .gitignore.
+ALERTS_LEDGER_NAME: str = "alerts.jsonl"
 
 # ── Dev server ─────────────────────────────────────────────────────
 # Vite's default dev origins, for CORS.

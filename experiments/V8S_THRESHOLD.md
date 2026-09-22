@@ -122,7 +122,7 @@ P_DETECT = 0.827               # was 0.824 (YOLOv12s recall at conf 0.18)
 ```
 
 **The simulation change is +0.003.** The 100-seed re-run is still required for
-correctness, but the headline figures — 20/20 vs 11/20, the 3.21× speed-up —
+correctness, but the headline figures — 20/20 vs 11/20, the 3.11× speed-up —
 will move by almost nothing. That is a meaningful reduction in the swap's blast
 radius: the deck chart is unlikely to need redrawing.
 

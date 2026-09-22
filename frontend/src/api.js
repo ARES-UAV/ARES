@@ -6,7 +6,7 @@
  * the map's tile URL is built from it too — the backend serves the cached
  * OpenStreetMap tiles — and those two must not be able to drift apart.
  *
- * CLAUDE.md also requires a path where the frontend works with the backend
+ * CONVENTIONS.md also requires a path where the frontend works with the backend
  * switched off — that will load a static JSON file through this same module,
  * so keep fetching in here rather than in components.
  */
@@ -79,4 +79,54 @@ export async function loadConfig() {
   } catch (e) {
     return { config: FALLBACK_CONFIG, offline: true, reason: e.message }
   }
+}
+
+/**
+ * Ground routes from the rescue staging point to each confirmed survivor.
+ *
+ * Supplementary, not load-bearing: a failure here costs the route overlay and
+ * nothing else, so the map still plots every survivor and the queue still
+ * ranks them. The panel says the routes are missing rather than going quiet.
+ */
+export function fetchRoutes() {
+  return getJson('/api/routes')
+}
+
+/**
+ * The alert queue — what warranted interrupting somebody, and whether it got
+ * through.
+ *
+ * Degrades like the routes: a failure costs the alert strip and nothing else.
+ * The map, the queue and the log are unaffected, and the strip says the queue
+ * is unreadable rather than rendering an empty one — "no alerts" and "cannot
+ * tell" are different claims and only one of them would be true.
+ */
+export function fetchAlerts() {
+  return getJson('/api/alerts')
+}
+
+/**
+ * Attempt delivery of every alert not already sent.
+ *
+ * A POST, and the only call in this module that changes anything on the
+ * server: it writes to the delivery ledger. It is deliberately operator-
+ * driven rather than automatic — a dashboard that fires webhooks on page load
+ * would transmit every time a judge refreshed it.
+ *
+ * Resolves with a FlushResult even when nothing was attempted; `channel: null`
+ * means none is configured, which is not an error.
+ */
+export async function flushAlerts() {
+  const res = await fetch(`${API_BASE}/api/alerts/flush`, { method: 'POST' })
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`
+    try {
+      const body = await res.json()
+      if (body?.detail) detail = body.detail
+    } catch {
+      // Not JSON; the status code is all we have.
+    }
+    throw new Error(detail)
+  }
+  return res.json()
 }

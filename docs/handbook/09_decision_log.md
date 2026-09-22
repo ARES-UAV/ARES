@@ -186,7 +186,7 @@ no benefit.
 when you are learning it under a deadline.
 **Why Vite:** instant startup, hot reload, minimal config.
 **Why Tailwind:** styles beside markup; no growing pile of dead CSS.
-**Why Leaflet:** **no API key** — CLAUDE.md constraint 4. Mapbox and Google both
+**Why Leaflet:** **no API key** — CONVENTIONS.md constraint 4. Mapbox and Google both
 require one.
 **Why not Next.js:** server-side rendering solves a problem this project does not
 have.
@@ -595,7 +595,7 @@ nothing works.
 | Pi benchmark at `imgsz=960` | Blocked on the SD card. Target both models, both runtimes, densest frame, active cooling |
 | BoT-SORT comparison | `compare_trackers.py` written, not run to a conclusion |
 | `MIN_TRACK_SECONDS` naming | Confirmation counts *detections*, not elapsed time. Track 1409 took 5.2 s under a constant named 2.5 |
-| 3 m/s vs 5 m/s | `CLAUDE.md` implies 3, `config.py` says 5. Pick one |
+| 3 m/s vs 5 m/s | `CONVENTIONS.md` implies 3, `config.py` says 5. Pick one |
 | `cluster_formed` labelling | 19 events describe **one** group growing. Relabel as confirmation/growth |
 | "22 others within 15 m" | `cluster_size` excludes self; the wording must say so |
 | Static-mode bundle | `frontend/public/static/` exists — verify the backend-off path end to end |

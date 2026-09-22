@@ -603,7 +603,7 @@ answer judges remember.
 | "It works in real time" | "It runs at N FPS on a Pi 4, and here's why that's enough" |
 | "We don't have any weaknesses" | ID switches, no ground-truth count, INT8 accuracy unmeasured, sustained power/thermal unmeasured |
 | "That's just a placeholder" | If it's on screen, defend it or remove it before the demo |
-| "Claude wrote that part" | You directed it, you reviewed it, you can explain it. That's authorship |
+| "That part was already written" | Say who owns the module and what it does. Every file here has an owner |
 
 ---
 

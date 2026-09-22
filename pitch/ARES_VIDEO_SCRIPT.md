@@ -39,7 +39,7 @@ changes before recording, change it here first.
 | **2:10** | Text: **So where should it fly?** Then `02_good.mp4` begins — split screen, both drones start. | Which brings us to the real question. Where should it fly? |
 | **2:20** | Let the split-screen run. Left = grid. Right = adaptive, heat map visible. | On the left, the standard grid. On the right, ARES. Same map, same survivors, same battery, same detection luck. The only difference is the choice of where to go. |
 | **2:33** | Adaptive starts finding people; counters diverge. | ARES builds a live probability map and always flies to the highest-value ground it hasn't searched yet. |
-| **2:43** | End card over the video: **20 of 20 vs 11 of 20 · 3.2× faster to half · median of 100 simulated missions**. | Across a hundred simulated missions, the adaptive planner finds twenty survivors out of twenty where the grid finds eleven — and reaches half of them three point two times faster. In simulation. |
+| **2:43** | End card over the video: **20 of 20 vs 11 of 20 · 3.1× faster to half · median of 100 simulated missions**. | Across a hundred simulated missions, the adaptive planner finds twenty survivors out of twenty where the grid finds eleven — and reaches half of them three point one times faster. In simulation. |
 | **2:57** | Quick cut to `04_uniform.mp4`, both counters level. | And when we take away its information entirely — a completely useless prior — it simply matches the grid. It never does worse. We tested the case where our own method has no advantage, because that is the test that matters. |
 | **3:12** | Screen recording: the live dashboard. Click a map pin → table row highlights → event log scrolls. | Everything lands in one console. A live map, a rescue queue ordered by priority, and an event log where every line is derived from a detection — nothing is hand-written. |
 | **3:25** | Pull the network cable / wifi-off icon; dashboard keeps running. | Cut the internet and it keeps working. The map tiles are cached and the inference already happened on the aircraft. |
@@ -115,10 +115,10 @@ The current dashboard screenshot shows both:
 
 1. **The product name reads "Adaptive Rescue and Exploration System"** in the
    header. The deck, the video and every other document say **"Autonomous
-   Rescue & Environmental Intelligence System."** `CLEANUP.md` has flagged this
+   Rescue & Environmental Intelligence System."** This has been flagged
    as the highest-priority documentation fix and it is still open. A judge who
    sees the deck and the screenshot together will notice.
-2. **The mission date reads 25 Aug 2026.** `CLAUDE.md`: *"Keep any mission date
+2. **The mission date reads 25 Aug 2026.** `CONVENTIONS.md`: *"Keep any mission date
    current. A stale placeholder date reads as an unfinished demo."*
 
 Both are one-line changes in the frontend. Fix them, take the screenshots again,

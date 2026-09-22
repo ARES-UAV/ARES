@@ -259,8 +259,7 @@ ARES/
 │   ├── qualcomm_benchmark.py      Quantize → compile → profile on AI Hub
 │   ├── fix_onnx_io.py             Repairs an Ultralytics ONNX spec violation
 │   └── benchmark.py               Local latency measurement
-├── CLAUDE.md               Working context and project conventions
-├── BUILD_ORDER.md          Dashboard implementation sequence
+├── CONVENTIONS.md               Working context and project conventions
 └── requirements.txt        Backend dependencies (light — no ML stack)
 ```
 

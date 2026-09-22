@@ -16,7 +16,7 @@ WHY REPLAY AND NOT A JAVASCRIPT PORT
        come from different code, which is the exact failure this project keeps
        catching elsewhere.
 
-    2. CLAUDE.md's demo-day rule: if a feature can fail live on stage, it does
+    2. CONVENTIONS.md's demo-day rule: if a feature can fail live on stage, it does
        not go in. The dashboard already replays a pre-computed detections.json
        for that reason. This is the same decision applied to the same problem.
 

@@ -2,7 +2,7 @@
 
 The dashboard's event log is a replay of things that happened, keyed to the
 same frame index every other panel is keyed on. Every line traces back to a
-detection — see the demo footage policy in CLAUDE.md. Nothing in this module
+detection — see the demo footage policy in CONVENTIONS.md. Nothing in this module
 authors an event, and there is no place to put one that would.
 
 Only two kinds of event live here, because only these two cannot be derived
@@ -365,7 +365,7 @@ def final_bands(
     survivor sitting at 0.76 in "critical" while the log, which watched them
     arrive there from below, still has them in "high". Same clip, same number,
     two answers on screen at once. That is precisely the reconciliation failure
-    CLAUDE.md's dashboard requirements open with, so the endpoint takes its
+    CONVENTIONS.md's dashboard requirements open with, so the endpoint takes its
     history from the same walk the log does instead of inventing one.
 
     Tracks absent from the returned mapping have no assessment yet and should

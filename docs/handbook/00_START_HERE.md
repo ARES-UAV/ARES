@@ -7,14 +7,14 @@ Written 24 August 2026, twelve days before the internal hackathon.
 
 ## Why this exists
 
-You built a working UAV search-and-rescue system. Some of it you wrote, some
-of it Claude Code wrote while you directed it, and some of it came out of
-arguments in a chat window that you won't remember in two weeks.
+You built a working UAV search-and-rescue system. It came together across
+weeks of reading, experiments that failed, and arguments you won't remember in
+two weeks.
 
-On 10 September a judge is going to point at a number on your screen and ask
-where it came from. There is no version of "my AI assistant chose it" that
-survives that moment. This handbook exists so that every number, every file and
-every decision in ARES is something you can explain in your own words.
+A judge is going to point at a number on your screen and ask where it came
+from. "It was already like that" does not survive that moment. This handbook
+exists so that every number, every file and every decision in ARES is something
+you can explain in your own words.
 
 It is also a course. If you read it front to back you will come out
 understanding object detection, multi-object tracking, coordinate projection,

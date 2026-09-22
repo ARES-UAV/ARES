@@ -399,7 +399,7 @@ at full rate.
 ### The demo is not affected
 
 The demo replays a pre-computed `detections.json` produced at the clip's full
-24 FPS, exactly as `CLAUDE.md` specifies. Nothing on stage depends on
+24 FPS, exactly as `CONVENTIONS.md` specifies. Nothing on stage depends on
 device-rate tracking. What this study constrains is the **claim**, not the
 demonstration.
 

@@ -115,7 +115,7 @@ Not given to the groups. Most of these are minutes, not days.
 | 1 | **Commit the 31 August work.** 12 untracked paths including `render_video.py`, `multi_sortie.py`, the fusion and thermal docs, and `simulation/shots/` holding both rendered mp4s. Git does not know they exist | 10 min |
 | 2 | **Back the two mp4s up off the laptop** — Drive or a Release. They are the demo video | 5 min |
 | 3 | Ask Robin to push `tests/` | 2 min |
-| 4 | **Fix the project name.** `README.md` says *Adaptive Rescue and Exploration System*; everything else says *Autonomous Rescue & Environmental Intelligence System*. `CLEANUP.md` calls this the highest-priority doc fix and a screener reading both will notice | 5 min |
+| 4 | **Fix the project name.** `README.md` says *Adaptive Rescue and Exploration System*; everything else says *Autonomous Rescue & Environmental Intelligence System*. This is the highest-priority doc fix and a screener reading both will notice | 5 min |
 | 5 | README's Repository Structure line still says `simulation/` holds documentation only — it holds a 100-seed benchmark | 10 min |
 | 6 | `Rob-Todo.md` header still says "cutoff 5 September" | 2 min |
 | 7 | Generate the missing `docs/img/disaster-detections.png` — same weights, conf 0.18, imgsz 960, over a handful of C2A images. The site block is a placeholder | 20 min |

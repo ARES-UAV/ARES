@@ -178,6 +178,10 @@ export const FALLBACK_CONFIG = {
   priority_medium_at: 0.25,
   priority_high_at: 0.5,
   priority_critical_at: 0.75,
+  // False is the honest fallback. With the backend unreachable there is no
+  // way to know whether a channel is configured, and claiming one exists
+  // would make the strip promise a delivery it cannot make.
+  alert_channel_configured: false,
   band_hysteresis: 0.03,
 }
 
@@ -185,7 +189,7 @@ export const FALLBACK_CONFIG = {
  * Where the browser loads the clip from.
  *
  * Served out of `frontend/public/`, not the backend, so the video panel still
- * works with the backend switched off (CLAUDE.md, demo-day constraint 2).
+ * works with the backend switched off (CONVENTIONS.md, demo-day constraint 2).
  */
 export const CLIP_SRC = '/demo_clip.mp4'
 
@@ -205,9 +209,9 @@ export const CLIP_SRC = '/demo_clip.mp4'
  *   `--survivor`     marks survivor DETECTIONS and nothing else — bounding
  *                    boxes, map pins, the selected row's edge, the playback
  *                    scrubber. Never a text colour and never a priority band:
- *                    a cyan number reads as a category rather than a value,
+ *                    a Beacon number reads as a category rather than a value,
  *                    and every row in the survivor table is a survivor, so
- *                    colouring priority in cyan would say nothing.
+ *                    colouring priority in Beacon would say nothing.
  *
  *   `--priority-*`   the four steps of the ordinal ramp below. One hue,
  *                    monotone light to dark. They mean rank, not status.
@@ -293,7 +297,7 @@ export function priorityBand(band) {
 /**
  * Map tiles — served by the backend from disk, not fetched from the internet.
  *
- * Demo-day constraint 3 in CLAUDE.md: tiles need internet and venue wifi
+ * Demo-day constraint 3 in CONVENTIONS.md: tiles need internet and venue wifi
  * fails. `tools/fetch_tiles.py` downloads the OpenStreetMap tiles covering the
  * demo area into `backend/data/tiles/`, and `GET /tiles/{z}/{x}/{y}.png`
  * serves them. Nothing on the map's path leaves the machine on demo day.

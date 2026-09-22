@@ -134,7 +134,7 @@ whole chain. This is roughly **2–3 days** of careful work.
    v12s's 0.371 — do not inherit 0.18 without re-deriving it).
 3. `simulation/config.py` — `P_DETECT` is currently **0.824**, which is v12s's
    recall at conf 0.18. Replace with v8s's, then **re-run 100 seeds**. The
-   headline 20/20-vs-11/20 and 3.21× figures may move.
+   headline 20/20-vs-11/20 and 3.11× figures may move.
 
 **Then update every file that quotes a v12s-derived number:**
 `README.md` · `REPORT.md` · `RUNBOOK.md` · `docs/index.html` ·

@@ -1,10 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { fetchDetections, fetchEvents, fetchSurvivors, loadConfig } from './api.js'
+import {
+  fetchAlerts,
+  fetchDetections,
+  fetchEvents,
+  fetchRoutes,
+  fetchSurvivors,
+  flushAlerts,
+  loadConfig,
+} from './api.js'
 import {
   buildDetectionIndex,
   detectionsAt,
   uniqueTracksThrough,
 } from './detectionIndex.js'
+import AlertStrip from './AlertStrip.jsx'
 import EventLogPanel from './EventLogPanel.jsx'
 import HeaderBar from './HeaderBar.jsx'
 import MapPanel from './MapPanel.jsx'
@@ -71,6 +80,20 @@ export default function App() {
   const [survivorsError, setSurvivorsError] = useState(null)
   const [events, setEvents] = useState(null)
   const [eventsError, setEventsError] = useState(null)
+  // Route overlay. Supplementary to the map rather than part of it: null
+  // means not loaded yet, an error means the overlay is unavailable and the
+  // pins are unaffected.
+  const [routes, setRoutes] = useState(null)
+  const [routesError, setRoutesError] = useState(null)
+  // The alert queue and the outcome of the last delivery attempt. Kept apart
+  // on purpose: `alerts` is what the clip warrants, `flushResult` is what one
+  // POST achieved. Merging them would make a failed transmit look like a
+  // change in the alerts themselves.
+  const [alerts, setAlerts] = useState(null)
+  const [alertsError, setAlertsError] = useState(null)
+  const [flushing, setFlushing] = useState(false)
+  const [flushResult, setFlushResult] = useState(null)
+  const [flushError, setFlushError] = useState(null)
   const [clipDuration, setClipDuration] = useState(0)
   const [error, setError] = useState(null)
   const [currentFrame, setCurrentFrame] = useState(0)
@@ -138,6 +161,36 @@ export default function App() {
     fetchEvents().then(setEvents).catch((e) => setEventsError(e.message))
   }, [])
 
+  useEffect(() => {
+    fetchRoutes().then(setRoutes).catch((e) => setRoutesError(e.message))
+  }, [])
+
+  useEffect(() => {
+    // Read-only. The queue is FETCHED on load; it is never flushed on load —
+    // see handleFlush.
+    fetchAlerts().then(setAlerts).catch((e) => setAlertsError(e.message))
+  }, [])
+
+  // The one action on this dashboard that changes server state. Deliberately
+  // behind a button: a flush writes to the delivery ledger, and a page that
+  // transmitted on mount would fire the webhook every time somebody refreshed
+  // it. Re-fetches afterwards so the strip's counts are read back from the
+  // ledger rather than guessed from what the POST reported.
+  const handleFlush = useCallback(async () => {
+    setFlushing(true)
+    setFlushError(null)
+    try {
+      const result = await flushAlerts()
+      setFlushResult(result)
+      setAlerts(await fetchAlerts())
+    } catch (e) {
+      setFlushError(e.message)
+      setFlushResult(null)
+    } finally {
+      setFlushing(false)
+    }
+  }, [])
+
   // Unconditional: hooks cannot sit behind the early returns below. An empty
   // index is harmless because nothing renders against it until data arrives.
   const index = useMemo(() => buildDetectionIndex(detections ?? []), [detections])
@@ -146,7 +199,7 @@ export default function App() {
   // `survivorsFound` is the ONE list of confirmed survivors as of the current
   // playback instant. The table renders it as rows and the header renders its
   // length, so the row count and the "confirmed survivors" figure are the same
-  // value and cannot drift — CLAUDE.md's requirement that counts reconcile,
+  // value and cannot drift — CONVENTIONS.md's requirement that counts reconcile,
   // satisfied by construction rather than by two calculations agreeing. The
   // map shades the same boundary: a survivor absent from this list is the one
   // drawn hollow.
@@ -260,7 +313,7 @@ export default function App() {
             readings of the same playback instant, and a reading you have to
             scroll to is a reading you are not watching.
 
-            The rows are `flex-[3]` and `flex-[2]`, not fixed pixel heights: the
+            The rows are `flex-[5]` and `flex-[4]`, not fixed pixel heights: the
             panels divide whatever the viewport actually gives them, so a taller
             screen makes the video and the map bigger rather than leaving a band
             of empty ground under the log. */}
@@ -289,13 +342,31 @@ export default function App() {
             </div>
           )}
 
+          {/* Emergency alerting. A strip rather than a fifth panel: it takes
+              its height out of the panels below instead of pushing one past
+              the fold, exactly as the banner above does. See AlertStrip.jsx
+              for why alerting is a notice-once surface and not a monitored
+              one. */}
+          <AlertStrip
+            alerts={alerts}
+            alertsError={alertsError}
+            flushResult={flushResult}
+            flushError={flushError}
+            flushing={flushing}
+            onFlush={handleFlush}
+            config={config}
+            currentFrame={currentFrame}
+            selectedTrackId={selectedTrackId}
+            onSelectTrack={handleSelectTrack}
+          />
+
           {/* Row 2 — the two picture panels, side by side and roughly equal.
               They take the larger share because both are spatial: a map you
               cannot see the extent of and a video you cannot make out a person
               in are not worth the pixels they do get. `min-w-0` and `min-h-0`
               on the cells stop the Leaflet canvas and the video stage forcing
               the grid past the box they are supposed to fit inside. */}
-          <div className="grid min-h-0 grid-cols-1 gap-3 lg:flex-[3] lg:grid-cols-2">
+          <div className="grid min-h-0 grid-cols-1 gap-3 lg:flex-[5] lg:grid-cols-2">
             {/* `ares-panel-media` gives the video and map a floor height below
                 `lg`, where the grid is one column. Without it both collapse to
                 their intrinsic content height when stacked and the map becomes
@@ -317,6 +388,8 @@ export default function App() {
                 two the table is given — one derivation, three renderings. */}
             <div className="ares-panel-media min-h-0 min-w-0">
               <MapPanel
+                routes={routes}
+                routesError={routesError}
                 survivors={survivors}
                 survivorsError={survivorsError}
                 config={config}
@@ -334,12 +407,13 @@ export default function App() {
               the log is what happened up to it. Each scrolls inside its own box
               rather than growing the page, so the row's height is a budget the
               panels live within instead of a number they set. */}
-          <div className="grid min-h-0 grid-cols-1 gap-3 lg:flex-[2] lg:grid-cols-2">
+          <div className="grid min-h-0 grid-cols-1 gap-3 lg:flex-[4] lg:grid-cols-2">
             {/* The rows are `survivorsFound`, whose length is the header's
                 survivor count — the two cannot disagree because they are the
                 same array. */}
             <div className="min-h-0 min-w-0">
               <SurvivorTable
+                routes={routes}
                 survivors={survivorsFound}
                 survivorsInClip={survivorsInClip}
                 survivorsError={survivorsError}
@@ -479,7 +553,7 @@ function DashboardSkeleton() {
           not taken yet — close enough that nothing jumps when the data lands,
           which is the whole point of drawing the layout rather than a spinner. */}
       <div className="flex flex-col gap-3 px-4 pt-3 pb-3 lg:h-[calc(100vh-7.5rem)]">
-        <div className="grid min-h-0 grid-cols-1 gap-3 lg:flex-[3] lg:grid-cols-2">
+        <div className="grid min-h-0 grid-cols-1 gap-3 lg:flex-[5] lg:grid-cols-2">
           {[0, 1].map((i) => (
             <div key={i} className="flex min-h-0 min-w-0 flex-col">
               <div className="skeleton mb-2 h-2.5 w-28 shrink-0" />
@@ -487,7 +561,7 @@ function DashboardSkeleton() {
             </div>
           ))}
         </div>
-        <div className="grid min-h-0 grid-cols-1 gap-3 lg:flex-[2] lg:grid-cols-2">
+        <div className="grid min-h-0 grid-cols-1 gap-3 lg:flex-[4] lg:grid-cols-2">
           {[0, 1].map((i) => (
             <div key={i} className="flex min-h-0 min-w-0 flex-col">
               <div className="skeleton mb-2 h-2.5 w-36 shrink-0" />

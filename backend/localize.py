@@ -1,6 +1,6 @@
 """Pixel -> GPS conversion for the demo clip.
 
-Implements the flat-earth nadir projection described in CLAUDE.md. The camera
+Implements the flat-earth nadir projection described in CONVENTIONS.md. The camera
 points straight down, the terrain under the clip is treated as flat, and
 altitude, field of view, the frame-0 GPS origin and the flight track are fixed
 constants per clip — the prototype has no live telemetry, so there is nothing
@@ -17,6 +17,60 @@ The accuracy this buys is "good enough to put a pin on the right building",
 not survey grade, and the pitch says so. Above roughly 40 m a 1.7 m person
 spans fewer than 24 px at 640 px input, which is where detection — not this
 maths — becomes the limit.
+
+── The nadir assumption is the dominant error term ──────────────────────
+
+"The camera points straight down" is the load-bearing assumption in this file,
+and on a moving quadcopter it is false. A multirotor translates ONLY by
+tilting; there is no other way for it to produce horizontal thrust. So for as
+long as the aircraft is moving between search cells, the camera is pitched or
+rolled by the angle that motion requires, and every pixel in that frame
+projects to the wrong place.
+
+The error is a bearing error, not a scale error, and it is large. A tilt of
+theta displaces the camera's ground centre by H * tan(theta):
+
+    tilt    shift at H = 20 m    as a share of the 23.09 m footprint
+     5 deg        1.75 m                   7.6 %
+    10 deg        3.53 m                  15.3 %
+    20 deg        7.28 m                  31.5 %
+    30 deg       11.55 m                  50.0 %
+
+At 20 degrees every pin moves 7.3 m — about half of CLUSTER_RADIUS_M. That is
+enough to merge two groups or split one, which changes the cluster term, which
+changes the priority ranking. It is not a rounding error on a coordinate; it
+propagates into who the dashboard says to rescue first.
+
+Altitude error, by contrast, barely matters here. GSD is linear in H, so a
+0.4 m altitude excursion is a 2 % scale error — 0.46 m across the whole frame.
+Tilt is the term worth engineering against; height hold is not.
+
+Measured, not assumed: these angles come from a quadcopter PID study on Swift
+Pico in MuJoCo (eYRC Khoj-o-Drone Task 1, September 2026), which characterised
+a 1.525 kg airframe with 21.88 N of thrust, hover at 68.4 % and NO aerodynamic
+damping. That study observed altitude being knocked out of its tolerance band
+precisely while pitch and roll were making their large corrections, and
+measured the thrust cost of tilting as T*cos(theta) — 6 % at 20 deg, 13 % at
+30 deg. Different airframe from anything ARES would fly, so treat the angles as
+the right order of magnitude rather than as ARES's own numbers.
+
+What this file does NOT do about it: nothing. There is no attitude input to
+compensate with, because the prototype has no telemetry. This is a disclosed
+limitation, and it is the specific reason IMU fusion is on the roadmap — not
+as a box to tick, but because it is worth roughly 7 m of localization error.
+
+Two mitigations exist for a real flight, and both belong in the flight plan
+rather than in this module:
+
+  capture level    hold attitude while observing, translate between
+                   observations. Costs search time, removes the error.
+  gate on attitude tag each frame with tilt and drop detections above a
+                   threshold. Costs coverage, removes the error.
+
+The pins in the current demo are NOT corrected for any of this, and cannot be:
+they come from stored VisDrone and C2A footage whose true camera attitude is
+unknown. The nadir assumption is unverified for them too — it is not that the
+footage is nadir and a real flight would not be.
 """
 
 import math
@@ -123,7 +177,7 @@ def pixel_to_latlon(
 
     Note the sign on the northing. Image y grows downward while latitude grows
     northward, so a pixel below the centre of the frame is *south* of the
-    origin and its dlat must be negative. The formula in CLAUDE.md is written
+    origin and its dlat must be negative. The formula in CONVENTIONS.md is written
     in terms of a ground offset and leaves that flip implicit; getting it wrong
     mirrors every survivor across the drone's position, which looks plausible
     on a map and is completely wrong.

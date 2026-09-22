@@ -1,7 +1,7 @@
 """Persistence filtering — which track IDs are confirmed survivors.
 
 A unique track ID is not a survivor. CONFIDENCE_THRESHOLD is set low on
-purpose (CLAUDE.md: a missed survivor cannot be recovered), and the price of
+purpose (CONVENTIONS.md: a missed survivor cannot be recovered), and the price of
 that choice is that the detector reports things which are person-shaped for a
 moment and the tracker gives each of them an ID. On the current clip the raw
 tracker emits 333 IDs; 310 of them are gone inside two seconds.

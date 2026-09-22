@@ -42,6 +42,13 @@
   --color-priority-critical: var(--priority-critical);
 
   --color-hazard:            var(--hazard);
+  --color-hazard-dim:        var(--hazard-dim);
+
+  --color-verify:            var(--verify);
+  --color-verify-dim:        var(--verify-dim);
+
+  --color-route:             var(--route);
+  --color-staging:           var(--staging);
 
   --color-unmeasured-bg:     var(--unmeasured-bg);
   --color-unmeasured-ink:    var(--unmeasured-ink);
@@ -80,9 +87,10 @@ body {
   color: var(--ink-muted);
 }
 
-/* Keyboard focus. Survivor cyan is the selection colour on this dashboard and
-   focus is a kind of selection, so it is the honest choice here — it marks a
-   detection-related target, never text. */
+/* Keyboard focus. Beacon is the selection colour on this dashboard and focus
+   is a kind of selection, so it is the honest choice here — it marks a
+   detection-related target, never text. It is also the brightest thing in the
+   palette, which is what a focus ring on a near-black ground has to be. */
 :where(a, button, input, select, [tabindex]):focus-visible {
   outline: 2px solid var(--survivor);
   outline-offset: 2px;
@@ -94,7 +102,7 @@ body {
 
    A range input cannot be styled through Tailwind utilities — the track and
    the thumb are vendor pseudo-elements — so it is written out once here in
-   tokens. It is survivor cyan because it is a playback control and not a
+   tokens. It is Beacon because it is a playback control and not a
    priority reading; there is no priority meaning to misread from it.
 
    Height is generous on purpose: this gets dragged in front of a room, on a
@@ -245,7 +253,7 @@ body {
    near-black that happens to look similar.                                     */
 
 /* Track labels beside each survivor marker. Cyan is the survivor colour and is
-   never used as a text colour, so the label is a dark chip with a cyan edge —
+   never used as a text colour, so the label is a dark chip with a Beacon edge —
    the colour still identifies it, the number stays readable. */
 .leaflet-tooltip.ares-track-tooltip {
   background: color-mix(in srgb, var(--surface-0) 88%, transparent);
@@ -312,4 +320,19 @@ body {
 .leaflet-bar a:hover {
   background: var(--surface-2);
   color: var(--ink);
+}
+
+/* The rescue staging point on the map.
+
+   A square, because every circle on this map is a localization estimate and
+   means "about here". The staging point is a chosen place with no uncertainty
+   attached, so it must not borrow the shape that carries one. Leaflet divIcons
+   have no styling of their own, so the span inside is what gets drawn. */
+.ares-staging span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 2px solid var(--surface-0);
+  border-radius: 2px;
+  box-sizing: border-box;
 }

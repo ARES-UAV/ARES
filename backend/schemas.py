@@ -1,6 +1,6 @@
 """Pydantic models for anything crossing the API boundary.
 
-`Detection` mirrors the perception data contract in CLAUDE.md exactly. That
+`Detection` mirrors the perception data contract in CONVENTIONS.md exactly. That
 format is agreed across detection, tracking, localization and the dashboard —
 it must not be changed unilaterally.
 """
@@ -44,7 +44,7 @@ class ClipConfig(BaseModel):
 
     The frontend keeps its own copy of these as a fallback and shows an offline
     badge when it is using it — the dashboard has to render with the backend
-    switched off (CLAUDE.md, demo-day constraint 2) — but whenever the backend
+    switched off (CONVENTIONS.md, demo-day constraint 2) — but whenever the backend
     is reachable, this is the single source of truth.
     """
 
@@ -145,6 +145,20 @@ class ClipConfig(BaseModel):
     priority_medium_at: float = Field(..., ge=0.0, le=1.0)
     priority_high_at: float = Field(..., ge=0.0, le=1.0)
     priority_critical_at: float = Field(..., ge=0.0, le=1.0)
+
+    # A BOOLEAN, never the URL. The dashboard needs to say "no channel
+    # configured" honestly, and that needs one bit; shipping the endpoint
+    # itself would put a delivery address into every browser that loads the
+    # page and into any screenshot of the network tab. CONVENTIONS.md's rule about
+    # private endpoints applies to what the API serves, not only to what git
+    # tracks.
+    alert_channel_configured: bool = Field(
+        ...,
+        description=(
+            "Whether an alert channel is configured. False means queued "
+            "alerts have nowhere to go yet — not that there is nothing to send"
+        ),
+    )
 
     # The deadband around those cuts. Sent for the same reason the cuts are:
     # the priority reference panel states it beside them, so a judge looking at
@@ -295,7 +309,7 @@ class MissionEvent(BaseModel):
     The dashboard's event log renders these against the playback clock. Every
     field is derived from the detection records by `backend.events` — nothing
     here is authored, and nothing here is a status message someone wrote for a
-    demo. See the demo footage policy in CLAUDE.md: a log line that cannot be
+    demo. See the demo footage policy in CONVENTIONS.md: a log line that cannot be
     traced back to a detection is the same failure as a hand-drawn box.
 
     Two kinds cross this boundary, and only two, because only these two need
@@ -343,3 +357,108 @@ class MissionEvent(BaseModel):
     track_ids: List[int] = Field(
         default_factory=list, description="Cluster membership, ascending"
     )
+
+
+class Route(BaseModel):
+    """A ground route from the rescue staging point to one survivor.
+
+    This is the path the RESCUE TEAM walks, not the path the drone flies —
+    `simulation/planners.py` owns the second one. They are different problems
+    with different costs: a drone flies over a collapsed building, a team goes
+    around it. The dashboard labels them apart for the same reason.
+
+    Two paths travel together on purpose. `path` avoids hazard risk;
+    `direct_path` is the shortest line and ignores it. The gap between them is
+    what the risk weighting bought, and it is the only honest way to show that
+    "safe route" means something — a single polyline on a map is just a line.
+    """
+
+    track_id: int = Field(..., ge=0)
+    priority: float = Field(..., ge=0.0, le=1.0)
+    priority_band: str
+
+    reachable: bool = Field(
+        ..., description="False only if the cost grid walled the survivor in"
+    )
+
+    # False means no hazards are known, so the risk term was never scored and
+    # `path` and `direct_path` are necessarily identical. Same convention as
+    # the priority score's dropped hazard term: a term nobody scored is
+    # reported absent, never as zero. It does NOT mean the ground is clear.
+    hazard_aware: bool = Field(
+        ...,
+        description=(
+            "Whether any hazard shaped this route. False = none known, not "
+            "'area is safe'"
+        ),
+    )
+
+    path: List[List[float]] = Field(
+        default_factory=list, description="Risk-weighted route, [[lat, lon], ...]"
+    )
+    direct_path: List[List[float]] = Field(
+        default_factory=list, description="Shortest route, hazard risk ignored"
+    )
+
+    length_m: float = Field(..., ge=0.0)
+    direct_length_m: float = Field(..., ge=0.0)
+    detour_m: float = Field(
+        ..., description="What avoiding the hazards cost, in metres. 0 when none are known"
+    )
+
+    risk_max: float = Field(..., ge=0.0, le=1.0, description="Peak risk along `path`")
+    risk_mean: float = Field(..., ge=0.0, le=1.0)
+    direct_risk_max: float = Field(
+        ...,
+        ge=0.0,
+        le=1.0,
+        description="Peak risk the shortest route would have crossed — what justifies the detour",
+    )
+
+
+class Alert(BaseModel):
+    """One thing that warranted interrupting somebody.
+
+    Derived from the event timeline and the survivor roster by
+    `backend.alerts` — never authored. `state` is the only field that is not
+    derived: it is read from the delivery ledger on disk, because whether an
+    alert reached anyone is a fact about the world and cannot be recomputed
+    from the clip.
+    """
+
+    id: str = Field(..., description="Stable across restarts; the ledger key")
+    kind: str = Field(
+        ..., description="critical_survivor | cluster | hazard_proximity"
+    )
+    frame_id: int = Field(..., ge=0)
+    mission_time_s: float = Field(
+        ..., ge=0, description="Playback seconds, not wall clock"
+    )
+
+    track_id: Optional[int] = Field(None, description="Null for group alerts")
+    priority: Optional[float] = Field(None, ge=0.0, le=1.0)
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    detail: str
+
+    # queued = nobody has tried. failed = a channel refused. The two are kept
+    # apart so a broken webhook cannot hide behind "we are offline anyway".
+    state: str = Field(..., description="queued | sent | failed")
+    attempts: int = Field(..., ge=0)
+    last_error: Optional[str] = None
+
+
+class FlushResult(BaseModel):
+    """What one delivery attempt achieved.
+
+    `channel` is null when none is configured, in which case nothing was
+    attempted and `note` says so. Reporting those alerts as failed would claim
+    a delivery attempt that never happened.
+    """
+
+    channel: Optional[str] = None
+    attempted: int = Field(..., ge=0)
+    sent: int = Field(..., ge=0)
+    failed: int = Field(..., ge=0)
+    queued: int = Field(..., ge=0)
+    note: Optional[str] = None

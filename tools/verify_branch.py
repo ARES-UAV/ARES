@@ -101,7 +101,7 @@ def check_contract(survivors, config, detections):
     else:
         ok(f"all {len(REQUIRED_CONFIG_KEYS)} config keys present")
 
-    # The detection contract is shared by all three of us — CLAUDE.md.
+    # The detection contract is shared by all three of us — CONVENTIONS.md.
     d = detections[0]
     expected = {"frame_id", "bbox", "confidence", "track_id", "class"}
     if set(d) != expected:

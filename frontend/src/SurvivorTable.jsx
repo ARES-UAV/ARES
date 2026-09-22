@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
+import PanelShell from './PanelShell.jsx'
 import { FALLBACK_CONFIG, paint, priorityBand } from './config.js'
 
 /**
@@ -6,7 +7,7 @@ import { FALLBACK_CONFIG, paint, priorityBand } from './config.js'
  *
  * Rows are the `survivors` prop and nothing else. That is the same array App
  * hands the header to count, so the number of rows here and the header's
- * "confirmed survivors" figure are one value rendered two ways. CLAUDE.md's
+ * "confirmed survivors" figure are one value rendered two ways. CONVENTIONS.md's
  * first dashboard requirement is that counts reconcile across every section,
  * and the first mockup failed it with a header saying 12 above a table showing
  * 5 — the only durable fix is for the table and the count to be the same list,
@@ -39,7 +40,7 @@ function Th({ children, numeric = false, tight = false }) {
     <th
       scope="col"
       className={`sticky top-0 z-10 border-b border-edge bg-surface-2 ${
-        tight ? 'px-2' : 'px-3'
+        tight ? 'px-2' : 'px-2.5'
       } py-2 text-eyebrow font-semibold tracking-wider whitespace-nowrap text-ink-muted uppercase ${
         numeric ? 'text-right' : 'text-left'
       }`}
@@ -60,7 +61,7 @@ function Th({ children, numeric = false, tight = false }) {
  * unreliable on a projector at the back of a room. So the label is always
  * rendered beside the swatch, never the swatch on its own.
  *
- * Survivor cyan never appears in this column. Cyan means "this is a
+ * Beacon never appears in this column. Beacon means "this is a
  * detection", and every row here is one — colouring priority in it would say
  * nothing, and using it for one band would break its meaning everywhere else.
  *
@@ -86,7 +87,20 @@ const TERMS = [
   { key: 'hazard', label: 'hazard' },
 ]
 
-function PriorityCell({ survivor }) {
+/**
+ * The priority cell.
+ *
+ * `expanded` is the selected row, and it is the ONLY row that shows the score
+ * breakdown. Measured on the demo clip: with the contribution bar and the
+ * three term readouts on every row, one row stood 135px tall and the queue
+ * showed two people. A rescue order you have to scroll to read is not a rescue
+ * order — the whole value of the panel is seeing who is next.
+ *
+ * Nothing is lost. The breakdown is the answer to "why is this one ranked
+ * here?", which is a question asked about ONE survivor, and asking it is
+ * exactly the act of selecting them.
+ */
+function PriorityCell({ survivor, expanded }) {
   const band = priorityBand(survivor.priority_band)
   const breakdown = survivor.score_breakdown ?? {}
 
@@ -101,10 +115,10 @@ function PriorityCell({ survivor }) {
         <span className="score w-9 text-right font-semibold text-ink">
           {survivor.priority.toFixed(2)}
         </span>
-        {/* w-14, not w-16: "Critical" is the longest band name and fits, and
-            this table has six nowrap columns to fit inside half of a 1280px
+        {/* w-12, not auto: "Critical" is the longest band name and fits, and
+            this table has four nowrap columns to fit inside half of a 1280px
             screen. Fixed rather than auto so the words start on one edge. */}
-        <span className="w-14 text-fine font-semibold text-ink-soft">{band.label}</span>
+        <span className="w-12 text-fine font-semibold text-ink-soft">{band.label}</span>
       </div>
 
       {/* The stacked contribution bar. Segments are the scored terms' shares
@@ -113,6 +127,7 @@ function PriorityCell({ survivor }) {
           demo clip only confidence is scored, so this is a single full-width
           segment; the term values below carry the split numerically whenever
           more than one term is in play. */}
+      {expanded && (
       <div
         aria-hidden="true"
         className="flex h-1 w-[9.5rem] overflow-hidden rounded-full bg-surface-2"
@@ -130,12 +145,14 @@ function PriorityCell({ survivor }) {
             ),
         )}
       </div>
+      )}
 
       {/* The three terms, each reporting its own state. A scored term shows
           its share in the ink-soft step; a dropped term shows "not scored" in
           the muted unmeasured step — the same visual rule the empty hazard
           layer already uses, so absence can never be misread as zero. The
           reason each dropped term is absent lives in the row tooltip. */}
+      {expanded && (
       <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] leading-none tracking-wide">
         {TERMS.map(({ key, label }) =>
           breakdown[key] != null ? (
@@ -149,6 +166,7 @@ function PriorityCell({ survivor }) {
           ),
         )}
       </div>
+      )}
     </div>
   )
 }
@@ -157,8 +175,8 @@ function PriorityCell({ survivor }) {
 function SkeletonRows() {
   return Array.from({ length: 4 }, (_, i) => (
     <tr key={i} className="border-t border-edge-soft">
-      {Array.from({ length: 6 }, (__, j) => (
-        <td key={j} className="px-3 py-2.5">
+      {Array.from({ length: 4 }, (__, j) => (
+        <td key={j} className="px-2.5 py-1.5">
           <div className="skeleton h-3" style={{ width: j === 0 ? '9rem' : '4rem' }} />
         </td>
       ))}
@@ -168,6 +186,7 @@ function SkeletonRows() {
 
 /**
  * @param {object}   props
+ * @param {object[]|null} props.routes       ground routes by track, or null
  * @param {object[]|null} props.survivors    rows: survivors confirmed by this
  *                                           frame, already ranked. null while
  *                                           loading.
@@ -178,6 +197,7 @@ function SkeletonRows() {
  * @param {function} props.onSelectTrack
  */
 export default function SurvivorTable({
+  routes,
   survivors,
   survivorsInClip,
   survivorsError,
@@ -185,6 +205,14 @@ export default function SurvivorTable({
   selectedTrackId,
   onSelectTrack,
 }) {
+  // Route lookup by track. Built here rather than threaded through every row
+  // so the table does a single pass over a list it does not own.
+  const routeByTrack = useMemo(() => {
+    const m = new Map()
+    for (const r of routes ?? []) m.set(r.track_id, r)
+    return m
+  }, [routes])
+
   const scrollRef = useRef(null)
 
   // Bring the selected row into view when the selection changes elsewhere —
@@ -205,20 +233,42 @@ export default function SurvivorTable({
 
   const rows = survivors ?? []
 
+  const basis = (
+    <>
+      <p>
+        Ordered by priority, highest first — this is a RESCUE ORDER, not a
+        detection list. A row appears once its track has persisted{' '}
+        <span className="figure text-ink">
+          {config?.min_track_frames ?? FALLBACK_CONFIG.min_track_frames}
+        </span>{' '}
+        frames, so the count here lags the tracker by exactly that threshold.
+      </p>
+      <p className="mt-1.5">
+        Detector confidence is not a column — it is in the score breakdown on
+        the selected row, beside the score it produced. The band name is
+        spelled out on every row; the swatch is never the only encoding. The full ramp and the scoring formula are below the fold under
+        “Priority ramp and scoring” — reference material, read once.
+      </p>
+      <p className="mt-1.5">
+        A detour figure under a track ID is what avoiding known hazards cost the
+        ground route to that survivor. Absent means no hazards are known, so
+        nothing was avoided — not that the ground is clear.
+      </p>
+    </>
+  )
+
   return (
-    <section className="flex h-full min-h-0 flex-col">
-      <div className="mb-2 flex shrink-0 flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 className="eyebrow">Survivor priority queue</h2>
-        {/* Same prop as the rows and as the header's survivor count. Not a
-            separate tally that has to be checked against them. */}
-        <span className="figure text-eyebrow text-ink-muted">
-          {survivorsError
-            ? 'unavailable'
-            : survivors === null
-              ? 'loading…'
-              : `${rows.length} of ${survivorsInClip} confirmed by this frame · highest priority first`}
-        </span>
-      </div>
+    <PanelShell
+      title="Survivor priority queue"
+      meta={
+        survivorsError
+          ? 'unavailable'
+          : survivors === null
+            ? 'loading…'
+            : `${rows.length} of ${survivorsInClip} · highest priority first`
+      }
+      note={basis}
+    >
 
       {/* The list takes the row's leftover height and scrolls inside it. The
           ramp legend and the scoring formula that used to sit under here are
@@ -226,8 +276,7 @@ export default function SurvivorTable({
           fold — this panel changes while the clip plays and has to stay whole
           and on screen. The band's name is still spelled out on every row, so
           nothing here depends on the legend being visible. */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-edge">
-        {survivorsError ? (
+      {survivorsError ? (
           <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
             <p className="text-body font-semibold text-ink">Survivor list unavailable</p>
             <p className="text-fine text-ink-soft">{survivorsError}</p>
@@ -249,6 +298,10 @@ export default function SurvivorTable({
               <thead>
                 <tr>
                   <Th>Priority</Th>
+                  {/* "Track" still, not "Track / detour": the second line is
+                      conditional and usually absent, and a header naming a
+                      column that is blank in every row describes a table that
+                      is not there. The sublabel carries its own tooltip. */}
                   <Th>Track</Th>
                   {/* One column, not two. The pair is the point — the
                       distance between the frames IS the persistence threshold
@@ -256,9 +309,20 @@ export default function SurvivorTable({
                       seventh nowrap column pushed the coordinates off the
                       right edge. */}
                   <Th tight>Seen → confirmed</Th>
-                  <Th numeric>Confidence</Th>
-                  <Th numeric>Latitude</Th>
-                  <Th numeric>Longitude</Th>
+                  {/* No confidence column. It is the detector's own number,
+                      not a decision the operator makes, and at five nowrap
+                      columns the coordinate pair was being clipped mid-digit
+                      — a position readout missing a digit is worse than one
+                      that is not shown. Confidence still appears, in the score
+                      breakdown on the selected row, which is where a
+                      provenance figure belongs: beside the score it produced.
+                      Measured: dropping it is what made the pair fit. */}
+                  {/* ONE column, not two. Two nowrap coordinate columns did
+                      not fit in half of a 1280px screen — the longitude was
+                      being clipped mid-digit, which on a position readout is
+                      worse than not showing it. A coordinate is a PAIR anyway;
+                      splitting it made two columns out of one value. */}
+                  <Th numeric>Position</Th>
                 </tr>
               </thead>
               <tbody>
@@ -266,7 +330,7 @@ export default function SurvivorTable({
 
                 {survivors !== null && rows.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-ink-muted">
+                    <td colSpan={4} className="px-4 py-8 text-center text-ink-muted">
                       No survivors confirmed yet — a track has to be seen in{' '}
                       {config.min_track_frames ?? FALLBACK_CONFIG.min_track_frames} frames
                       before it counts as a person, so the first rows appear a
@@ -290,7 +354,7 @@ export default function SurvivorTable({
                           onSelectTrack(survivor.track_id)
                         }
                       }}
-                      // The selected row is marked in survivor cyan, matching
+                      // The selected row is marked in Beacon, matching
                       // the map pin and the bounding box. The priority ramp in
                       // the first column is never borrowed for this: those
                       // colours mean rank, and a row that darkened because it
@@ -345,11 +409,48 @@ export default function SurvivorTable({
                           : '')
                       }
                     >
-                      <td className="px-3 py-2">
-                        <PriorityCell survivor={survivor} />
+                      <td className="px-2.5 py-1.5">
+                        <PriorityCell
+                          survivor={survivor}
+                          expanded={survivor.track_id === selectedTrackId}
+                        />
                       </td>
-                      <td className="num px-3 py-2 font-semibold whitespace-nowrap text-ink">
-                        #{survivor.track_id}
+                      {/* The track ID, and under it the detour the safe
+                          ground route took to reach this person.
+
+                          NOT a seventh column. This table has a 616px budget
+                          and a seventh nowrap column is exactly what cut the
+                          longitude off last time — see the note on the
+                          "Seen → confirmed" header. A second line under the ID
+                          costs no width at all: "+32 m" is no wider than
+                          "#1409", which this column already has to fit.
+
+                          It appears only where there is something to say.
+                          While no hazards are known every detour is zero, the
+                          line is absent from every row, and the table looks
+                          exactly as it does today — the routing feature does
+                          not get to announce itself before it has done
+                          anything. */}
+                      <td className="num px-2.5 py-1.5 whitespace-nowrap text-ink">
+                        <span className="font-semibold">#{survivor.track_id}</span>
+                        {(() => {
+                          const route = routeByTrack.get(survivor.track_id)
+                          if (!route || !route.hazard_aware || route.detour_m <= 0) {
+                            return null
+                          }
+                          return (
+                            <span
+                              className="block text-eyebrow font-normal text-ink-muted"
+                              title={
+                                `Safe ground route ${route.length_m} m against ` +
+                                `${route.direct_length_m} m direct. Peak hazard ` +
+                                `exposure ${route.direct_risk_max} → ${route.risk_max}.`
+                              }
+                            >
+                              +{route.detour_m} m
+                            </span>
+                          )
+                        })()}
                       </td>
                       {/* First sighting, then the frame the row earned its
                           place. The gap between them is the persistence
@@ -363,17 +464,12 @@ export default function SurvivorTable({
                           this track carries the timecode, so the dashboard
                           still states it — once, where there is room. */}
                       <td className="num px-2 py-2 whitespace-nowrap text-ink-soft">
-                        frame {survivor.first_frame}
+                        {survivor.first_frame}
                         <span className="text-ink-muted"> → </span>
                         {survivor.confirmed_frame}
                       </td>
-                      <td className="num px-3 py-2 text-right whitespace-nowrap text-ink-soft">
-                        {survivor.confidence.toFixed(2)}
-                      </td>
-                      <td className="coord px-3 py-2 text-right whitespace-nowrap text-ink-soft">
-                        {survivor.latitude.toFixed(5)}
-                      </td>
-                      <td className="coord px-3 py-2 text-right whitespace-nowrap text-ink-soft">
+                      <td className="coord px-2.5 py-1.5 text-right whitespace-nowrap text-ink-soft">
+                        {survivor.latitude.toFixed(5)},{' '}
                         {survivor.longitude.toFixed(5)}
                       </td>
                     </tr>
@@ -383,8 +479,6 @@ export default function SurvivorTable({
             </table>
           </div>
         )}
-      </div>
-
-    </section>
+    </PanelShell>
   )
 }

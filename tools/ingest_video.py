@@ -39,7 +39,7 @@ handled here rather than left for demo day.
    So the re-encode forces constant frame rate. This is not optional.
 
 3. RESOLUTION vs THE SIZE FLOOR.  This model degrades when a person spans much
-   under ~24 px (CLAUDE.md, maximum operating altitude). Downscaling a 4K clip
+   under ~24 px (CONVENTIONS.md, maximum operating altitude). Downscaling a 4K clip
    to 720p to "match the demo" can push every person under that floor and the
    run returns almost nothing.
 
@@ -47,7 +47,7 @@ handled here rather than left for demo day.
    reports the share of detections clearing 0.70 confidence, benchmarked
    against THE DEMO CLIP rather than against an absolute cut.
 
-   That calibration matters and it cost a wrong version of this check. CLAUDE.md
+   That calibration matters and it cost a wrong version of this check. CONVENTIONS.md
    records ~32 % above 0.70 on "lower-altitude footage" and ~4 % on footage
    flown too high — but the 32 % is ground-level C2A imagery, a different
    domain. The demo clip, which is aerial and produces a working dashboard,
@@ -237,7 +237,7 @@ def summarise(records: list[dict], fps: float, min_track_s: float) -> dict:
         "median_person_px": round(float(np.median(heights)), 1),
         # Share of detections clearing 0.70. Compared against DEMO_PCT_070
         # below, not an absolute cut — see the module docstring for why the
-        # 32 % figure in CLAUDE.md is the wrong reference for aerial footage.
+        # 32 % figure in CONVENTIONS.md is the wrong reference for aerial footage.
         "pct_above_070": round(100 * float(np.mean(np.array(confs) > 0.70)), 1),
     }
 

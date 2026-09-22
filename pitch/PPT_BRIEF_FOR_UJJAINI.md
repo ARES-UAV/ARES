@@ -98,7 +98,7 @@ Use these if you are asked. Every one is measured, not estimated.
 |---|---|
 | **recall 0.824** | Of every 100 people in the test images, the model finds 82. Measured over 86,092 labelled people. |
 | **20 / 20 vs 11 / 20** | Survivors found in one 20-minute flight, median of 100 simulated missions. |
-| **3.2× faster** | Time to reach half the survivors: 291 seconds vs 935. |
+| **3.1× faster** | Time to reach half the survivors: 291 seconds vs 905. The grid never reached half at all in 42 of the 100 missions; those are left out of its 905, so 3.1× is the cautious figure, not the flattering one. |
 | **209 ms · 4.8 FPS** | One frame on the real Qualcomm drone board. About 22 looks at every patch of ground — plenty for search. |
 | **489 of 489 layers on the NPU** | 100% of the model runs on the drone's AI chip, nothing falls back to the slow CPU. **This is the headline, not the frame rate.** |
 | **7,081 → 333 → 23** | Raw detections, then tracks, then actual unique survivors. Shows we don't count the same person twice. |

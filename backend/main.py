@@ -1,7 +1,7 @@
 """ARES dashboard API.
 
 The backend serves pre-computed detections against a playback clock — it does
-not run inference. See CLAUDE.md, "Demo-day constraints".
+not run inference. See CONVENTIONS.md, "Demo-day constraints".
 """
 
 import json
@@ -12,8 +12,25 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from backend import config, events as events_module, localize, priority, tracks
-from backend.schemas import ClipConfig, Detection, Health, MissionEvent, Survivor
+from backend import (
+    alerts as alerts_module,
+    config,
+    events as events_module,
+    localize,
+    priority,
+    routing,
+    tracks,
+)
+from backend.schemas import (
+    Alert,
+    ClipConfig,
+    Detection,
+    FlushResult,
+    Health,
+    MissionEvent,
+    Route,
+    Survivor,
+)
 
 VERSION = "0.1.0"
 
@@ -83,6 +100,8 @@ def clip_config() -> ClipConfig:
         priority_medium_at=config.PRIORITY_MEDIUM_AT,
         priority_high_at=config.PRIORITY_HIGH_AT,
         priority_critical_at=config.PRIORITY_CRITICAL_AT,
+        # bool(), so the URL itself never leaves the backend.
+        alert_channel_configured=bool(config.ALERT_WEBHOOK_URL),
     )
 
 
@@ -90,7 +109,7 @@ def clip_config() -> ClipConfig:
 def tile(z: int, x: int, y: int) -> FileResponse:
     """One cached OpenStreetMap tile.
 
-    Demo-day constraint 3 in CLAUDE.md: map tiles need internet and venue wifi
+    Demo-day constraint 3 in CONVENTIONS.md: map tiles need internet and venue wifi
     fails. `tools/fetch_tiles.py` downloads the tiles covering the demo area
     into `config.TILES_DIR` ahead of time, and Leaflet points here instead of
     at openstreetmap.org — so the base map survives a dead network.
@@ -164,7 +183,7 @@ def events() -> List[MissionEvent]:
 
     What the dashboard's event log plays back against the playback clock. Every
     event is derived from the same detections file the other two endpoints read
-    — see `backend.events` for how, and CLAUDE.md's demo footage policy for why
+    — see `backend.events` for how, and CONVENTIONS.md's demo footage policy for why
     there is no other way to get a line into this list.
 
     Only the two kinds that need server-side maths are here: cluster formation,
@@ -435,3 +454,59 @@ def survivors() -> List[Survivor]:
     # polling this endpoint would look like the ranking changing on its own.
     result.sort(key=lambda s: (-s.priority, s.track_id))
     return result
+
+
+@app.get("/api/routes", response_model=List[Route])
+def routes() -> List[Route]:
+    """A ground route to every confirmed survivor, highest priority first.
+
+    Built on `survivors()` rather than on the detections, so the route list and
+    the rescue queue are the same sequence in the same order — one list, not
+    two tallies that have to agree.
+
+    ── What this is and is not ──────────────────────────────────────
+    The cost surface is a hazard grid, not a road network. A route here says
+    "approach from this side rather than that one"; it is not turn-by-turn
+    navigation, and the dashboard labels it that way.
+
+    While `config.HAZARDS` is empty — hazard classification is Phase 2 — there
+    is no risk surface, every `hazard_aware` comes back False and the two paths
+    in each record are identical. That is the honest state, not a failure: the
+    endpoint reports that the risk term was never scored rather than returning
+    a "safe" route that avoided nothing.
+    """
+    return [Route(**r) for r in routing.plan_routes(survivors())]
+
+
+@app.get("/api/alerts", response_model=List[Alert])
+def alerts() -> List[Alert]:
+    """Every alert the clip justifies, with its delivery state.
+
+    Built on `events()` and `survivors()` — the same two lists the mission log
+    and the priority table render — so an alert can always be traced to the
+    detections that produced it. Nothing here is authored.
+
+    `state` comes from the append-only ledger in `backend/data/`. With no
+    channel configured every alert reads `queued`, which is the honest state
+    and the one the prototype ships in: the alerts exist, they are ordered, and
+    nothing has carried them anywhere yet.
+    """
+    derived = alerts_module.derive_alerts(events(), survivors())
+    return [Alert(**a) for a in alerts_module.join_state(derived)]
+
+
+@app.post("/api/alerts/flush", response_model=FlushResult)
+def flush_alerts() -> FlushResult:
+    """Drain the queue to the configured channel, highest priority first.
+
+    The ordering is the point. A link that returns for ten seconds should spend
+    them on the survivor most likely to die, not on whichever alert happened to
+    fire first — the same priority that ranks the rescue queue, applied to
+    bandwidth instead of to people's time.
+
+    Explicit rather than automatic: nothing on this dashboard should reach out
+    to a network on its own during a demo. With `ALERT_WEBHOOK_URL` unset this
+    attempts nothing and says why.
+    """
+    derived = alerts_module.derive_alerts(events(), survivors())
+    return FlushResult(**alerts_module.flush(derived))

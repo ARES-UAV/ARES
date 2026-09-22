@@ -157,7 +157,7 @@ Render one frame first and look at it before generating 750.
 |---|---|---|
 | 1 | 4 s | Title card: *"20 minutes of battery. Enough to search half the area. Which half?"* |
 | 2 | 25 s | **Good prior**, full run, split screen |
-| 3 | 4 s | Freeze on the final frame. Big: **20 / 20 vs 10 / 20** · *3.2× faster to half* |
+| 3 | 4 s | Freeze on the final frame. Big: **20 / 20 vs 11 / 20** · *3.1× faster to half* |
 | 4 | 15 s | **Uniform prior** — *"and if the map is wrong?"* |
 | 5 | 4 s | Freeze: **11 vs 4**, still ahead |
 | 6 | 6 s | The 100-seed table, and the words **SIMULATION · NOT FLOWN** |

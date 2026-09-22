@@ -4,7 +4,7 @@ Download the OpenStreetMap tiles the dashboard map needs, for offline use.
     python tools/fetch_tiles.py
 
 WHY THIS EXISTS
-    Demo-day constraint 3 in CLAUDE.md: map tiles need internet and venue wifi
+    Demo-day constraint 3 in CONVENTIONS.md: map tiles need internet and venue wifi
     fails. Discovering that on 10 September is not a plan. This pulls the tiles
     covering the demo area onto disk ahead of time; the backend then serves
     them from `GET /tiles/{z}/{x}/{y}.png` and Leaflet never talks to

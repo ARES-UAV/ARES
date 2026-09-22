@@ -15,7 +15,7 @@ assumed, every failure named.
 
 The single most useful thing to know: **detection and tracking do not run at
 demo time.** They run once, offline, and write a file. The dashboard replays
-that file against a clock. This is `CLAUDE.md`'s demo-day constraint 1 and it
+that file against a clock. This is `CONVENTIONS.md`'s demo-day constraint 1 and it
 removes every live-inference failure mode from the stage.
 
 | Stage | Runs | Where exactly |
@@ -64,7 +64,7 @@ The frontend fetches each **once on mount**. It does not poll.
 `simulation/` is a research study with its own world, planners and metrics. It
 shares `backend/config.py`'s constants and nothing else. No dashboard panel
 reads it. When the deck says "adaptive search", it is describing that study —
-which is why `CLAUDE.md`'s scope table marks it *simulation only, not flown*.
+which is why `CONVENTIONS.md`'s scope table marks it *simulation only, not flown*.
 
 **Do not read "Neither" as "unplaced".** This table says where code runs *in
 this repository*, and the answer for the planner is neither the backend nor the
@@ -243,7 +243,7 @@ Or just `git checkout backend/data/detections.json frontend/public/demo_clip.mp4
 
 ## 5. The offline path
 
-`CLAUDE.md` demo-day constraint 2: **the dashboard must work with the backend
+`CONVENTIONS.md` demo-day constraint 2: **the dashboard must work with the backend
 switched off.** Test it, do not assume it.
 
 ```bash

@@ -1,8 +1,8 @@
 # Adaptive Search — Experiment Log
 
-**Run:** 28 August 2026
+**Run:** 22 September 2026 (re-run; first run 28 August 2026)
 **Command:** `python simulation/run.py --seeds 100`
-**Machine:** MacBook Air, `.venv-qai`
+**Machine:** MacBook Air
 **Design:** `simulation/DESIGN.md` — written before the code, unchanged since
 **Raw output:** `simulation/results/results.json`, `results.md`, `found_vs_time.png`
 
@@ -59,20 +59,50 @@ experiment.**
 
 | Prior | Corr. | Planner | Found /20 | Coverage | t50 | t80 | Reached 80 % |
 |---|---:|---|---:|---:|---:|---:|---:|
-| good | 0.65 | lawnmower | 11.0 | 56 % | 935 s | 985 s | 10/100 |
+| good | 0.65 | lawnmower | 11.0 | 55 % | 905 s | 985 s | 10/100 |
 | good | 0.65 | **adaptive** | **20.0** | 33 % | **291 s** | **578 s** | **81/100** |
-| mediocre | 0.38 | lawnmower | 10.5 | 56 % | 938 s | 985 s | 10/100 |
+| mediocre | 0.38 | lawnmower | 11.0 | 55 % | 905 s | 985 s | 10/100 |
 | mediocre | 0.38 | **adaptive** | **19.0** | 42 % | **430 s** | **782 s** | **79/100** |
-| uniform | −0.01 | lawnmower | 11.0 | 56 % | 938 s | 985 s | 10/100 |
+| uniform | −0.01 | lawnmower | 11.0 | 55 % | 905 s | 985 s | 10/100 |
 | uniform | −0.01 | **adaptive** | 11.0 | 48 % | **715 s** | **900 s** | **18/100** |
 
 **Speed-up to 50 % of survivors:**
 
 | Prior | Speed-up |
 |---|---:|
-| good (0.65) | **3.21×** |
-| mediocre (0.38) | **2.18×** |
-| uniform (−0.01) | **1.31×** |
+| good (0.65) | **3.11×** |
+| mediocre (0.38) | **2.10×** |
+| uniform (−0.01) | **1.27×** |
+
+### Why these differ from the 31 August write-up
+
+This table was re-run on 22 September because the numbers recorded here could
+not be reproduced from `results/results.json` — the file on disk was a 30-seed
+run, and the 100-seed output it was meant to hold had been overwritten. The
+re-run reproduces **every adaptive figure exactly** (291 / 578 / 81-of-100,
+430 / 782 / 79-of-100, 715 / 900 / 18-of-100). What moved is the lawnmower's
+t50: **935 / 938 / 938 s → 905 s**, and with it the speed-ups, 3.21× → 3.11×.
+
+The cause is commit `828877b`, the only commit to touch `simulation/` since.
+`P_DETECT` is unchanged at 0.824, so this is not the v8s threshold change that
+`V8S_THRESHOLD.md` anticipated.
+
+The new figure is also the more obviously correct one. **The lawnmower ignores
+the prior entirely**, so it must fly the same path through the same worlds in
+all three rows — and it now reports an identical 905 s in each. The old table
+had it at 935 / 938 / 938, three different numbers for a planner that cannot
+see the thing being varied. That was the bug, and the re-run removed it.
+
+### The caveat that belongs beside every speed-up
+
+**The lawnmower's t50 is a median over the 58 seeds of 100 in which it reached
+half the survivors at all.** In the other 42 it never got there, and those runs
+are excluded rather than counted as failures. That discards the baseline's
+*worst* outcomes, so **3.11× understates the advantage.** The adaptive planner
+with a good prior reaches half in 100 of 100.
+
+Quote the ratio with the denominator, or quote 58/100 vs 100/100 instead. Do
+not quote the ratio as though both planners finished the task.
 
 ### The column that says the most
 
@@ -89,12 +119,12 @@ This is the row to be careful about.
 With a prior correlating **−0.01** with truth — no information whatsoever —
 adaptive found **11.0 of 20**, and so did the lawnmower. **Identical.**
 
-What differs is *when*: 715 s to half, against 938 s. A **1.31× speed-up on
+What differs is *when*: 715 s to half, against 905 s. A **1.27× speed-up on
 time, and no advantage at all on the number found.**
 
 So the honest claim is narrower than "it wins with no information":
 
-> With no prior information, adaptive reaches half the survivors 1.31× faster,
+> With no prior information, adaptive reaches half the survivors 1.27× faster,
 > but finds no more of them overall.
 
 The speed comes from in-flight learning: with a flat prior nothing is more
@@ -106,13 +136,13 @@ instead of marching on.
 
 | Prior | 30 seeds | 100 seeds |
 |---|---:|---:|
-| good | 3.13× | 3.21× |
-| mediocre | 2.19× | 2.18× |
-| **uniform** | **1.54×** | **1.31×** |
+| good | 3.13× | 3.11× |
+| mediocre | 2.19× | 2.10× |
+| **uniform** | **1.54×** | **1.27×** |
 
-The informed cases were stable. The uniform figure fell by 15 %. **Quote the
+The informed cases were stable. The uniform figure fell by 18 %. **Quote the
 100-seed numbers.** This is exactly why the design specified repeats rather than
-a single run.
+a single run — and §4's re-run note is the second time that has paid off.
 
 ---
 
@@ -257,7 +287,7 @@ sorties. A real planner does not produce numbers that clean.
 **May:**
 
 > In simulation, with a detector at our measured 0.824 recall, adaptive search
-> reached half the survivors 3.2× faster than a lawnmower grid and found 20 of
+> reached half the survivors 3.1× faster than a lawnmower grid and found 20 of
 > 20 against 11. With a prior correlating zero with reality it was still 1.3×
 > faster to half, though it found no more people overall.
 

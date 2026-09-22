@@ -408,7 +408,7 @@ north_m = (height / 2.0 - y) * scale   # y grows down, north grows up
 northward. A pixel below the centre of the frame is **south** of the origin, so
 its `dlat` must be negative.
 
-The formula in `CLAUDE.md` is written in terms of a ground offset and leaves this
+The formula in `CONVENTIONS.md` is written in terms of a ground offset and leaves this
 implicit. Getting it wrong mirrors every survivor across the drone's position —
 again, plausible-looking and completely wrong.
 
@@ -682,7 +682,7 @@ cut — which is exactly what the log showed. Both are disclosed on the dashboar
 `/api/survivors` scores a *single frame*. The event log *walked to* that frame.
 With hysteresis, those give different answers: a survivor sitting at 0.763 would
 be "critical" in the table and "high" in the log — **same person, two bands on
-screen at once**, which is precisely the reconciliation failure `CLAUDE.md`'s
+screen at once**, which is precisely the reconciliation failure `CONVENTIONS.md`'s
 dashboard requirements open with.
 
 So `final_bands()` exposes the walk's closing state, and the endpoint scores

@@ -2,7 +2,7 @@
  * Derived views over the clip's detection records.
  *
  * Everything the dashboard counts from raw detections is computed here, once,
- * from the single `detections` array App holds. CLAUDE.md's first dashboard
+ * from the single `detections` array App holds. CONVENTIONS.md's first dashboard
  * requirement is that counts reconcile across every section, and the way that
  * is guaranteed is that no panel is allowed to count anything for itself — the
  * header and the video overlay both read the structures below, so "3 in frame"
@@ -49,7 +49,7 @@
 /**
  * Build every derived count the dashboard needs in one pass.
  *
- * @param {object[]} detections records matching the CLAUDE.md JSON contract
+ * @param {object[]} detections records matching the CONVENTIONS.md JSON contract
  * @returns {DetectionIndex}
  */
 export function buildDetectionIndex(detections) {
