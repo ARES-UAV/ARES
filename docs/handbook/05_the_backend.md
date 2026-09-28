@@ -694,7 +694,74 @@ together.
 
 ---
 
-## 9. `backend/main.py` — the routes
+## 9. `backend/routing.py` — ground routes for the rescue team
+
+The route on the map is the path a **team on foot** takes from the staging
+point to a survivor. It is not the drone's flight path — `simulation/planners.py`
+owns that one, and they are different problems with different costs. A drone
+flies over a collapsed building; a team goes around it.
+
+**A\* over a risk-weighted grid.** The search area becomes a grid of
+`ROUTE_CELL_M` cells. Each cell carries a risk derived from its distance to the
+nearest hazard, with the same linear decay `priority.py` uses:
+
+```
+risk(cell) = max(0, 1 - nearest_hazard_distance / HAZARD_INFLUENCE_M)
+```
+
+Step cost is distance × (1 + `ROUTE_HAZARD_WEIGHT` × risk), so a route will
+happily walk further to stay out of a hazard's influence. Movement is
+8-connected with √2 diagonals, and the heuristic is straight-line distance —
+admissible, so A\* returns the true optimum.
+
+**Two paths travel together on purpose.** `path` avoids risk; `direct_path`
+ignores it. The gap between them is what the risk weighting bought, and it is
+the only honest way to show that "safe route" means something — a single
+polyline is just a line. When no hazards are known the two are identical, and
+the API says `hazard_aware: false` rather than implying something was avoided.
+
+**Start and goal are never blocked.** A survivor detected inside a hazard zone
+is exactly the person the system exists to reach.
+
+---
+
+## 10. `backend/alerts.py` — what warranted interrupting somebody
+
+Alerts are **derived**, never authored — from the event timeline and the
+survivor roster. Only one field is not derived: `state`, read from a delivery
+ledger on disk, because whether an alert reached anyone is a fact about the
+world and cannot be recomputed from the clip.
+
+Three rules fire:
+
+| Rule | Fires when |
+|---|---|
+| `critical_survivor` | a survivor's band *transitions* into critical |
+| `cluster` | a group reaches `ALERT_CLUSTER_MIN`, then each time it grows by `ALERT_CLUSTER_STEP` |
+| `hazard_proximity` | a survivor is within `ALERT_HAZARD_M` of a known hazard |
+
+**Why the cluster rule has a step.** Measured on the demo clip: without it, one
+component accumulating members one at a time emitted **eighteen** alerts —
+"group of 3", "group of 4", "group of 5", all the same people. An operator
+interrupted eighteen times for one group has learned to ignore the nineteenth.
+The step rule took it to eight. Same principle as the critical band: the
+*transition* is the news, not the state.
+
+**Three states, kept strictly apart.** `queued` means nobody has tried.
+`sent` means a channel accepted it. `failed` means a channel **refused**.
+Collapsing `failed` into `queued` would let a broken webhook hide behind "we're
+offline anyway", which is the one failure an alerting system must never conceal.
+
+**Delivery is priority-ordered and idempotent.** The flush drains highest
+priority first — bandwidth allocation mirroring rescue ranking — and an
+append-only JSONL ledger with last-write-wins on read means a second flush
+re-sends nothing. It ships with no channel configured, so the dashboard reads
+"*N* queued — no channel configured", which is the offline claim demonstrated
+rather than asserted.
+
+---
+
+## 11. `backend/main.py` — the routes
 
 ### The endpoints
 
@@ -770,7 +837,7 @@ changing on its own.
 
 ---
 
-## 10. The call graph
+## 12. The call graph
 
 ```
 main.py

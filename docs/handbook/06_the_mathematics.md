@@ -603,7 +603,7 @@ The honest error budget, which is a genuinely good thing to have ready.
 |---|---|
 | Altitude assumed 20 m, actually ±10% | ±1.1 m |
 | Terrain relief ±2 m | ±1.1 m |
-| Camera tilt 5° off nadir | ~1.7 m footprint shift, non-uniform |
+| **Camera tilt 5° off nadir** | **~1.75 m shift — and this row is the one that grows, see §10** |
 | Box centre estimate, ±3 px | ±0.05 m |
 | Flat-earth vs geodesic | ~0.001 m |
 | 111,320 vs true meridional degree | ~0.11 m |
@@ -624,6 +624,67 @@ Two conclusions follow, and both are worth stating:
 The accuracy this buys is **"good enough to put a pin on the right building"**,
 not survey grade. `localize.py`'s docstring says exactly that, and so should the
 pitch.
+
+---
+
+## 10. The nadir assumption, and what it actually costs
+
+§9's table prices camera tilt at 5°, which is what a hovering aircraft holding
+station might drift to. That is the gentle case, and it hides the real one.
+
+**A multirotor translates only by tilting.** There is no other way for it to
+produce horizontal thrust. So for as long as the aircraft is moving between
+search cells — which is most of a sortie — the camera is not at nadir, and the
+whole projection in §2 is being applied to a frame it does not describe.
+
+The error is a bearing error, not a scale error, and it is `H·tan θ`:
+
+| Airframe tilt | Shift at H = 20 m | Share of the 23.09 m footprint |
+|---|---:|---:|
+| 5° | 1.75 m | 7.6 % |
+| 10° | 3.53 m | 15.3 % |
+| **20°** | **7.28 m** | **31.5 %** |
+| 30° | 11.55 m | 50.0 % |
+
+At 20° every pin moves **7.3 m** — about half of `CLUSTER_RADIUS_M`. Read §5
+and §8 again with that number in mind: a 7 m displacement can merge two
+connected components or split one, group size is a scored term in §6, and the
+ranking changes. **The error does not stop at the coordinate. It reaches the
+order the dashboard tells you to rescue people in.**
+
+Altitude error is negligible beside it. GSD is linear in `H`, so a 0.4 m
+excursion is a 2 % scale error — 0.46 m across the entire frame. **Tilt is the
+term worth engineering against; height hold is not.**
+
+### Where the angles come from
+
+A quadcopter PID study on Swift Pico in MuJoCo — a 1.525 kg airframe, 21.88 N
+of maximum thrust, hover at 68.4 % of it, and no aerodynamic damping at all.
+That study measured altitude leaving its tolerance band precisely while pitch
+and roll were making their large corrections, and put the thrust cost of
+tilting at `T·cos θ` — 6 % at 20°, 13 % at 30°, against a margin of only 32 %
+above hover.
+
+Different airframe, different simulator. Treat the **angles** as the right
+order of magnitude rather than as ARES's own numbers; the **displacement
+arithmetic** above is exact for any airframe.
+
+### What follows
+
+IMU fusion is not a checklist item on the roadmap. It is worth about seven
+metres of localization error, and that is the honest reason to build it. Two
+mitigations need no new sensor and belong in the flight plan rather than in
+`localize.py`:
+
+- **Capture level.** Hold attitude while observing, translate between
+  observations. Costs search time, removes the error.
+- **Gate on attitude.** Tag each frame with its tilt and drop detections above
+  a threshold. Costs coverage, removes the error.
+
+**This does not correct the current demo, and cannot.** Those pins come from
+stored VisDrone and C2A footage whose true camera attitude is unknown, so the
+nadir assumption is undischarged in both directions — it is not that the
+footage is nadir and only a real flight would differ.
 
 ---
 
