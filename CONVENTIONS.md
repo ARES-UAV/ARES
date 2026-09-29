@@ -299,7 +299,11 @@ If a change touches the JSON contract, it affects all three. Flag it rather than
 
 Two expansions of "ARES" are currently in use across the project's materials:
 
-- **Adaptive Rescue and Exploration System** — `README.md`, `docs/project_overview.md`
-- **Autonomous Rescue & Environmental Intelligence System** — pitch deck and planning material
+- **Autonomous Rescue & Environmental Intelligence System** — everywhere. Settled
+  29 September 2026. `README.md` and `docs/project_overview.md` used to say
+  *Adaptive Rescue and Exploration System*; the site, the field manual, the deck
+  and the planning material all said the other one, so the two outliers were
+  changed rather than the six. If you are adding a new document, this is the
+  expansion.
 
 The first reflects the research contribution (adaptive search planning); the second reflects the SIH framing. **One should be adopted everywhere before 10 September.** Until that decision is made, use the `README.md` form in anything written here rather than introducing a third variant.

@@ -1,0 +1,17 @@
+# Normalise line endings in the repository.
+#
+# Seven files were committed with CRLF from a Windows editor and the rest with
+# LF, which makes `git diff` show whole files as changed the first time anyone
+# touches them on another machine. `text=auto` stores everything as LF and
+# checks it out in the platform's own convention, so it cannot happen again.
+* text=auto
+
+# Binary, so git must never try to translate anything inside them.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.pdf  binary
+*.pptx binary
+*.mp4  binary
+*.pt   binary
+*.onnx binary

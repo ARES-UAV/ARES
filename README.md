@@ -1,11 +1,30 @@
 # ARES
-### Adaptive Rescue and Exploration System
+### Autonomous Rescue & Environmental Intelligence System
 
 An AI-assisted UAV system for disaster-zone search, survivor detection, and localization.
 
 ARES aims to improve UAV search-and-rescue efficiency by dynamically adapting its search strategy according to detected survivors, uncertainty, environmental risk, and remaining mission energy.
 
 > **Project status:** Research and software prototyping. Detection, evaluation, on-device benchmarking and the command dashboard are complete and measured; UAV integration is not built.
+
+---
+
+## See it running
+
+| | |
+|---|---|
+| **Live site** | <https://ares.paralux.in> |
+| **Engineering handbook** | [`docs/handbook/`](./docs/handbook/) — thirteen parts, beginner to advanced |
+| **Single source of truth for every number** | [`experiments/ARES_MEASURED_NUMBERS.md`](./experiments/ARES_MEASURED_NUMBERS.md) |
+
+Four recordings. Each one shows the thing running, not slides about it.
+
+| | Video | What it shows |
+|---|---|---|
+| 01 | [The case for ARES](https://youtu.be/J89oZT977GU) | The system end to end, and what we deliberately did not build |
+| 02 | [The adaptive planner](https://youtu.be/nnc5-N-GEU4) | 100 simulated missions against a lawnmower grid, including the no-information control |
+| 03 | [Detection to GPS](https://youtu.be/das3HfpK2vY) | 7,081 raw boxes becoming 23 located people |
+| 04 | [The command dashboard](https://youtu.be/VloJFoPbxy4) | Live map, ranked rescue queue, alerts held offline |
 
 ---
 
@@ -39,6 +58,28 @@ Latencies are **medians of ~100 samples**, not minimums — see
 **The 100 % is the headline, not the frame rate.** Every layer of an attention-centric YOLOv12 executes on the NPU with nothing falling back to CPU.
 
 **Coverage** — at 20 m altitude the camera sees 23.09 m of ground; at 5 m/s the aircraft takes 4.6 s to cross its own footprint. At 4.8 FPS that is **~22 looks at every patch of ground**. Compute is not the binding constraint; per-look recall is.
+
+**The adaptive planner — simulated, not flown.** This is the one headline figure on this page that is not a measurement of hardware, and it is labelled that way everywhere it appears. What *is* measured inside it is the detector: the simulation flies at our own P(detect) = 0.824, the recall measured at conf 0.18 and 960 px over 86,092 instances. Everything else — the aircraft, the terrain, the survivors — is synthetic. There is no aircraft.
+
+Both planners fly identical worlds: same survivor layout, same detection coin-flips, same battery. The only thing that differs is where each one chooses to go next. Medians over 100 seeds:
+
+| Prior quality | Planner | Found / 20 | Time to half | Ground covered |
+|---|---|---:|---:|---:|
+| good (r = 0.65) | lawnmower grid | 11.0 | 905 s | 55 % |
+| good (r = 0.65) | **adaptive** | **20.0** | **291 s** | 33 % |
+| none (r = −0.01) | lawnmower grid | 11.0 | 905 s | 55 % |
+| none (r = −0.01) | **adaptive** | 11.0 | **715 s** | 48 % |
+
+**Speed-up to half the survivors: 3.11× with a good prior, 2.10× with a mediocre one, 1.27× with none at all.**
+
+The bottom two rows are the result worth reading. Given a probability map no better than chance, adaptive finds **no more people** than the grid — it just reaches half of them sooner, by learning in flight. The honest claim is therefore narrower than "it always wins", and [`simulation/RESULTS.md`](./simulation/RESULTS.md) states it that way, along with the two bugs the experiment caught and the 18 % the uniform figure fell when the run went from 30 seeds to 100.
+
+Reproduce it in about six seconds:
+
+```bash
+python simulation/run.py           # 100 seeds, all three priors
+python simulation/check_baseline.py   # confirms the grid baseline is information-blind
+```
 
 ### Not measured
 
@@ -238,32 +279,49 @@ Detection results are produced by running the trained model over public UAV data
 ARES/
 ├── docs/                   Research and technical documentation
 │   ├── handbook/           13-part technical handbook, beginner to advanced
-│   ├── site/               Public pitch site (GitHub Pages)
+│   ├── index.html          The public site — served at ares.paralux.in
+│   ├── img/                Screenshots used by the site
 │   ├── ARES_ROBIN_GUIDE_v4.md     Integration guide for the pipeline owner
+│   ├── PRIORITY_PRIOR_AND_OFFLINE.md
 │   ├── project_overview.md
 │   ├── research_problem.md
 │   └── roadmap.md
-├── ai/                     Perception: detection, tracking, export
-│   └── requirements.txt    ML dependencies (heavy — install separately)
-├── planning/               Search and adaptive planning algorithms
-├── simulation/             Disaster and UAV simulation
+├── simulation/             The adaptive-search experiment — code, design and results
+│   ├── DESIGN.md           Written before the code, unchanged since
+│   ├── RESULTS.md          100-seed experiment log, including the bugs it caught
+│   ├── config.py           Every constant, each tagged assumed / derived / chosen / measured
+│   ├── world.py            Survivor placement and prior generation
+│   ├── planners.py         The lawnmower baseline and the adaptive planner
+│   ├── run.py              The experiment runner
+│   ├── check_baseline.py   Proves the baseline cannot use information
+│   └── results/            Generated table, JSON and plot
+├── backend/                FastAPI dashboard API
+│   ├── localize.py         Pixel → GPS, and the error budget for the nadir assumption
+│   ├── priority.py         The transparent rescue-priority score
+│   ├── routing.py          A* over a risk-weighted cost grid
+│   ├── alerts.py           Alert derivation and the delivery ledger
+│   └── data/               The pre-computed demo detections and offline map tiles
+├── frontend/               Vite + React command dashboard
 ├── experiments/            Evaluation results, one directory per experiment
 │   ├── ARES_MEASURED_NUMBERS.md   Single source of truth for every figure
 │   ├── QUALCOMM_BENCHMARK.md      On-device results from Qualcomm AI Hub
-│   ├── MODEL_SELECTION.md  Detection model comparison and analysis
-│   └── Perception/C2A/     YOLOv8n and YOLOv8s baselines and fine-tunes
-├── hardware/               UAV hardware and CAD
-├── backend/                FastAPI dashboard API
-├── frontend/               Vite + React command dashboard
+│   ├── MODEL_SELECTION.md         Detection model comparison and analysis
+│   ├── MODEL_COMPARISON_V8S_V12S.md  The controlled re-run, and why we did not swap
+│   └── Perception/C2A/            YOLOv8n and YOLOv8s baselines and fine-tunes
 ├── tools/                  Development utilities
 │   ├── qualcomm_benchmark.py      Quantize → compile → profile on AI Hub
 │   ├── fix_onnx_io.py             Repairs an Ultralytics ONNX spec violation
 │   └── benchmark.py               Local latency measurement
-├── CONVENTIONS.md               Working context and project conventions
+├── planning/               Team plans and per-group scopes
+├── pitch/                  SIH decks
+├── ai/                     Perception notes
+│   └── requirements.txt    ML dependencies (heavy — install separately)
+├── hardware/               UAV hardware notes and the bill of materials
+├── CONVENTIONS.md          Working context and project conventions
 └── requirements.txt        Backend dependencies (light — no ML stack)
 ```
 
-`ai/`, `planning/`, `simulation/` and `hardware/` currently hold documentation only.
+`ai/`, `planning/` and `hardware/` hold documentation only. `simulation/`, `backend/` and `frontend/` hold code that runs.
 
 ---
 
@@ -286,6 +344,10 @@ Datasets and model weights are not stored in this repository. Trained weights ar
 ### Reproducing the numbers
 
 ```bash
+# The adaptive-search experiment — no weights, no GPU, about six seconds
+python simulation/run.py
+python simulation/check_baseline.py
+
 # Accuracy — combined C2A + VisDrone validation split
 yolo val model=models/yolov12s.pt data=<combined>.yaml imgsz=960
 

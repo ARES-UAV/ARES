@@ -23,6 +23,23 @@ the next thing yourself.
 
 ---
 
+## Watch it first, if you would rather
+
+Four recordings of the system running. They cover the same ground as Parts 1,
+3, 5 and 7, in about twenty minutes instead of a day.
+
+| | Video | Handbook parts it covers |
+|---|---|---|
+| 01 | [The case for ARES](https://youtu.be/J89oZT977GU) | Part 1 |
+| 02 | [The adaptive planner](https://youtu.be/nnc5-N-GEU4) | Part 6, and `simulation/RESULTS.md` |
+| 03 | [Detection to GPS](https://youtu.be/das3HfpK2vY) | Parts 2, 3 and 6 |
+| 04 | [The command dashboard](https://youtu.be/VloJFoPbxy4) | Parts 5 and 7 |
+
+The site is at <https://ares.paralux.in>, the source at
+<https://github.com/ARES-UAV/ARES>.
+
+---
+
 ## How to read it
 
 **If you have twelve days and a demo:** read Part 1, then Part 10 (Judge Q&A),

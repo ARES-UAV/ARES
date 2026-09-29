@@ -195,7 +195,7 @@ by construction, and it uses every run.
 `tools`: `simulation/multi_sortie.py` · record `simulation/results/multi_sortie.json`
 
 The strongest objection to § 7's trade — adaptive covers 33 % against the
-lawnmower's 56 % — is the obvious one:
+lawnmower's 55 % — is the obvious one:
 
 > *"A grid is systematic. Fly it long enough and it finds everyone. Yours goes
 > where it guesses. Do the ones it skipped ever get searched?"*
@@ -251,7 +251,7 @@ revisiting, and the staleness term guarantees the unvisited ones rise anyway.
 > sooner: 20 of 20 against the grid's 17 of 20, with both at 100 % coverage.
 
 **Retires:** the framing in § 7 that the single-sortie coverage gap (33 % vs
-56 %) is a straight cost. Across a campaign it is a scheduling difference, and
+55 %) is a straight cost. Across a campaign it is a scheduling difference, and
 the grid's higher first-sortie coverage buys it nothing it keeps.
 
 ### Caveats
@@ -301,7 +301,7 @@ direction, simulation only, not flown."*
 
 ### The cost, stated
 
-Adaptive covers **33 %** of the area against the lawnmower's **56 %**. It finds
+Adaptive covers **33 %** of the area against the lawnmower's **55 %**. It finds
 more people, sooner, over less ground. If the objective were "map the whole
 area" rather than "find people fast", the lawnmower wins. That is a real trade,
 and it belongs in the table rather than in a footnote.

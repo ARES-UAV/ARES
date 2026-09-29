@@ -1,7 +1,7 @@
 """
 The experiment runner.
 
-    python simulation/run.py                 # all three priors, 30 seeds
+    python simulation/run.py                 # all three priors, 100 seeds
     python simulation/run.py --prior uniform # just the hard case
     python simulation/run.py --seeds 5       # quick check
 

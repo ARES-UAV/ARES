@@ -2,7 +2,7 @@
  * Self-hosted webfonts.
  *
  * There is deliberately no <link> to Google Fonts anywhere in this project.
- * The dashboard has to render correctly with no network (CLAUDE.md, demo-day
+ * The dashboard has to render correctly with no network (CONVENTIONS.md, demo-day
  * constraint 3 — venue wifi fails), and a remote stylesheet is the quietest
  * possible failure: the page still loads, the layout still works, and the
  * entire type system silently drops to system fallbacks on the one day it is

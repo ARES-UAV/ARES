@@ -397,6 +397,12 @@ td.win{color:var(--cy);font-weight:700}
 .shot .h{font-family:var(--disp);font-weight:700;font-size:17px;text-transform:uppercase;color:var(--ink-soft)}
 .shot .f{font-size:10px;letter-spacing:.12em;color:var(--dim)}
 .shot img{width:100%;height:100%;object-fit:cover;display:block}
+a.shot{text-decoration:none;transition:border-color .2s,background .2s}
+.lead a{color:var(--cy);text-decoration:none;border-bottom:1px solid rgba(255,201,61,.45)}
+.lead a:hover{border-bottom-color:var(--cy)}
+a.shot:hover{border-color:var(--cy);background:var(--void)}
+a.shot:hover .h{color:var(--cy)}
+a.shot .h::after{content:" \2197";font-size:13px}
 
 /* ── team ─────────────────────────────────────────────────────── */
 .team{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:44px}
@@ -525,7 +531,7 @@ img,svg,video{max-width:100%}
     <span>MISSION 001 · <b>VISDRONE-VID</b></span>
     <span>26.4059°N 92.2335°E</span>
     <span>ALT <b>20 M</b> · FOV <b>60°</b> · NADIR</span>
-    <span>SIH 2026 · HARDWARE EDITION</span>
+    <span>SIH 2026 · STUDENT INNOVATION</span>
   </div>
 </div>
 
@@ -540,8 +546,9 @@ img,svg,video{max-width:100%}
       <a href="#scope">SCOPE</a>
       <a href="#edge">ON-DEVICE</a>
       <a href="#search">ADAPTIVE</a>
+      <a href="#watch">WATCH</a>
     </div>
-    <a class="btn" href="https://github.com/dewangdhakad/ARES">SOURCE →</a>
+    <a class="btn" href="https://github.com/ARES-UAV/ARES">SOURCE →</a>
   </div>
 </nav>
 
@@ -567,7 +574,7 @@ img,svg,video{max-width:100%}
         <span class="chip"><b>YOLOv12s</b> · 960 PX</span>
         <span class="chip"><b>CONF 0.18</b> HIGH RECALL</span>
         <span class="chip"><b>BYTETRACK</b> DE-DUP</span>
-        <span class="chip"><b>PI 4</b> ON-DEVICE</span>
+        <span class="chip"><b>RB3 GEN 2</b> 489/489 ON NPU</span>
         <span class="chip"><b>NO</b> API KEYS</span>
       </div>
     </div>
@@ -1121,7 +1128,7 @@ img,svg,video{max-width:100%}
       <div class="tri">
         <span class="fn">THE COST, STATED</span>
         <h3>It covers less ground</h3>
-        <p>33 % of the area against the lawnmower's 56 %. More people, sooner, over less ground. If the objective were <em class="am">map everything</em> rather than <em class="am">find people fast</em>, the lawnmower wins — and that belongs in the table, not a footnote.</p>
+        <p>33 % of the area against the lawnmower's 55 %. More people, sooner, over less ground. If the objective were <em class="am">map everything</em> rather than <em class="am">find people fast</em>, the lawnmower wins — and that belongs in the table, not a footnote.</p>
       </div>
     </div>
 
@@ -1185,17 +1192,51 @@ img,svg,video{max-width:100%}
         disaster scenes.
       </p>
       <p class="lead" style="margin-top:14px">
-        Below: the same weights, the same thresholds — conf 0.18, imgsz 960 — run over
-        C2A disaster imagery. Nothing re-tuned for the picture.
+        We do not have a figure here of the shipped weights run over C2A stills, because
+        we do not redistribute the dataset and will not render one from imagery we cannot
+        publish alongside it. The fine-tuning runs are in the repository instead —
+        <em class="am">experiments/Perception/C2A/</em> holds the validation batches, the
+        confusion matrices and the PR curves, which is the same evidence in a form you can
+        check rather than look at.
       </p>
-      <!-- img/disaster-detections.png does not exist in the repo — this was a
-           broken image on the live site. Placeholder until the figure is
-           generated: same weights, conf 0.18, imgsz 960, over C2A. -->
-      <div class="shot" style="margin-top:22px">
-        <div class="h">FIGURE PENDING</div>
-        <div class="f">C2A DISASTER DETECTIONS · SAME WEIGHTS · CONF 0.18 · IMGSZ 960</div>
-      </div>
     </div>
+  </div>
+</section>
+
+<!-- ═══ WATCH ═══════════════════════════════════════════════════ -->
+<section id="watch">
+  <div class="wrap">
+    <div class="mark rv"><span class="sq"></span> § WATCH IT RUN</div>
+    <h2 class="rv">FOUR RECORDINGS.<br>NOT SLIDES ABOUT IT.</h2>
+    <p class="lead rv" style="margin-top:0">
+      Every claim on this page has something moving behind it. These are screen recordings
+      of the system running, narrated live — not an edit of a presentation.
+    </p>
+
+    <div class="rv d2" style="display:grid;gap:14px;margin-top:30px;grid-template-columns:repeat(auto-fit,minmax(270px,1fr))">
+      <a class="shot rv" href="https://youtu.be/J89oZT977GU">
+        <div class="h">01 · THE CASE FOR ARES</div>
+        <div class="f">The system end to end — and what we deliberately did not build</div>
+      </a>
+      <a class="shot rv" href="https://youtu.be/nnc5-N-GEU4">
+        <div class="h">02 · THE ADAPTIVE PLANNER</div>
+        <div class="f">100 simulated missions, including the no-information control</div>
+      </a>
+      <a class="shot rv" href="https://youtu.be/das3HfpK2vY">
+        <div class="h">03 · DETECTION TO GPS</div>
+        <div class="f">7,081 raw boxes becoming 23 located people</div>
+      </a>
+      <a class="shot rv" href="https://youtu.be/VloJFoPbxy4">
+        <div class="h">04 · THE COMMAND DASHBOARD</div>
+        <div class="f">Live map, ranked rescue queue, alerts held offline</div>
+      </a>
+    </div>
+
+    <p class="lead rv" style="margin-top:26px">
+      The long form is the <a href="https://github.com/ARES-UAV/ARES/tree/main/docs/handbook">engineering handbook</a> —
+      thirteen parts, from what a convolution is to why the priority score is a weighted sum
+      you can read rather than a model you cannot.
+    </p>
   </div>
 </section>
 
@@ -1217,17 +1258,17 @@ img,svg,video{max-width:100%}
     <div class="kick rv">§ SIGN OFF</div>
     <h2 class="rv" style="margin-top:16px">FIND THEM FASTER.<br><em class="hi">MISS NOBODY.</em></h2>
     <div class="hctas rv d1">
-      <a class="btn" href="https://github.com/dewangdhakad/ARES">VIEW THE SOURCE →</a>
-      <a class="btn ghost" href="https://github.com/dewangdhakad/ARES/tree/main/docs/handbook">TECHNICAL HANDBOOK</a>
+      <a class="btn" href="https://github.com/ARES-UAV/ARES">VIEW THE SOURCE →</a>
+      <a class="btn ghost" href="https://github.com/ARES-UAV/ARES/tree/main/docs/handbook">TECHNICAL HANDBOOK</a>
     </div>
-    <div class="beta rv d2">SMART INDIA HACKATHON 2026 · HARDWARE EDITION</div>
+    <div class="beta rv d2">SMART INDIA HACKATHON 2026 · STUDENT INNOVATION</div>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
     <span>ARES · AUTONOMOUS RESCUE &amp; ENVIRONMENTAL INTELLIGENCE SYSTEM</span>
-    <span>SIH 2026 · HARDWARE EDITION</span>
+    <span>SIH 2026 · STUDENT INNOVATION</span>
   </div>
   <div class="wrap">
     <p class="fine">

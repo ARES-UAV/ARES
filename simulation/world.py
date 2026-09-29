@@ -252,7 +252,7 @@ def build(seed: int, w: float) -> tuple[World, float]:
 
 
 if __name__ == "__main__":
-    print("PRIOR QUALITY BY NOISE LEVEL — 30 seeds each\n")
+    print(f"PRIOR QUALITY BY NOISE LEVEL — {C.N_SEEDS} seeds each\n")
     print(f"  {'run':<10} {'w':>5}   {'correlation with truth':>24}")
     print("  " + "-" * 44)
     for name, w in C.PRIOR_NOISE_LEVELS.items():

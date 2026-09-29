@@ -2,7 +2,7 @@
 
 ## Full Name
 
-Adaptive Rescue and Exploration System
+Autonomous Rescue & Environmental Intelligence System
 
 ## Overview
 

@@ -53,7 +53,7 @@ from backend import config  # noqa: E402
 USER_AGENT = (
     "ARES-dashboard-tile-fetch/1.0 "
     "(disaster-response student project; "
-    "+https://github.com/dewangdhakad/ARES)"
+    "+https://github.com/ARES-UAV/ARES)"
 )
 
 TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"

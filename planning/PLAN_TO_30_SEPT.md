@@ -126,6 +126,24 @@ Not given to the groups. Most of these are minutes, not days.
 Items 1 and 2 are today. A laptop failure right now costs a day of work and the
 demo video.
 
+### Status, 29 September
+
+| | Outcome |
+|---|---|
+| 1 | Done — the 31 August work is tracked. |
+| 3 | Not done. `tests/` was never pushed; there is no test suite in this repository and the README does not claim one. |
+| 4 | Done. Settled on **Autonomous Rescue & Environmental Intelligence System** and the two outliers were changed to match. See `CONVENTIONS.md`. |
+| 5 | Done — the structure block now describes what is actually in each directory, and says which ones hold code rather than documentation. |
+| 6 | Moot — `Rob-Todo.md` is not in the repository. |
+| 7 | Resolved differently. The figure was never generated, so the claim was removed rather than left as a placeholder: the site now points at `experiments/Perception/C2A/` instead of promising a picture. |
+| 9 | Not done. The planner chart has two lines, not three. A random-search baseline remains the obvious next control. |
+
+Item 10's dry run is what produced the rest of this list: `simulation/run.py`,
+`world.py` and `check_baseline.py` were all run from a clean checkout on a
+different machine on 29 September. `check_baseline.py` crashed on a signature
+mismatch and `run.py`'s default was still 30 seeds, so the documented command
+reproduced a different table from the published one. Both are fixed.
+
 ```bash
 cd ~/College/ARES
 printf 'simulation/frames/\nsimulation/shots/\n' >> .gitignore

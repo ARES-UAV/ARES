@@ -46,7 +46,7 @@ import world as W           # noqa: E402
 N_SEEDS = 100
 
 
-def blind_go_home(self) -> None:
+def blind_go_home(self, use_belief: bool = False) -> None:
     """Return to base ignoring belief — the honest baseline behaviour.
 
     Same movement rule minus the one line that reads the belief map: step to

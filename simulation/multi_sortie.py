@@ -6,7 +6,7 @@
 
 THE QUESTION, WHICH IS THE RIGHT ONE TO ASK
     Adaptive finds 20 of 20 with a good prior and covers 33% of the area. The
-    lawnmower finds 11 and covers 56%. The obvious objection:
+    lawnmower finds 11 and covers 55%. The obvious objection:
 
         "The grid pattern is systematic. Fly it long enough and it finds
          everyone. Yours goes where it guesses — do the ones it skipped ever

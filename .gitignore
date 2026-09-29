@@ -29,7 +29,7 @@ Icon?
 # ── Secrets ────────────────────────────────────────────────────────
 # The previous version of this file had `.env -` with a stray trailing
 # " -", which is a literal pattern matching a file called ".env -".
-# Real .env files were never ignored. CLAUDE.md says this repo is
+# Real .env files were never ignored. CONVENTIONS.md says this repo is
 # public and must never carry a credential; that typo was the gap.
 .env
 .env.*

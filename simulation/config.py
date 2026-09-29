@@ -184,8 +184,13 @@ PRIOR_NOISE_LEVELS: dict[str, float] = {
 }
 
 # One run proves nothing — a single lucky survivor layout can flatter either
-# planner. 30 seeds, reported as median with range.
-N_SEEDS: int = 30
+# planner. 100 seeds, reported as median with range.
+#
+# This was 30 until 22 September. Thirty was optimistic: the uniform-prior
+# speed-up fell 18 % when the run was repeated at 100 (RESULTS.md § 5). The
+# default is now the published figure, so `python simulation/run.py` with no
+# flags reproduces the table in RESULTS.md rather than a smaller, luckier one.
+N_SEEDS: int = 100
 
 RESULTS_DIR: Path = Path(__file__).resolve().parent / "results"
 

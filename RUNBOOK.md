@@ -112,7 +112,7 @@ weights to ingest a *new* video.
 ### The five commands
 
 ```bash
-git clone https://github.com/dewangdhakad/ARES.git
+git clone https://github.com/ARES-UAV/ARES.git
 cd ARES
 
 # ── terminal 1 · backend ────────────────────────────────

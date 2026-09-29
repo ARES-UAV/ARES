@@ -217,11 +217,13 @@ class Drone:
             and wandered, which reads as a bug.
 
             Measured over 100 seeds, blind vs belief-guided return, the
-            baseline finds 11.0 either way and covers 56% vs 55%. The error
-            was in the CONSERVATIVE direction — it made the baseline slightly
-            stronger — so nothing published needs retracting. It is fixed
-            because the sentence describing it has to be true, not because the
-            numbers moved.
+            baseline is identical on every axis that is published: 11.0 found,
+            55% coverage, t50 905 s, 58/100 reaching half the survivors. Run
+            `python simulation/check_baseline.py` to reproduce both columns.
+
+            So nothing published needs retracting. It is fixed because the
+            sentence describing it has to be true, not because the numbers
+            moved — they did not move at all.
         """
         guard = 0
         while self.pos != C.BASE_CELL and guard < C.GRID_N * 4:
