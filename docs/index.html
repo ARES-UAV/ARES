@@ -878,8 +878,8 @@ img,svg,video{max-width:100%}
           <tr><td class="cap">Command dashboard</td><td><span class="pill b">Built</span></td><td class="nt">Works with the backend switched off</td></tr>
           <tr><td class="cap">Offline resilience</td><td><span class="pill b">Built</span></td><td class="nt">A consequence of on-device inference, not a feature</td></tr>
           <tr><td class="cap">Adaptive search planning</td><td><span class="pill p">Simulated</span></td><td class="nt">A 100-seed study against a lawnmower baseline — <a href="#search" style="color:var(--cy)">§&nbsp;06</a>. Never flown</td></tr>
-          <tr><td class="cap">RGB + thermal fusion</td><td><span class="pill p">Partial</span></td><td class="nt">Public thermal datasets, not physical hardware</td></tr>
-          <tr><td class="cap">Hazard classification</td><td><span class="pill p">Partial</span></td><td class="nt">3 of 7 classes — fire/smoke, flood, collapse</td></tr>
+          <tr><td class="cap">RGB + thermal fusion</td><td><span class="pill p">Partial</span></td><td class="nt">Both detectors built and measured — thermal recall 0.883 on HIT-UAV. Fusion itself is specified, not built. Public datasets; we own no thermal camera</td></tr>
+          <tr><td class="cap">Hazard classification</td><td><span class="pill d">Not built</span></td><td class="nt">Nothing trained. Scope narrowed to 3 of 7 classes — fire/smoke, flood, collapse — and AIDER selected. <code>HAZARDS</code> is empty and the score drops the term</td></tr>
           <tr><td class="cap">Autonomous nav · SLAM</td><td><span class="pill d">Described</span></td><td class="nt">Architecture only. Deliberately not built, and not mocked</td></tr>
         </tbody>
       </table>

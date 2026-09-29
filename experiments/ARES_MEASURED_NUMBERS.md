@@ -51,6 +51,23 @@ Combined C2A + VisDrone validation split.
 | mAP50 | 0.783 | **0.833** |
 | mAP50-95 | 0.511 | **0.577** |
 
+### Thermal — a second, separate detector
+
+Not a fusion result. A YOLOv8s trained on HIT-UAV, measured on its own
+validation split. Quoted on the deck and on the site, so it belongs here.
+
+| Metric | Value |
+|---|---|
+| **Recall** | **0.883** |
+
+104 epochs of a planned 150; the curves had flattened. Full write-up and the
+argument for stopping early in [`THERMAL_MODEL.md`](./THERMAL_MODEL.md).
+
+**What this is not.** It is not evidence that RGB + thermal fusion works —
+fusion is specified in [`FUSION_PLAN.md`](./FUSION_PLAN.md) and has not been
+built. Running both detectors together measured **2.4 FPS**, not 4.8. And we
+do not own a thermal camera; this is a public dataset.
+
 ### Decomposing the gain
 
 Three measurements separate two variables that would otherwise be confounded:

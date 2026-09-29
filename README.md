@@ -264,8 +264,8 @@ ARES is deliberately explicit about which capabilities are implemented and which
 | Command centre dashboard | Built |
 | Geo-tagged mapping | Built |
 | Offline resilience | Built — a consequence of on-device inference |
-| Multi-sensor fusion (RGB + thermal) | Partial — public thermal datasets, not physical hardware |
-| Hazard classification | Partial — 3 of 7 classes (fire/smoke, flood, collapsed structures) |
+| Multi-sensor fusion (RGB + thermal) | Partial — both detectors are built and measured (thermal: YOLOv8s on HIT-UAV, recall 0.883). The fusion itself is specified, not built, and running both detectors together measured 2.4 FPS rather than 4.8. Public datasets; we own no thermal camera. |
+| Hazard classification | **Not built** — nothing trained. Scope was narrowed to 3 of 7 classes (fire/smoke, flood, collapsed structures) and AIDER selected as the dataset, but no classifier exists. `HAZARDS` is an empty list, the priority score drops the term rather than scoring it as zero, and the dashboard shows no hazards rather than an invented one. |
 | Adaptive search planning | Research direction — simulation only, not flown |
 | Autonomous navigation, GPS-denied SLAM | Described only — architecture write-up, not built |
 
